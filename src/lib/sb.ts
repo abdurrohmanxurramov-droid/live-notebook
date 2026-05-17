@@ -1,25 +1,16 @@
-// Lazy proxy to avoid loading the supabase client (which references
-// localStorage at module init) during SSR.
+// Lazy accessor to avoid SSR evaluating the supabase client (touches localStorage).
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-let _client: SupabaseClient | null = null;
+let _sb: SupabaseClient | null = null;
+let _loading: Promise<SupabaseClient> | null = null;
 
-function getClient(): SupabaseClient {
-  if (_client) return _client;
-  // Only resolve in browser; throw if accidentally used in SSR.
-  if (typeof window === "undefined") {
-    throw new Error("Supabase client accessed during SSR");
+export async function sb(): Promise<SupabaseClient> {
+  if (_sb) return _sb;
+  if (!_loading) {
+    _loading = import("@/integrations/supabase/client").then((m) => {
+      _sb = m.supabase;
+      return _sb;
+    });
   }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require("@/integrations/supabase/client") as { supabase: SupabaseClient };
-  _client = mod.supabase;
-  return _client;
+  return _loading;
 }
-
-export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
-  get(_t, prop) {
-    const c = getClient() as unknown as Record<string, unknown>;
-    const value = c[prop as string];
-    return typeof value === "function" ? (value as Function).bind(c) : value;
-  },
-});
