@@ -91,7 +91,7 @@ export function RatesCard() {
 
   const save = useMut(async () => {
     if (!rates) return;
-    const { error } = await supabase
+    const { error } = await (await sb())
       .from("rates")
       .update({
         usd_to_rub: Number(usdRub || rates.usd_to_rub),

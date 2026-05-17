@@ -41,7 +41,7 @@ export function useStudents() {
   return useQuery({
     queryKey: ["students"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (await sb())
         .from("students")
         .select("*")
         .order("created_at", { ascending: false });
@@ -55,7 +55,7 @@ export function useFinance() {
   return useQuery({
     queryKey: ["finance"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (await sb())
         .from("finance")
         .select("*")
         .order("created_at", { ascending: false });
@@ -69,7 +69,7 @@ export function useAttendance() {
   return useQuery({
     queryKey: ["attendance"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (await sb())
         .from("attendance")
         .select("*")
         .order("date", { ascending: false });
@@ -83,14 +83,14 @@ export function useRates() {
   return useQuery({
     queryKey: ["rates"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (await sb())
         .from("rates")
         .select("*")
         .order("updated_at", { ascending: false })
         .limit(1);
       if (error) throw error;
       if (!data || data.length === 0) {
-        const { data: inserted, error: insErr } = await supabase
+        const { data: inserted, error: insErr } = await (await sb())
           .from("rates")
           .insert({ usd_to_rub: 90, usdt_to_egp: 50, usd_to_egp: 50 })
           .select()
