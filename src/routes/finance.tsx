@@ -12,7 +12,7 @@ import {
   convertToUSDT,
   convertToEGP,
 } from "@/lib/db";
-import { supabase } from "@/integrations/supabase/client";
+import { sb } from "@/lib/sb";
 import { RefreshCw, Trash2, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/finance")({ component: FinancePage });
@@ -169,7 +169,7 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
   const add = useMut(async () => {
     const num = Number(amount);
     if (!num || num <= 0) throw new Error("Введите сумму");
-    const { error } = await supabase.from("finance").insert({
+    const { error } = await (await sb()).from("finance").insert({
       student_id: studentId,
       amount: num,
       currency,
@@ -254,11 +254,11 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
 
 function PaymentRow({ f, name }: { f: any; name: string }) {
   const del = useMut(async () => {
-    const { error } = await supabase.from("finance").delete().eq("id", f.id);
+    const { error } = await (await sb()).from("finance").delete().eq("id", f.id);
     if (error) throw error;
   }, ["finance"]);
   const toggle = useMut(async () => {
-    const { error } = await supabase.from("finance").update({ is_paid: !f.is_paid }).eq("id", f.id);
+    const { error } = await (await sb()).from("finance").update({ is_paid: !f.is_paid }).eq("id", f.id);
     if (error) throw error;
   }, ["finance"]);
 

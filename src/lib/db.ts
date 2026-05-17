@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { sb } from "@/lib/sb";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type Student = {

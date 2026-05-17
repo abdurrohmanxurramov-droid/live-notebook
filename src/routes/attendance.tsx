@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { useStudents, useAttendance, useMut, initials } from "@/lib/db";
-import { supabase } from "@/integrations/supabase/client";
+import { sb } from "@/lib/sb";
 import { CalendarCheck, Check, X, FileText, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/attendance")({ component: AttendancePage });
@@ -26,7 +26,7 @@ function AttendancePage() {
 
   const add = useMut(async () => {
     if (!studentId) throw new Error("Выберите ученика");
-    const { error } = await supabase.from("attendance").insert({
+    const { error } = await (await sb()).from("attendance").insert({
       student_id: studentId,
       date,
       status,
@@ -36,7 +36,7 @@ function AttendancePage() {
   }, ["attendance"]);
 
   const del = useMut(async (id: string) => {
-    const { error } = await supabase.from("attendance").delete().eq("id", id);
+    const { error } = await (await sb()).from("attendance").delete().eq("id", id);
     if (error) throw error;
   }, ["attendance"]);
 

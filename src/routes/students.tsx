@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useFinance, useMut, initials } from "@/lib/db";
-import { supabase } from "@/integrations/supabase/client";
+import { sb } from "@/lib/sb";
 import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/students")({ component: StudentsPage });
@@ -21,7 +21,7 @@ function StudentsPage() {
   );
 
   const del = useMut(async (id: string) => {
-    const { error } = await supabase.from("students").delete().eq("id", id);
+    const { error } = await (await sb()).from("students").delete().eq("id", id);
     if (error) throw error;
   }, ["students", "finance", "attendance"]);
 
@@ -147,7 +147,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
 
   const add = useMut(async () => {
     const d = Math.max(1, Math.min(7, Number(days) || 1));
-    const { error } = await supabase.from("students").insert({
+    const { error } = await (await sb()).from("students").insert({
       name: name.trim(),
       days_per_week: d,
       subject: subject.trim() || null,
