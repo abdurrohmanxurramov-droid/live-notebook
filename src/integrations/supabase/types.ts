@@ -14,7 +14,159 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          note?: string | null
+          status: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          is_paid: boolean
+          pay_date: string | null
+          student_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_paid?: boolean
+          pay_date?: string | null
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          is_paid?: boolean
+          pay_date?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons_conducted: {
+        Row: {
+          created_at: string
+          id: string
+          lessons_done: number
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lessons_done?: number
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lessons_done?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_conducted_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rates: {
+        Row: {
+          id: string
+          updated_at: string
+          usd_to_egp: number
+          usd_to_rub: number
+          usdt_to_egp: number
+        }
+        Insert: {
+          id?: string
+          updated_at?: string
+          usd_to_egp?: number
+          usd_to_rub?: number
+          usdt_to_egp?: number
+        }
+        Update: {
+          id?: string
+          updated_at?: string
+          usd_to_egp?: number
+          usd_to_rub?: number
+          usdt_to_egp?: number
+        }
+        Relationships: []
+      }
+      students: {
+        Row: {
+          created_at: string
+          days_per_week: number
+          id: string
+          name: string
+          phone: string | null
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          days_per_week?: number
+          id?: string
+          name: string
+          phone?: string | null
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          days_per_week?: number
+          id?: string
+          name?: string
+          phone?: string | null
+          subject?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
