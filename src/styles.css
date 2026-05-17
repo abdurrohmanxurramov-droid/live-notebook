@@ -1,0 +1,98 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--accent);
+  --color-success: var(--success);
+  --color-gold: var(--accent);
+  --color-navy: var(--primary);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  /* Light */
+  --background: #F5F1E8;
+  --foreground: #14213D;
+  --card: #FFFFFF;
+  --card-foreground: #14213D;
+  --primary: #14213D;       /* Navy */
+  --primary-foreground: #F8F4EC;
+  --secondary: #EDE6D6;
+  --secondary-foreground: #14213D;
+  --muted: #EDE6D6;
+  --muted-foreground: #6B6357;
+  --accent: #B38B59;        /* Gold */
+  --accent-foreground: #FFFFFF;
+  --destructive: #B23A48;
+  --success: #2D6A4F;
+  --border: #E5DCC8;
+}
+
+.dark {
+  --background: #0D1B2A;
+  --foreground: #F8F4EC;
+  --card: #1B263B;
+  --card-foreground: #F8F4EC;
+  --primary: #F8F4EC;
+  --primary-foreground: #14213D;
+  --secondary: #243049;
+  --secondary-foreground: #F8F4EC;
+  --muted: #243049;
+  --muted-foreground: #9AA5B8;
+  --accent: #C6A969;
+  --accent-foreground: #14213D;
+  --destructive: #B23A48;
+  --success: #4FAE7F;
+  --border: #2A3854;
+}
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+  * { border-color: var(--color-border); }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .name-italic { font-style: italic; }
+}
+
+@layer utilities {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-top { padding-top: env(safe-area-inset-top); }
+}

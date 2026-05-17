@@ -1,0 +1,152 @@
+import { sb } from "@/lib/sb";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+export type Student = {
+  id: string;
+  name: string;
+  days_per_week: number;
+  subject: string | null;
+  phone: string | null;
+  created_at: string;
+};
+
+export type Finance = {
+  id: string;
+  student_id: string;
+  amount: number;
+  currency: "RUB" | "USD" | "EGP";
+  is_paid: boolean;
+  pay_date: string | null;
+  created_at: string;
+};
+
+export type Attendance = {
+  id: string;
+  student_id: string;
+  date: string;
+  status: "present" | "absent" | "excused";
+  note: string | null;
+  created_at: string;
+};
+
+export type Rates = {
+  id: string;
+  usd_to_rub: number;
+  usdt_to_egp: number;
+  usd_to_egp: number;
+  updated_at: string;
+};
+
+export function useStudents() {
+  return useQuery({
+    queryKey: ["students"],
+    queryFn: async () => {
+      const { data, error } = await (await sb())
+        .from("students")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Student[];
+    },
+  });
+}
+
+export function useFinance() {
+  return useQuery({
+    queryKey: ["finance"],
+    queryFn: async () => {
+      const { data, error } = await (await sb())
+        .from("finance")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Finance[];
+    },
+  });
+}
+
+export function useAttendance() {
+  return useQuery({
+    queryKey: ["attendance"],
+    queryFn: async () => {
+      const { data, error } = await (await sb())
+        .from("attendance")
+        .select("*")
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Attendance[];
+    },
+  });
+}
+
+export function useRates() {
+  return useQuery({
+    queryKey: ["rates"],
+    queryFn: async () => {
+      const { data, error } = await (await sb())
+        .from("rates")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        const { data: inserted, error: insErr } = await (await sb())
+          .from("rates")
+          .insert({ usd_to_rub: 90, usdt_to_egp: 50, usd_to_egp: 50 })
+          .select()
+          .single();
+        if (insErr) throw insErr;
+        return inserted as Rates;
+      }
+      return data[0] as Rates;
+    },
+  });
+}
+
+export function useInvalidate() {
+  const qc = useQueryClient();
+  return (keys: string[]) => keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+}
+
+export function useMut<T>(fn: (input: T) => Promise<unknown>, keys: string[]) {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => invalidate(keys),
+  });
+}
+
+export function initials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((s) => s[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+export function formatMoney(amount: number, currency: string) {
+  const sym = currency === "RUB" ? "₽" : currency === "USD" ? "$" : "£";
+  return `${Math.round(amount).toLocaleString("ru-RU")} ${sym}`;
+}
+
+export function convertToRUB(amount: number, currency: string, rates: Rates) {
+  if (currency === "RUB") return amount;
+  if (currency === "USD") return amount * rates.usd_to_rub;
+  if (currency === "EGP") return (amount / rates.usdt_to_egp) * rates.usd_to_rub;
+  return amount;
+}
+
+export function convertToUSDT(amount: number, currency: string, rates: Rates) {
+  if (currency === "USD") return amount;
+  if (currency === "RUB") return amount / rates.usd_to_rub;
+  if (currency === "EGP") return amount / rates.usdt_to_egp;
+  return amount;
+}
+
+export function convertToEGP(amount: number, currency: string, rates: Rates) {
+  if (currency === "EGP") return amount;
+  if (currency === "USD") return amount * rates.usdt_to_egp;
+  if (currency === "RUB") return (amount / rates.usd_to_rub) * rates.usdt_to_egp;
+  return amount;
+}
