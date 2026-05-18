@@ -1,8 +1,9 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, GraduationCap, CalendarCheck, Wallet, Settings } from "lucide-react";
+import { Home, GraduationCap, CalendarCheck, Wallet, Settings, CalendarDays } from "lucide-react";
 
 const tabs = [
   { to: "/", label: "Главная", icon: Home },
+  { to: "/schedule", label: "Расписание", icon: CalendarDays },
   { to: "/students", label: "Ученики", icon: GraduationCap },
   { to: "/attendance", label: "Журнал", icon: CalendarCheck },
   { to: "/finance", label: "Финансы", icon: Wallet },
