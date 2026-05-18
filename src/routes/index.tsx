@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { Card, SectionTitle, Avatar, Badge, Empty } from "@/components/ui-bits";
-import { useStudents, useFinance, useRates, formatMoney, initials, convertToRUB } from "@/lib/db";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles } from "lucide-react";
+import { useStudents, useFinance, useRates, useSchedule, formatMoney, initials, convertToRUB } from "@/lib/db";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -18,6 +18,18 @@ function Home() {
   const { data: students = [] } = useStudents();
   const { data: finance = [] } = useFinance();
   const { data: rates } = useRates();
+  const { data: schedule = [] } = useSchedule();
+
+  const todayDow = (new Date().getDay() + 6) % 7;
+  const todayLessons = useMemo(
+    () => schedule.filter((s) => s.day_of_week === todayDow).sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    [schedule, todayDow]
+  );
+  const studentsById = useMemo(() => {
+    const m = new Map<string, (typeof students)[number]>();
+    students.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [students]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -80,6 +92,38 @@ function Home() {
         <QuickAction to="/finance" icon={<Plus className="h-5 w-5" />} label="Оплата" />
         <QuickAction to="/students" icon={<UserPlus className="h-5 w-5" />} label="Ученик" />
       </div>
+
+      <SectionTitle action={<Link to="/schedule" className="text-xs font-medium text-accent">Открыть →</Link>}>
+        Сегодня
+      </SectionTitle>
+      {todayLessons.length === 0 ? (
+        <Card className="px-4 py-5 text-center">
+          <CalendarDays className="mx-auto h-6 w-6 text-muted-foreground" />
+          <p className="mt-2 text-sm font-medium text-foreground">Сегодня уроков нет</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Отдыхайте или запланируйте новый</p>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {todayLessons.map((slot) => {
+            const st = studentsById.get(slot.student_id);
+            return (
+              <Card key={slot.id} className="flex items-center gap-3 p-3">
+                <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
+                  <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
+                  <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
+                </div>
+                <Avatar initials={initials(st?.name ?? "?")} />
+                <div className="min-w-0 flex-1">
+                  <div className="name-italic truncate text-[14px] font-semibold text-foreground">{st?.name ?? "—"}</div>
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Clock className="h-3 w-3" /> {st?.subject || "Урок"}
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       <SectionTitle>Недавние ученики</SectionTitle>
       {students.length === 0 ? (
