@@ -1,0 +1,251 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Card, Button, Input, Select, Empty, SectionTitle, Badge, Avatar } from "@/components/ui-bits";
+import { Sheet } from "@/components/Sheet";
+import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@/lib/db";
+import { sb } from "@/lib/sb";
+import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
+
+export const Route = createFileRoute("/schedule")({ component: SchedulePage });
+
+const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
+const DAYS_FULL = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"] as const;
+
+function jsDayToMon(jsDay: number) {
+  // JS: 0=Sun..6=Sat → 0=Mon..6=Sun
+  return (jsDay + 6) % 7;
+}
+
+function fmtTime(t: string) {
+  return t.slice(0, 5);
+}
+
+function addMinutes(t: string, mins: number) {
+  const [h, m] = t.split(":").map(Number);
+  const total = h * 60 + m + mins;
+  const hh = String(Math.floor(total / 60) % 24).padStart(2, "0");
+  const mm = String(total % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function SchedulePage() {
+  const { data: slots = [] } = useSchedule();
+  const { data: students = [] } = useStudents();
+  const [open, setOpen] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const studentsById = useMemo(() => {
+    const m = new Map<string, (typeof students)[number]>();
+    students.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [students]);
+
+  const grouped = useMemo(() => {
+    const map: Record<number, ScheduleSlot[]> = {};
+    for (let i = 0; i < 7; i++) map[i] = [];
+    slots.forEach((s) => map[s.day_of_week]?.push(s));
+    return map;
+  }, [slots]);
+
+  const todayDow = jsDayToMon(new Date().getDay());
+
+  const del = useMut(async (id: string) => {
+    const { error } = await (await sb()).from("schedule_slots").delete().eq("id", id);
+    if (error) throw error;
+  }, ["schedule"]);
+
+  return (
+    <div className="px-4 pt-6">
+      <header className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Расписание</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Еженедельные уроки по дням</p>
+        </div>
+        <Button variant="gold" onClick={() => setOpen(true)}>
+          <Plus className="h-4 w-4" /> Слот
+        </Button>
+      </header>
+
+      {slots.length === 0 ? (
+        <div className="mt-6">
+          <Empty
+            icon={<CalendarDays className="h-8 w-8" />}
+            title="Расписание пусто"
+            hint="Нажмите «Слот», чтобы добавить регулярный урок"
+          />
+        </div>
+      ) : (
+        <div className="mt-5 space-y-4">
+          {DAYS.map((_, i) => {
+            const dayItems = grouped[i] ?? [];
+            const isToday = todayDow === i;
+            return (
+              <section key={i}>
+                <div className="mb-2 flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[15px] font-semibold tracking-tight ${isToday ? "text-accent" : "text-foreground"}`}>
+                      {DAYS_FULL[i]}
+                    </span>
+                    {isToday && <Badge tone="gold">сегодня</Badge>}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {dayItems.length === 0 ? "—" : `${dayItems.length} ${dayItems.length === 1 ? "урок" : "урока"}`}
+                  </span>
+                </div>
+
+                {dayItems.length === 0 ? (
+                  <Card className="px-4 py-3">
+                    <p className="text-xs text-muted-foreground">Свободный день</p>
+                  </Card>
+                ) : (
+                  <div className="space-y-2">
+                    {dayItems.map((slot) => {
+                      const st = studentsById.get(slot.student_id);
+                      const end = addMinutes(slot.start_time, slot.duration_min);
+                      return (
+                        <Card key={slot.id} className="flex items-center gap-3 p-3">
+                          <div className="flex w-16 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-2">
+                            <span className="num text-base leading-tight text-accent">{fmtTime(slot.start_time)}</span>
+                            <span className="text-[10px] font-medium text-muted-foreground">{end}</span>
+                          </div>
+                          <Avatar initials={initials(st?.name ?? "?")} />
+                          <div className="min-w-0 flex-1">
+                            <div className="name-italic truncate text-[14px] font-semibold text-foreground">
+                              {st?.name ?? "Удалён"}
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              {slot.duration_min} мин
+                              {st?.subject ? ` · ${st.subject}` : ""}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setConfirmId(slot.id)}
+                            className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            aria-label="Удалить"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
+
+      <AddSlotSheet open={open} onClose={() => setOpen(false)} />
+
+      <Sheet open={!!confirmId} onClose={() => setConfirmId(null)} title="Удалить слот?">
+        <p className="text-sm text-muted-foreground">Регулярный урок будет удалён из расписания.</p>
+        <div className="mt-5 flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={() => setConfirmId(null)}>Отмена</Button>
+          <Button
+            variant="danger"
+            className="flex-1"
+            onClick={async () => {
+              if (!confirmId) return;
+              try {
+                await del.mutateAsync(confirmId);
+                toast.success("Слот удалён");
+                setConfirmId(null);
+              } catch (e: any) {
+                toast.error(e?.message ?? "Ошибка");
+              }
+            }}
+          >
+            Удалить
+          </Button>
+        </div>
+      </Sheet>
+    </div>
+  );
+}
+
+function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { data: students = [] } = useStudents();
+  const [studentId, setStudentId] = useState("");
+  const [day, setDay] = useState("0");
+  const [time, setTime] = useState("16:00");
+  const [duration, setDuration] = useState("60");
+
+  const add = useMut(async () => {
+    if (!studentId) throw new Error("Выберите ученика");
+    const { error } = await (await sb()).from("schedule_slots").insert({
+      student_id: studentId,
+      day_of_week: Number(day),
+      start_time: `${time}:00`,
+      duration_min: Math.max(15, Math.min(240, Number(duration) || 60)),
+    });
+    if (error) throw error;
+  }, ["schedule"]);
+
+  return (
+    <Sheet open={open} onClose={onClose} title="Новый урок в расписании">
+      {students.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Сначала добавьте хотя бы одного ученика во вкладке «Ученики».
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <Field label="Ученик">
+            <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+              <option value="">— Выберите —</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="День недели">
+            <Select value={day} onChange={(e) => setDay(e.target.value)}>
+              {DAYS_FULL.map((d, i) => (
+                <option key={i} value={i}>{d}</option>
+              ))}
+            </Select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Время">
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </Field>
+            <Field label="Длительность, мин">
+              <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
+            </Field>
+          </div>
+        </div>
+      )}
+      <div className="mt-5 flex gap-2">
+        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button
+          variant="gold"
+          className="flex-1"
+          disabled={!studentId || add.isPending}
+          onClick={async () => {
+            try {
+              await add.mutateAsync(undefined as never);
+              toast.success("Урок добавлен");
+              setStudentId(""); setDay("0"); setTime("16:00"); setDuration("60");
+              onClose();
+            } catch (e: any) {
+              toast.error(e?.message ?? "Ошибка");
+            }
+          }}
+        >
+          Сохранить
+        </Button>
+      </div>
+    </Sheet>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
