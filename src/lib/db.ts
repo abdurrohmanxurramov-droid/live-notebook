@@ -29,6 +29,15 @@ export type Attendance = {
   created_at: string;
 };
 
+export type ScheduleSlot = {
+  id: string;
+  student_id: string;
+  day_of_week: number; // 0=Mon ... 6=Sun
+  start_time: string; // "HH:MM:SS"
+  duration_min: number;
+  created_at: string;
+};
+
 export type Rates = {
   id: string;
   usd_to_rub: number;
@@ -75,6 +84,21 @@ export function useAttendance() {
         .order("date", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Attendance[];
+    },
+  });
+}
+
+export function useSchedule() {
+  return useQuery({
+    queryKey: ["schedule"],
+    queryFn: async () => {
+      const { data, error } = await (await sb())
+        .from("schedule_slots")
+        .select("*")
+        .order("day_of_week", { ascending: true })
+        .order("start_time", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as ScheduleSlot[];
     },
   });
 }
