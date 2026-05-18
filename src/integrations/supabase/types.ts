@@ -140,6 +140,33 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_slots: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          duration_min: number
+          id: string
+          start_time: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          duration_min?: number
+          id?: string
+          start_time: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          duration_min?: number
+          id?: string
+          start_time?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           created_at: string
