@@ -119,7 +119,36 @@ function AnalyticsPage() {
       .sort((a, b) => b.n - a.n);
   }, [students, finance]);
 
-  const hasAny = students.length > 0 && (finance.length > 0 || attendance.length > 0);
+  // Аналитика ДЗ
+  const hwStats = useMemo(() => {
+    const acc = { assigned: 0, done: 0, partial: 0, not_done: 0 };
+    for (const h of homework) acc[h.status as keyof typeof acc] = (acc[h.status as keyof typeof acc] ?? 0) + 1;
+    const evaluated = acc.done + acc.partial + acc.not_done;
+    const rate = evaluated ? Math.round(((acc.done + acc.partial * 0.5) / evaluated) * 100) : 0;
+    return { ...acc, rate, evaluated };
+  }, [homework]);
+
+  const hwByStudent = useMemo(() => {
+    const map = new Map<string, { done: number; partial: number; not_done: number; assigned: number }>();
+    for (const h of homework) {
+      const m = map.get(h.student_id) ?? { done: 0, partial: 0, not_done: 0, assigned: 0 };
+      m[h.status as keyof typeof m] += 1;
+      map.set(h.student_id, m);
+    }
+    return students
+      .map((s) => {
+        const m = map.get(s.id) ?? { done: 0, partial: 0, not_done: 0, assigned: 0 };
+        const evaluated = m.done + m.partial + m.not_done;
+        const rate = evaluated ? Math.round(((m.done + m.partial * 0.5) / evaluated) * 100) : 0;
+        const total = evaluated + m.assigned;
+        return { s, rate, total, ...m };
+      })
+      .filter((x) => x.total > 0)
+      .sort((a, b) => b.rate - a.rate);
+  }, [students, homework]);
+
+  const hasAny = students.length > 0 && (finance.length > 0 || attendance.length > 0 || homework.length > 0);
+
 
   return (
     <div className="px-4 pt-6">
