@@ -324,6 +324,82 @@ function AnalyticsPage() {
             </>
           )}
 
+          {homework.length > 0 && (
+            <>
+              <SectionTitle>Домашние задания</SectionTitle>
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/15 text-accent">
+                    <BookOpen className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Успеваемость по ДЗ</div>
+                    <div className="num text-2xl text-foreground">{hwStats.rate}%</div>
+                  </div>
+                  <div className="text-right text-[11px] text-muted-foreground">
+                    Оценено<br />{hwStats.evaluated} из {homework.length}
+                  </div>
+                </div>
+                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
+                  <div className="h-full rounded-full bg-[color:var(--success)]" style={{ width: `${hwStats.rate}%` }} />
+                </div>
+                <div className="mt-3 grid grid-cols-4 gap-2 text-center text-[11px]">
+                  <div className="rounded-xl bg-secondary py-2">
+                    <div className="num text-base text-foreground">{hwStats.assigned}</div>
+                    <div className="text-muted-foreground">Активно</div>
+                  </div>
+                  <div className="rounded-xl bg-[color:var(--success)]/15 py-2">
+                    <div className="num text-base text-[color:var(--success)]">{hwStats.done}</div>
+                    <div className="text-muted-foreground">Сдали</div>
+                  </div>
+                  <div className="rounded-xl bg-accent/15 py-2">
+                    <div className="num text-base text-accent">{hwStats.partial}</div>
+                    <div className="text-muted-foreground">Част.</div>
+                  </div>
+                  <div className="rounded-xl bg-destructive/15 py-2">
+                    <div className="num text-base text-destructive">{hwStats.not_done}</div>
+                    <div className="text-muted-foreground">Не сдали</div>
+                  </div>
+                </div>
+              </Card>
+
+              {hwByStudent.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {hwByStudent.map(({ s, rate, done, partial, not_done, assigned }) => (
+                    <Card key={s.id} className="p-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar initials={initials(s.name)} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="name-italic truncate text-[14px] font-semibold">{s.name}</div>
+                            <div className="num text-sm text-foreground">{rate}%</div>
+                          </div>
+                          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${rate}%`,
+                                background: rate >= 80 ? "var(--success)" : rate >= 50 ? "var(--accent)" : "var(--destructive)",
+                              }}
+                            />
+                          </div>
+                          <div className="mt-1.5 flex gap-3 text-[11px] text-muted-foreground">
+                            <span className="text-[color:var(--success)]">✓ {done}</span>
+                            <span className="text-accent">~ {partial}</span>
+                            <span className="text-destructive">✗ {not_done}</span>
+                            {assigned > 0 && <span>⏳ {assigned}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+
+
           {topStudents.length > 0 && (
             <>
               <SectionTitle>Топ учеников по доходу</SectionTitle>
