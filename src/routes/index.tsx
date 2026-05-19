@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { Card, SectionTitle, Avatar, Badge, Empty } from "@/components/ui-bits";
 import { useStudents, useFinance, useRates, useSchedule, formatMoney, initials, convertToRUB } from "@/lib/db";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays } from "lucide-react";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -87,8 +87,9 @@ function Home() {
       </div>
 
       <SectionTitle>Быстрые действия</SectionTitle>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <QuickAction to="/attendance" icon={<CalendarPlus className="h-5 w-5" />} label="Урок" />
+        <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="ДЗ" />
         <QuickAction to="/finance" icon={<Plus className="h-5 w-5" />} label="Оплата" />
         <QuickAction to="/students" icon={<UserPlus className="h-5 w-5" />} label="Ученик" />
       </div>
