@@ -19,11 +19,12 @@ import {
   useStudents,
   useFinance,
   useAttendance,
+  useHomework,
   useRates,
   convertToRUB,
   initials,
 } from "@/lib/db";
-import { BarChart3, TrendingUp, Users, AlertTriangle } from "lucide-react";
+import { BarChart3, TrendingUp, Users, AlertTriangle, BookOpen } from "lucide-react";
 
 export const Route = createFileRoute("/analytics")({ component: AnalyticsPage });
 
@@ -34,6 +35,7 @@ function AnalyticsPage() {
   const { data: students = [] } = useStudents();
   const { data: finance = [] } = useFinance();
   const { data: attendance = [] } = useAttendance();
+  const { data: homework = [] } = useHomework();
   const { data: rates } = useRates();
   const [range, setRange] = useState<6 | 12>(6);
 
