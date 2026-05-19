@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as StudentsRouteImport } from './routes/students'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as HomeworkRouteImport } from './routes/homework'
 import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
@@ -30,6 +31,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeworkRoute = HomeworkRouteImport.update({
+  id: '/homework',
+  path: '/homework',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinanceRoute = FinanceRouteImport.update({
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/attendance': typeof AttendanceRoute
   '/finance': typeof FinanceRoute
+  '/homework': typeof HomeworkRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/students': typeof StudentsRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/attendance': typeof AttendanceRoute
   '/finance': typeof FinanceRoute
+  '/homework': typeof HomeworkRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/students': typeof StudentsRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/attendance': typeof AttendanceRoute
   '/finance': typeof FinanceRoute
+  '/homework': typeof HomeworkRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/students': typeof StudentsRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/attendance'
     | '/finance'
+    | '/homework'
     | '/schedule'
     | '/settings'
     | '/students'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/attendance'
     | '/finance'
+    | '/homework'
     | '/schedule'
     | '/settings'
     | '/students'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/attendance'
     | '/finance'
+    | '/homework'
     | '/schedule'
     | '/settings'
     | '/students'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   AttendanceRoute: typeof AttendanceRoute
   FinanceRoute: typeof FinanceRoute
+  HomeworkRoute: typeof HomeworkRoute
   ScheduleRoute: typeof ScheduleRoute
   SettingsRoute: typeof SettingsRoute
   StudentsRoute: typeof StudentsRoute
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/homework': {
+      id: '/homework'
+      path: '/homework'
+      fullPath: '/homework'
+      preLoaderRoute: typeof HomeworkRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/finance': {
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   AttendanceRoute: AttendanceRoute,
   FinanceRoute: FinanceRoute,
+  HomeworkRoute: HomeworkRoute,
   ScheduleRoute: ScheduleRoute,
   SettingsRoute: SettingsRoute,
   StudentsRoute: StudentsRoute,

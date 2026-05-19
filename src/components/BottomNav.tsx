@@ -1,14 +1,15 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, GraduationCap, CalendarCheck, Wallet, Settings, CalendarDays, BarChart3 } from "lucide-react";
+import { Home, GraduationCap, CalendarCheck, Wallet, Settings, CalendarDays, BarChart3, BookOpen } from "lucide-react";
 
 const tabs = [
   { to: "/", label: "Главная", icon: Home },
-  { to: "/schedule", label: "Расписание", icon: CalendarDays },
+  { to: "/schedule", label: "Распис.", icon: CalendarDays },
   { to: "/students", label: "Ученики", icon: GraduationCap },
   { to: "/attendance", label: "Журнал", icon: CalendarCheck },
+  { to: "/homework", label: "ДЗ", icon: BookOpen },
   { to: "/finance", label: "Финансы", icon: Wallet },
-  { to: "/analytics", label: "Аналитика", icon: BarChart3 },
-  { to: "/settings", label: "Настройки", icon: Settings },
+  { to: "/analytics", label: "Анализ", icon: BarChart3 },
+  { to: "/settings", label: "Ещё", icon: Settings },
 ] as const;
 
 export function BottomNav() {

@@ -38,6 +38,18 @@ export type ScheduleSlot = {
   created_at: string;
 };
 
+export type HomeworkStatus = "assigned" | "done" | "not_done" | "partial";
+export type Homework = {
+  id: string;
+  student_id: string;
+  assigned_date: string;
+  due_date: string | null;
+  task: string;
+  status: HomeworkStatus;
+  note: string | null;
+  created_at: string;
+};
+
 export type Rates = {
   id: string;
   usd_to_rub: number;
@@ -99,6 +111,21 @@ export function useSchedule() {
         .order("start_time", { ascending: true });
       if (error) throw error;
       return (data ?? []) as ScheduleSlot[];
+    },
+  });
+}
+
+export function useHomework() {
+  return useQuery({
+    queryKey: ["homework"],
+    queryFn: async () => {
+      const { data, error } = await (await sb())
+        .from("homework")
+        .select("*")
+        .order("assigned_date", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Homework[];
     },
   });
 }
