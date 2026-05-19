@@ -87,6 +87,39 @@ export type Database = {
           },
         ]
       }
+      homework: {
+        Row: {
+          assigned_date: string
+          created_at: string
+          due_date: string | null
+          id: string
+          note: string | null
+          status: string
+          student_id: string
+          task: string
+        }
+        Insert: {
+          assigned_date?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          note?: string | null
+          status?: string
+          student_id: string
+          task: string
+        }
+        Update: {
+          assigned_date?: string
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          note?: string | null
+          status?: string
+          student_id?: string
+          task?: string
+        }
+        Relationships: []
+      }
       lessons_conducted: {
         Row: {
           created_at: string
