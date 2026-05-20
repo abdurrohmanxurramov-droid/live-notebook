@@ -12,10 +12,17 @@ export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
 function SettingsPage() {
   const [dark, setDark] = useState(false);
+  const [supported, setSupported] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const testFn = useServerFn(sendTestPush);
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setDark(isDark);
+    const s = pushSupported();
+    setSupported(s);
+    if (s) isSubscribed().then(setSubscribed).catch(() => {});
   }, []);
 
   function toggle() {
@@ -25,10 +32,44 @@ function SettingsPage() {
     localStorage.setItem("theme", next ? "dark" : "light");
   }
 
+  async function togglePush() {
+    setBusy(true);
+    try {
+      if (subscribed) {
+        await unsubscribePush();
+        setSubscribed(false);
+        toast.success("Уведомления отключены");
+      } else {
+        await subscribePush();
+        setSubscribed(true);
+        toast.success("Уведомления включены — за 10 минут до урока");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Не удалось");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function testPush() {
+    setBusy(true);
+    try {
+      const reg = await getRegistration();
+      const sub = await reg?.pushManager.getSubscription();
+      if (!sub) throw new Error("Сначала включите уведомления");
+      await testFn({ data: { endpoint: sub.endpoint } });
+      toast.success("Отправлено");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="px-4 pt-6">
       <h1 className="text-2xl font-bold tracking-tight text-foreground">Настройки</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Тема, курсы и информация</p>
+      <p className="mt-1 text-sm text-muted-foreground">Тема, уведомления, курсы</p>
 
       <SectionTitle>Внешний вид</SectionTitle>
       <Card className="flex items-center justify-between p-4">
