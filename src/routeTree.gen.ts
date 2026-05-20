@@ -17,6 +17,7 @@ import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicHooksLessonRemindersRouteImport } from './routes/api/public/hooks/lesson-reminders'
 
 const StudentsRoute = StudentsRouteImport.update({
   id: '/students',
@@ -58,6 +59,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksLessonRemindersRoute =
+  ApiPublicHooksLessonRemindersRouteImport.update({
+    id: '/api/public/hooks/lesson-reminders',
+    path: '/api/public/hooks/lesson-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/students': typeof StudentsRoute
+  '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +86,7 @@ export interface FileRoutesByTo {
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/students': typeof StudentsRoute
+  '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +98,7 @@ export interface FileRoutesById {
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
   '/students': typeof StudentsRoute
+  '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/students'
+    | '/api/public/hooks/lesson-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/students'
+    | '/api/public/hooks/lesson-reminders'
   id:
     | '__root__'
     | '/'
@@ -121,6 +133,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/students'
+    | '/api/public/hooks/lesson-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +145,7 @@ export interface RootRouteChildren {
   ScheduleRoute: typeof ScheduleRoute
   SettingsRoute: typeof SettingsRoute
   StudentsRoute: typeof StudentsRoute
+  ApiPublicHooksLessonRemindersRoute: typeof ApiPublicHooksLessonRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/lesson-reminders': {
+      id: '/api/public/hooks/lesson-reminders'
+      path: '/api/public/hooks/lesson-reminders'
+      fullPath: '/api/public/hooks/lesson-reminders'
+      preLoaderRoute: typeof ApiPublicHooksLessonRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +225,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduleRoute: ScheduleRoute,
   SettingsRoute: SettingsRoute,
   StudentsRoute: StudentsRoute,
+  ApiPublicHooksLessonRemindersRoute: ApiPublicHooksLessonRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
