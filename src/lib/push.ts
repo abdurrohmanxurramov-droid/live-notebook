@@ -1,0 +1,74 @@
+// Client-side Web Push helpers
+import { savePushSubscription, removePushSubscription } from "./push.functions";
+
+// VAPID public key (safe to expose; private key lives in server secret)
+export const VAPID_PUBLIC_KEY =
+  "BMsPV2ojnxOy0BNfmip6b0_ZBBsO4BAlZFBjcRaAMS65s-LAlImbacmmuNspD1I3tgfieXXzw4LCBX0EPGUfuwg";
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+export function pushSupported(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window &&
+    "Notification" in window
+  );
+}
+
+export async function getRegistration(): Promise<ServiceWorkerRegistration | null> {
+  if (!pushSupported()) return null;
+  let reg = await navigator.serviceWorker.getRegistration("/sw.js");
+  if (!reg) reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  await navigator.serviceWorker.ready;
+  return reg;
+}
+
+export async function isSubscribed(): Promise<boolean> {
+  const reg = await getRegistration();
+  if (!reg) return false;
+  const sub = await reg.pushManager.getSubscription();
+  return !!sub && Notification.permission === "granted";
+}
+
+export async function subscribePush(): Promise<boolean> {
+  if (!pushSupported()) throw new Error("Браузер не поддерживает push");
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") throw new Error("Разрешение не получено");
+  const reg = await getRegistration();
+  if (!reg) throw new Error("Не удалось зарегистрировать service worker");
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
+    });
+  }
+  const json = sub.toJSON();
+  await savePushSubscription({
+    data: {
+      endpoint: sub.endpoint,
+      p256dh: json.keys?.p256dh ?? "",
+      auth: json.keys?.auth ?? "",
+      user_agent: navigator.userAgent,
+    },
+  });
+  return true;
+}
+
+export async function unsubscribePush(): Promise<void> {
+  const reg = await getRegistration();
+  if (!reg) return;
+  const sub = await reg.pushManager.getSubscription();
+  if (sub) {
+    await removePushSubscription({ data: { endpoint: sub.endpoint } });
+    await sub.unsubscribe();
+  }
+}
