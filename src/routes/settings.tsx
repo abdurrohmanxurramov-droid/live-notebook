@@ -127,7 +127,7 @@ function SettingsPage() {
           </button>
         </div>
         {subscribed && (
-          <Button onClick={testPush} disabled={busy} variant="secondary" className="mt-3 w-full">
+          <Button onClick={testPush} disabled={busy} variant="outline" className="mt-3 w-full">
             Отправить тестовое уведомление
           </Button>
         )}
