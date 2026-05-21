@@ -1,11 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useFinance, useMut, initials } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen } from "lucide-react";
+import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight } from "lucide-react";
+
 
 export const Route = createFileRoute("/students")({ component: StudentsPage });
 
@@ -56,13 +57,18 @@ function StudentsPage() {
             return (
               <Card key={s.id} className="p-4">
                 <div className="flex items-start gap-3">
-                  <Avatar initials={initials(s.name)} />
-                  <div className="min-w-0 flex-1">
-                    <div className="name-italic truncate text-[15px] font-semibold text-foreground">{s.name}</div>
-                    <div className="mt-0.5 text-xs text-muted-foreground">
-                      {s.subject || "Без предмета"}
+                  <Link to="/students/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-start gap-3">
+                    <Avatar initials={initials(s.name)} />
+                    <div className="min-w-0 flex-1">
+                      <div className="name-italic flex items-center gap-1 truncate text-[15px] font-semibold text-foreground">
+                        {s.name} <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {s.subject || "Без предмета"}
+                      </div>
                     </div>
-                  </div>
+                  </Link>
+
                   <button
                     onClick={() => setConfirmId(s.id)}
                     className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"

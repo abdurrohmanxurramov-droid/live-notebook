@@ -17,6 +17,7 @@ import { Route as FinanceRouteImport } from './routes/finance'
 import { Route as AttendanceRouteImport } from './routes/attendance'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StudentsIdRouteImport } from './routes/students.$id'
 import { Route as ApiPublicHooksLessonRemindersRouteImport } from './routes/api/public/hooks/lesson-reminders'
 
 const StudentsRoute = StudentsRouteImport.update({
@@ -59,6 +60,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentsIdRoute = StudentsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => StudentsRoute,
+} as any)
 const ApiPublicHooksLessonRemindersRoute =
   ApiPublicHooksLessonRemindersRouteImport.update({
     id: '/api/public/hooks/lesson-reminders',
@@ -74,7 +80,8 @@ export interface FileRoutesByFullPath {
   '/homework': typeof HomeworkRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
-  '/students': typeof StudentsRoute
+  '/students': typeof StudentsRouteWithChildren
+  '/students/$id': typeof StudentsIdRoute
   '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
 }
 export interface FileRoutesByTo {
@@ -85,7 +92,8 @@ export interface FileRoutesByTo {
   '/homework': typeof HomeworkRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
-  '/students': typeof StudentsRoute
+  '/students': typeof StudentsRouteWithChildren
+  '/students/$id': typeof StudentsIdRoute
   '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
 }
 export interface FileRoutesById {
@@ -97,7 +105,8 @@ export interface FileRoutesById {
   '/homework': typeof HomeworkRoute
   '/schedule': typeof ScheduleRoute
   '/settings': typeof SettingsRoute
-  '/students': typeof StudentsRoute
+  '/students': typeof StudentsRouteWithChildren
+  '/students/$id': typeof StudentsIdRoute
   '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
 }
 export interface FileRouteTypes {
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/students'
+    | '/students/$id'
     | '/api/public/hooks/lesson-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/students'
+    | '/students/$id'
     | '/api/public/hooks/lesson-reminders'
   id:
     | '__root__'
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/settings'
     | '/students'
+    | '/students/$id'
     | '/api/public/hooks/lesson-reminders'
   fileRoutesById: FileRoutesById
 }
@@ -144,7 +156,7 @@ export interface RootRouteChildren {
   HomeworkRoute: typeof HomeworkRoute
   ScheduleRoute: typeof ScheduleRoute
   SettingsRoute: typeof SettingsRoute
-  StudentsRoute: typeof StudentsRoute
+  StudentsRoute: typeof StudentsRouteWithChildren
   ApiPublicHooksLessonRemindersRoute: typeof ApiPublicHooksLessonRemindersRoute
 }
 
@@ -206,6 +218,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/students/$id': {
+      id: '/students/$id'
+      path: '/$id'
+      fullPath: '/students/$id'
+      preLoaderRoute: typeof StudentsIdRouteImport
+      parentRoute: typeof StudentsRoute
+    }
     '/api/public/hooks/lesson-reminders': {
       id: '/api/public/hooks/lesson-reminders'
       path: '/api/public/hooks/lesson-reminders'
@@ -216,6 +235,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface StudentsRouteChildren {
+  StudentsIdRoute: typeof StudentsIdRoute
+}
+
+const StudentsRouteChildren: StudentsRouteChildren = {
+  StudentsIdRoute: StudentsIdRoute,
+}
+
+const StudentsRouteWithChildren = StudentsRoute._addFileChildren(
+  StudentsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
@@ -224,7 +255,7 @@ const rootRouteChildren: RootRouteChildren = {
   HomeworkRoute: HomeworkRoute,
   ScheduleRoute: ScheduleRoute,
   SettingsRoute: SettingsRoute,
-  StudentsRoute: StudentsRoute,
+  StudentsRoute: StudentsRouteWithChildren,
   ApiPublicHooksLessonRemindersRoute: ApiPublicHooksLessonRemindersRoute,
 }
 export const routeTree = rootRouteImport
