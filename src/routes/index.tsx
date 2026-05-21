@@ -126,7 +126,9 @@ function Home() {
         </div>
       )}
 
-      <SectionTitle>Недавние ученики</SectionTitle>
+      <SectionTitle action={<Link to="/students" className="text-xs font-medium text-accent">Все →</Link>}>
+        Ученики
+      </SectionTitle>
       {students.length === 0 ? (
         <Empty
           icon={<GraduationCap className="h-8 w-8" />}
@@ -134,31 +136,39 @@ function Home() {
           hint="Добавьте первого ученика во вкладке «Ученики»"
         />
       ) : (
-        <div className="space-y-2">
-          {students.slice(0, 5).map((s) => {
+        <div className="space-y-2 pb-4">
+          {students.map((s) => {
             const fin = finance.filter((f) => f.student_id === s.id);
             const hasUnpaid = fin.some((f) => !f.is_paid);
             return (
-              <Card key={s.id} className="flex items-center gap-3 p-3">
-                <Avatar initials={initials(s.name)} />
-                <div className="min-w-0 flex-1">
-                  <div className="name-italic truncate text-[15px] font-semibold text-foreground">{s.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {s.days_per_week} {pluralDays(s.days_per_week)} · {s.subject || "—"}
+              <Link
+                key={s.id}
+                to="/students/$id"
+                params={{ id: s.id }}
+                className="block"
+              >
+                <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary">
+                  <Avatar initials={initials(s.name)} />
+                  <div className="min-w-0 flex-1">
+                    <div className="name-italic truncate text-[15px] font-semibold text-foreground">{s.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {s.days_per_week} {pluralDays(s.days_per_week)} · {s.subject || "—"}
+                    </div>
                   </div>
-                </div>
-                {fin.length === 0 ? (
-                  <Badge>—</Badge>
-                ) : hasUnpaid ? (
-                  <Badge tone="danger">Должник</Badge>
-                ) : (
-                  <Badge tone="success">Оплачено</Badge>
-                )}
-              </Card>
+                  {fin.length === 0 ? (
+                    <Badge>—</Badge>
+                  ) : hasUnpaid ? (
+                    <Badge tone="danger">Должник</Badge>
+                  ) : (
+                    <Badge tone="success">Оплачено</Badge>
+                  )}
+                </Card>
+              </Link>
             );
           })}
         </div>
       )}
+
     </div>
   );
 }
