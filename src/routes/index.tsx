@@ -20,6 +20,13 @@ function Home() {
   const { data: finance = [] } = useFinance();
   const { data: rates } = useRates();
   const { data: schedule = [] } = useSchedule();
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = openId ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [openId]);
+
 
   const todayDow = (new Date().getDay() + 6) % 7;
   const todayLessons = useMemo(
