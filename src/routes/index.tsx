@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Card, SectionTitle, Avatar, Badge, Empty } from "@/components/ui-bits";
-import { useStudents, useFinance, useRates, useSchedule, formatMoney, initials, convertToRUB } from "@/lib/db";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen } from "lucide-react";
+import { StudentRoom } from "@/components/StudentRoom";
+import { useStudents, useFinance, useRates, useSchedule, initials, convertToRUB } from "@/lib/db";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen, X } from "lucide-react";
 
 export const Route = createFileRoute("/")({ component: Home });
 
