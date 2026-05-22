@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Button } from "@/components/ui-bits";
+
 import { StudentRoom } from "@/components/StudentRoom";
 import { ArrowLeft } from "lucide-react";
 
