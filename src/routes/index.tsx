@@ -149,11 +149,11 @@ function Home() {
             const fin = finance.filter((f) => f.student_id === s.id);
             const hasUnpaid = fin.some((f) => !f.is_paid);
             return (
-              <Link
+              <button
                 key={s.id}
-                to="/students/$id"
-                params={{ id: s.id }}
-                className="block"
+                type="button"
+                onClick={() => setOpenId(s.id)}
+                className="block w-full text-left"
               >
                 <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary">
                   <Avatar initials={initials(s.name)} />
@@ -171,9 +171,30 @@ function Home() {
                     <Badge tone="success">Оплачено</Badge>
                   )}
                 </Card>
-              </Link>
+              </button>
             );
           })}
+        </div>
+      )}
+
+      {openId && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpenId(null)} />
+          <div className="relative z-10 flex h-[92vh] w-full max-w-md flex-col rounded-t-3xl bg-background shadow-2xl sm:h-[88vh] sm:rounded-2xl animate-in slide-in-from-bottom-4">
+            <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+              <h3 className="text-base font-semibold tracking-tight text-foreground">Карточка ученика</h3>
+              <button
+                onClick={() => setOpenId(null)}
+                aria-label="Закрыть"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 pb-6 pt-4">
+              <StudentRoom id={openId} />
+            </div>
+          </div>
         </div>
       )}
 
