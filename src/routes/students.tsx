@@ -145,22 +145,68 @@ function StudentsPage() {
   );
 }
 
+type Pattern = "mwf" | "tts" | "custom";
+const PATTERN_DAYS: Record<Exclude<Pattern, "custom">, number[]> = {
+  mwf: [0, 2, 4], // Пн, Ср, Пт
+  tts: [1, 3, 5], // Вт, Чт, Сб
+};
+
 function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [name, setName] = useState("");
-  const [days, setDays] = useState("2");
+  const [pattern, setPattern] = useState<Pattern>("mwf");
+  const [customDays, setCustomDays] = useState("2");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
+  const [time, setTime] = useState("16:00");
+  const [duration, setDuration] = useState("60");
 
   const add = useMut(async () => {
-    const d = Math.max(1, Math.min(7, Number(days) || 1));
-    const { error } = await (await sb()).from("students").insert({
-      name: name.trim(),
-      days_per_week: d,
-      subject: subject.trim() || null,
-      phone: phone.trim() || null,
-    });
+    const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
+    const daysCount =
+      pattern === "custom"
+        ? Math.max(1, Math.min(7, Number(customDays) || 1))
+        : slotDays.length;
+
+    const sup = await sb();
+    const { data: created, error } = await sup
+      .from("students")
+      .insert({
+        name: name.trim(),
+        days_per_week: daysCount,
+        subject: subject.trim() || null,
+        phone: phone.trim() || null,
+      })
+      .select()
+      .single();
     if (error) throw error;
-  }, ["students"]);
+
+    if (slotDays.length > 0 && created) {
+      const dur = Math.max(15, Math.min(240, Number(duration) || 60));
+      const rows = slotDays.map((d) => ({
+        student_id: created.id,
+        day_of_week: d,
+        start_time: `${time}:00`,
+        duration_min: dur,
+      }));
+      const { error: slotErr } = await sup.from("schedule_slots").insert(rows);
+      if (slotErr) throw slotErr;
+    }
+  }, ["students", "schedule"]);
+
+  const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => (
+    <button
+      type="button"
+      onClick={() => setPattern(value)}
+      className={`flex-1 rounded-2xl border p-3 text-left transition-all ${
+        pattern === value
+          ? "border-accent bg-accent/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
+          : "border-white/60 bg-white/40 dark:bg-white/5 dark:border-white/10"
+      } backdrop-blur-md`}
+    >
+      <div className="text-sm font-semibold text-foreground">{label}</div>
+      <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>
+    </button>
+  );
 
   return (
     <Sheet open={open} onClose={onClose} title="Новый ученик">
@@ -168,9 +214,41 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
         <Field label="Имя">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Например, Анна Иванова" />
         </Field>
-        <Field label="Дней в неделю (1–7)">
-          <Input type="number" min={1} max={7} value={days} onChange={(e) => setDays(e.target.value)} />
-        </Field>
+
+        <div>
+          <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Расписание</span>
+          <div className="flex gap-2">
+            <PatternBtn value="mwf" label="Пн / Ср / Пт" hint="3 урока в неделю" />
+            <PatternBtn value="tts" label="Вт / Чт / Сб" hint="3 урока в неделю" />
+          </div>
+          <button
+            type="button"
+            onClick={() => setPattern("custom")}
+            className={`mt-2 w-full rounded-2xl border p-3 text-left text-sm transition-all backdrop-blur-md ${
+              pattern === "custom"
+                ? "border-accent bg-accent/15"
+                : "border-white/60 bg-white/40 dark:bg-white/5 dark:border-white/10 text-muted-foreground"
+            }`}
+          >
+            Свой график (без авто-слотов)
+          </button>
+        </div>
+
+        {pattern !== "custom" ? (
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Время">
+              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </Field>
+            <Field label="Длительность, мин">
+              <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
+            </Field>
+          </div>
+        ) : (
+          <Field label="Дней в неделю (1–7)">
+            <Input type="number" min={1} max={7} value={customDays} onChange={(e) => setCustomDays(e.target.value)} />
+          </Field>
+        )}
+
         <Field label="Предмет (необязательно)">
           <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Математика" />
         </Field>
@@ -188,7 +266,8 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
             try {
               await add.mutateAsync(undefined as never);
               toast.success("Ученик добавлен");
-              setName(""); setDays("2"); setSubject(""); setPhone("");
+              setName(""); setPattern("mwf"); setCustomDays("2");
+              setSubject(""); setPhone(""); setTime("16:00"); setDuration("60");
               onClose();
             } catch (e: any) {
               toast.error(e?.message ?? "Ошибка");
