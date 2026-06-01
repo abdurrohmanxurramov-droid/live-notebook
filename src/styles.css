@@ -100,6 +100,8 @@
       radial-gradient(55% 40% at 100% 15%, rgba(91, 130, 200, 0.30), transparent 60%),
       radial-gradient(70% 50% at 50% 100%, rgba(200, 110, 140, 0.22), transparent 60%);
     background-attachment: fixed;
+    background-size: 180% 180%, 200% 200%, 220% 220%;
+    animation: aurora-drift 28s ease-in-out infinite alternate;
   }
   .dark body {
     background-image:
@@ -120,15 +122,104 @@
   .safe-top { padding-top: env(safe-area-inset-top); }
 
   .glass {
+    position: relative;
     background: var(--glass-bg);
     backdrop-filter: blur(var(--glass-blur)) saturate(180%);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
+    overflow: hidden;
+    isolation: isolate;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: glass-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+  .glass::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.35));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .glass::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
+    transform: skewX(-18deg);
+    transition: left 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .glass:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px -12px rgba(20,33,61,0.28), inset 0 1px 0 0 rgba(255,255,255,0.75);
+  }
+  .glass:hover::after { left: 130%; }
+  .glass:active { transform: translateY(0) scale(0.99); }
+
+  .dark .glass::before {
+    background: linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.08));
+  }
+  .dark .glass::after {
+    background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.10) 50%, transparent 100%);
+  }
+
   .glass-strong {
+    position: relative;
     background: var(--glass-bg-strong);
     backdrop-filter: blur(28px) saturate(180%);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
+    overflow: hidden;
+    isolation: isolate;
+    animation: glass-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+  .glass-strong::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0) 45%, rgba(255,255,255,0) 55%, rgba(255,255,255,0.4));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  .dark .glass-strong::before {
+    background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(255,255,255,0) 55%, rgba(255,255,255,0.08));
+  }
+}
+
+@keyframes glass-in {
+  0%   { opacity: 0; transform: translateY(8px) scale(0.985); }
+  100% { opacity: 1; transform: translateY(0)   scale(1); }
+}
+
+@keyframes aurora-drift {
+  0%   { background-position: 0% 0%, 100% 0%, 50% 100%; }
+  50%  { background-position: 30% 20%, 70% 30%, 60% 70%; }
+  100% { background-position: 10% 40%, 90% 10%, 40% 90%; }
+}
+
+@keyframes glass-pop {
+  0%   { transform: scale(0.92); opacity: 0; }
+  60%  { transform: scale(1.02); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.animate-glass-pop { animation: glass-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .glass, .glass-strong, body { animation: none !important; }
+  .glass::after { display: none; }
 }
