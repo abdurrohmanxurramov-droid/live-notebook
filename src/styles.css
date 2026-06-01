@@ -5,11 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 24px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-2xl: 28px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -36,26 +36,33 @@
 }
 
 :root {
-  /* Light */
-  --background: #F5F1E8;
+  /* Liquid glass — light */
+  --background: #EEE8DC;
   --foreground: #14213D;
   --card: #FFFFFF;
   --card-foreground: #14213D;
-  --primary: #14213D;       /* Navy */
+  --primary: #14213D;
   --primary-foreground: #F8F4EC;
-  --secondary: #EDE6D6;
+  --secondary: #E6DEC9;
   --secondary-foreground: #14213D;
-  --muted: #EDE6D6;
+  --muted: #E6DEC9;
   --muted-foreground: #6B6357;
-  --accent: #B38B59;        /* Gold */
+  --accent: #B38B59;
   --accent-foreground: #FFFFFF;
   --destructive: #B23A48;
   --success: #2D6A4F;
-  --border: #E5DCC8;
+  --border: rgba(20, 33, 61, 0.08);
+
+  /* Glass tokens */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 8px 32px -8px rgba(20, 33, 61, 0.18), inset 0 1px 0 0 rgba(255,255,255,0.7);
+  --glass-blur: 22px;
 }
 
 .dark {
-  --background: #0D1B2A;
+  --background: #0A1424;
   --foreground: #F8F4EC;
   --card: #1B263B;
   --card-foreground: #F8F4EC;
@@ -69,7 +76,12 @@
   --accent-foreground: #14213D;
   --destructive: #B23A48;
   --success: #4FAE7F;
-  --border: #2A3854;
+  --border: rgba(255, 255, 255, 0.08);
+
+  --glass-bg: rgba(27, 38, 59, 0.55);
+  --glass-bg-strong: rgba(27, 38, 59, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 8px 32px -8px rgba(0,0,0,0.45), inset 0 1px 0 0 rgba(255,255,255,0.08);
 }
 
 @layer base {
@@ -78,11 +90,22 @@
   }
   * { border-color: var(--color-border); }
   body {
-    background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
+    background-color: var(--color-background);
+    background-image:
+      radial-gradient(60% 45% at 10% 0%, rgba(179, 139, 89, 0.35), transparent 60%),
+      radial-gradient(55% 40% at 100% 15%, rgba(91, 130, 200, 0.30), transparent 60%),
+      radial-gradient(70% 50% at 50% 100%, rgba(200, 110, 140, 0.22), transparent 60%);
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image:
+      radial-gradient(60% 45% at 10% 0%, rgba(198, 169, 105, 0.22), transparent 60%),
+      radial-gradient(55% 40% at 100% 15%, rgba(80, 130, 220, 0.25), transparent 60%),
+      radial-gradient(70% 50% at 50% 100%, rgba(160, 80, 130, 0.20), transparent 60%);
   }
   .num {
     font-variant-numeric: tabular-nums;
@@ -95,4 +118,17 @@
 @layer utilities {
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
   .safe-top { padding-top: env(safe-area-inset-top); }
+
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
 }
