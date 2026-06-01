@@ -2,9 +2,7 @@ import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttribu
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div
-      className={`rounded-2xl bg-card border border-border/60 shadow-[0_2px_8px_-2px_rgba(20,33,61,0.06)] ${className}`}
-    >
+    <div className={`glass rounded-2xl ${className}`}>
       {children}
     </div>
   );
@@ -31,7 +29,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full min-h-[44px] rounded-xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 ${props.className ?? ""}`}
+      className={`w-full min-h-[44px] rounded-xl border border-white/60 bg-white/60 dark:bg-white/5 dark:border-white/10 backdrop-blur-md px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 ${props.className ?? ""}`}
     />
   );
 }
@@ -40,7 +38,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement> & { childr
   return (
     <select
       {...props}
-      className={`w-full min-h-[44px] rounded-xl border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 ${props.className ?? ""}`}
+      className={`w-full min-h-[44px] rounded-xl border border-white/60 bg-white/60 dark:bg-white/5 dark:border-white/10 backdrop-blur-md px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 ${props.className ?? ""}`}
     >
       {props.children}
     </select>
