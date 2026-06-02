@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
+import { Card, Button, Input, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
-import { useStudents, useFinance, useMut, initials } from "@/lib/db";
+import { useStudents, useFinance, useMut, initials, type Student } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight } from "lucide-react";
+import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil } from "lucide-react";
 
 
 export const Route = createFileRoute("/students")({ component: StudentsPage });
@@ -15,6 +15,7 @@ function StudentsPage() {
   const { data: finance = [] } = useFinance();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
+  const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const filtered = students.filter((s) =>
@@ -69,13 +70,22 @@ function StudentsPage() {
                     </div>
                   </Link>
 
-                  <button
-                    onClick={() => setConfirmId(s.id)}
-                    className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-                    aria-label="Удалить"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => setEditStudent(s)}
+                      className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-accent/15 hover:text-accent"
+                      aria-label="Редактировать"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(s.id)}
+                      className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      aria-label="Удалить"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
@@ -114,6 +124,8 @@ function StudentsPage() {
       )}
 
       <AddStudentSheet open={open} onClose={() => setOpen(false)} />
+      <EditStudentSheet student={editStudent} onClose={() => setEditStudent(null)} />
+
 
       <Sheet open={!!confirmId} onClose={() => setConfirmId(null)} title="Удалить ученика?">
         <p className="text-sm text-muted-foreground">
