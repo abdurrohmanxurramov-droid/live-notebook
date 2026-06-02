@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Home, GraduationCap, CalendarCheck, Wallet, Settings, CalendarDays, BarChart3, BookOpen } from "lucide-react";
+import { Home, GraduationCap, CalendarCheck, Wallet, Settings, CalendarDays, BarChart3, BookOpen, Sparkles } from "lucide-react";
 
 const tabs = [
   { to: "/", label: "Главная", icon: Home },
@@ -9,6 +9,7 @@ const tabs = [
   { to: "/homework", label: "ДЗ", icon: BookOpen },
   { to: "/finance", label: "Финансы", icon: Wallet },
   { to: "/analytics", label: "Анализ", icon: BarChart3 },
+  { to: "/assistant", label: "ИИ", icon: Sparkles },
   { to: "/settings", label: "Ещё", icon: Settings },
 ] as const;
 
