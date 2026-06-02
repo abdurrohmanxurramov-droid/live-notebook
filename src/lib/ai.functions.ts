@@ -10,14 +10,18 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY не настроен");
 
-    const { supabase, userId } = context;
+    const { supabase } = context;
 
-    // Собираем контекст: ученики, ближайшие финансы, посещаемость
-    const [{ data: students }, { data: slots }, { data: payments }] = await Promise.all([
-      supabase.from("students").select("id, name, price_per_lesson, lessons_paid, lessons_used").eq("user_id", userId),
+    // Собираем контекст: ученики, расписание, финансы, проведённые уроки
+    const [{ data: students }, { data: slots }, { data: finance }, { data: lessons }] = await Promise.all([
+      supabase.from("students").select("id, name, subject, days_per_week"),
       supabase.from("schedule_slots").select("student_id, day_of_week, start_time, duration_min"),
-      supabase.from("payments").select("student_id, amount, created_at").order("created_at", { ascending: false }).limit(20),
+      supabase.from("finance").select("student_id, amount, currency, is_paid, pay_date").order("created_at", { ascending: false }).limit(30),
+      supabase.from("lessons_conducted").select("student_id, lessons_done"),
     ]);
+
+    const lessonsByStudent = new Map<string, number>();
+    (lessons ?? []).forEach((l: any) => lessonsByStudent.set(l.student_id, (lessonsByStudent.get(l.student_id) ?? 0) + (l.lessons_done ?? 0)));
 
     const ctxText = [
       `Текущая дата: ${new Date().toISOString().slice(0, 10)}.`,
@@ -25,14 +29,16 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
       students?.length
         ? "Ученики: " +
           students
-            .map(
-              (s: any) =>
-                `${s.name} (цена ${s.price_per_lesson ?? "?"}, оплачено ${s.lessons_paid ?? 0}, проведено ${s.lessons_used ?? 0})`,
-            )
+            .map((s: any) => `${s.name} (${s.subject ?? "?"}, ${s.days_per_week ?? 0} р/нед, проведено ${lessonsByStudent.get(s.id) ?? 0})`)
             .join("; ")
         : "",
       slots?.length ? `Слотов в расписании: ${slots.length}.` : "",
-      payments?.length ? `Последних платежей: ${payments.length}.` : "",
+      finance?.length
+        ? "Финансы: " +
+          finance
+            .map((f: any) => `${f.amount}${f.currency} ${f.is_paid ? "оплачено" : "не оплачено"}${f.pay_date ? ` к ${f.pay_date}` : ""}`)
+            .join("; ")
+        : "",
     ]
       .filter(Boolean)
       .join("\n");
