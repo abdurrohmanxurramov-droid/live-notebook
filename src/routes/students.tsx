@@ -301,3 +301,181 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+
+function EditStudentSheet({ student, onClose }: { student: Student | null; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [subject, setSubject] = useState("");
+  const [phone, setPhone] = useState("");
+  const [pattern, setPattern] = useState<Pattern>("custom");
+  const [customDays, setCustomDays] = useState("2");
+  const [time, setTime] = useState("16:00");
+  const [duration, setDuration] = useState("60");
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  // Заполнить данные при открытии
+  useEffect(() => {
+    if (!student) return;
+    setName(student.name);
+    setSubject(student.subject ?? "");
+    setPhone(student.phone ?? "");
+    setCustomDays(String(student.days_per_week));
+
+    (async () => {
+      setLoadingSlots(true);
+      const sup = await sb();
+      const { data: slots } = await sup
+        .from("schedule_slots")
+        .select("day_of_week, start_time, duration_min")
+        .eq("student_id", student.id)
+        .order("day_of_week");
+      const days = (slots ?? []).map((s: any) => s.day_of_week).sort();
+      const mwf = JSON.stringify(days) === JSON.stringify([0, 2, 4]);
+      const tts = JSON.stringify(days) === JSON.stringify([1, 3, 5]);
+      setPattern(mwf ? "mwf" : tts ? "tts" : "custom");
+      if (slots?.[0]) {
+        setTime(String(slots[0].start_time).slice(0, 5));
+        setDuration(String(slots[0].duration_min));
+      } else {
+        setTime("16:00");
+        setDuration("60");
+      }
+      setLoadingSlots(false);
+    })();
+  }, [student?.id]);
+
+  const save = useMut(async () => {
+    if (!student) return;
+    const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
+    const daysCount =
+      pattern === "custom"
+        ? Math.max(1, Math.min(7, Number(customDays) || 1))
+        : slotDays.length;
+
+    const sup = await sb();
+    const { error: upErr } = await sup
+      .from("students")
+      .update({
+        name: name.trim(),
+        days_per_week: daysCount,
+        subject: subject.trim() || null,
+        phone: phone.trim() || null,
+      })
+      .eq("id", student.id);
+    if (upErr) throw upErr;
+
+    if (pattern !== "custom") {
+      // Перезаписать слоты
+      const { error: delErr } = await sup.from("schedule_slots").delete().eq("student_id", student.id);
+      if (delErr) throw delErr;
+      const dur = Math.max(15, Math.min(240, Number(duration) || 60));
+      const rows = slotDays.map((d) => ({
+        student_id: student.id,
+        day_of_week: d,
+        start_time: `${time}:00`,
+        duration_min: dur,
+      }));
+      const { error: insErr } = await sup.from("schedule_slots").insert(rows);
+      if (insErr) throw insErr;
+    } else {
+      // Обновить только время/длительность в существующих слотах
+      const dur = Math.max(15, Math.min(240, Number(duration) || 60));
+      const { error: updSlotErr } = await sup
+        .from("schedule_slots")
+        .update({ start_time: `${time}:00`, duration_min: dur })
+        .eq("student_id", student.id);
+      if (updSlotErr) throw updSlotErr;
+    }
+  }, ["students", "schedule", "finance"]);
+
+  const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => (
+    <button
+      type="button"
+      onClick={() => setPattern(value)}
+      className={`flex-1 rounded-2xl border p-3 text-left transition-all ${
+        pattern === value
+          ? "border-accent bg-accent/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
+          : "border-white/60 bg-white/40 dark:bg-white/5 dark:border-white/10"
+      } backdrop-blur-md`}
+    >
+      <div className="text-sm font-semibold text-foreground">{label}</div>
+      <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>
+    </button>
+  );
+
+  return (
+    <Sheet open={!!student} onClose={onClose} title="Редактировать ученика">
+      {loadingSlots ? (
+        <p className="text-sm text-muted-foreground">Загрузка…</p>
+      ) : (
+        <>
+          <div className="space-y-3">
+            <Field label="Имя">
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            </Field>
+
+            <div>
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Расписание</span>
+              <div className="flex gap-2">
+                <PatternBtn value="mwf" label="Пн / Ср / Пт" hint="3 урока в неделю" />
+                <PatternBtn value="tts" label="Вт / Чт / Сб" hint="3 урока в неделю" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setPattern("custom")}
+                className={`mt-2 w-full rounded-2xl border p-3 text-left text-sm transition-all backdrop-blur-md ${
+                  pattern === "custom"
+                    ? "border-accent bg-accent/15"
+                    : "border-white/60 bg-white/40 dark:bg-white/5 dark:border-white/10 text-muted-foreground"
+                }`}
+              >
+                Свой график (слоты не перезаписываются)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Время">
+                <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+              </Field>
+              <Field label="Длительность, мин">
+                <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
+              </Field>
+            </div>
+
+            {pattern === "custom" && (
+              <Field label="Дней в неделю (1–7)">
+                <Input type="number" min={1} max={7} value={customDays} onChange={(e) => setCustomDays(e.target.value)} />
+              </Field>
+            )}
+
+            <Field label="Предмет">
+              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Математика" />
+            </Field>
+            <Field label="Телефон">
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 ..." />
+            </Field>
+          </div>
+
+          <div className="mt-5 flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+            <Button
+              variant="gold"
+              className="flex-1"
+              disabled={!name.trim() || save.isPending}
+              onClick={async () => {
+                try {
+                  await save.mutateAsync(undefined as never);
+                  toast.success("Изменения сохранены");
+                  onClose();
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Ошибка");
+                }
+              }}
+            >
+              Сохранить
+            </Button>
+          </div>
+        </>
+      )}
+    </Sheet>
+  );
+}
