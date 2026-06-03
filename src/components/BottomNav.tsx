@@ -65,29 +65,37 @@ export function BottomNav() {
   const itemRefs = useRef<Map<Key, HTMLLIElement>>(new Map());
   const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
   const [ready, setReady] = useState(false);
+  const [targetKey, setTargetKey] = useState<Key>(activeKey);
+
+  // Sync optimistic target back to actual route (back/forward, external nav)
+  useEffect(() => {
+    setTargetKey(activeKey);
+  }, [activeKey]);
 
   useLayoutEffect(() => {
-    const el = itemRefs.current.get(activeKey);
+    const el = itemRefs.current.get(targetKey);
     if (!el) return;
     setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
     const t = setTimeout(() => setReady(true), 30);
     return () => clearTimeout(t);
-  }, [activeKey]);
+  }, [targetKey]);
 
   useEffect(() => {
     const onResize = () => {
-      const el = itemRefs.current.get(activeKey);
+      const el = itemRefs.current.get(targetKey);
       if (!el) return;
       setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [activeKey]);
+  }, [targetKey]);
 
   const setRef = (key: Key) => (node: HTMLLIElement | null) => {
     if (node) itemRefs.current.set(key, node);
     else itemRefs.current.delete(key);
   };
+
+  const moveTo = (key: Key) => () => setTargetKey(key);
 
   return (
     <>
@@ -102,7 +110,7 @@ export function BottomNav() {
                   transform: `translateX(${indicator.x - 6}px)`,
                   width: indicator.w,
                   transition: ready
-                    ? "transform 520ms cubic-bezier(0.34, 1.3, 0.4, 1), width 520ms cubic-bezier(0.34, 1.3, 0.4, 1)"
+                    ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)"
                     : "none",
                 }}
               />
@@ -115,6 +123,8 @@ export function BottomNav() {
                 <li key={t.to} ref={setRef(t.to as Key)} className="relative z-10 flex-1">
                   <Link
                     to={t.to}
+                    onPointerDown={moveTo(t.to as Key)}
+                    onClick={moveTo(t.to as Key)}
                     className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
                   >
                     <span className="relative">
@@ -147,7 +157,8 @@ export function BottomNav() {
             <li ref={setRef("__more__")} className="relative z-10 flex-1">
               <button
                 type="button"
-                onClick={() => setOpen(true)}
+                onPointerDown={moveTo("__more__")}
+                onClick={() => { setTargetKey("__more__"); setOpen(true); }}
                 className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
               >
                 <MoreHorizontal
