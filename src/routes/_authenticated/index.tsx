@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Card, SectionTitle, Avatar, Badge, Empty } from "@/components/ui-bits";
 import { StudentRoom } from "@/components/StudentRoom";
 import { useStudents, useFinance, useRates, useSchedule, initials, convertToRUB } from "@/lib/db";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen, X } from "lucide-react";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen, X, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
 
