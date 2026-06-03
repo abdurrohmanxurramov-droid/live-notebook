@@ -455,4 +455,16 @@
   select::-ms-expand { display: none; }
 }
 
+/* Hide scrollbars globally — keep native touch / wheel / trackpad scrolling. */
+html, body, * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+
 
