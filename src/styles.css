@@ -265,6 +265,6 @@
 .animate-glass-pop { animation: glass-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .glass, .glass-strong, body { animation: none !important; }
+  .glass, .glass-strong, body, .liquid-pill, .liquid-pill::after { animation: none !important; }
   .glass::after { display: none; }
 }
