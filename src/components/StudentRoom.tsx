@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import {
   useStudents,
@@ -9,16 +11,20 @@ import {
   useMut,
   initials,
   type HomeworkStatus,
+  type AttendanceStatus,
 } from "@/lib/db";
+import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target } from "lucide-react";
+import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target, RotateCcw } from "lucide-react";
 
 const LESSONS_PER_CYCLE = 12;
+const EXCUSED_LIMIT = 3;
 
-const ATT_STATUS = {
-  present: { label: "Был", emoji: "✅", tone: "success" as const },
-  absent: { label: "Не был", emoji: "❌", tone: "danger" as const },
-  excused: { label: "Уваж.", emoji: "📎", tone: "gold" as const },
+const ATT_STATUS: Record<AttendanceStatus, { label: string; emoji: string; tone: "success" | "danger" | "gold" | "neutral" }> = {
+  present: { label: "Был", emoji: "✅", tone: "success" },
+  absent: { label: "Не был", emoji: "❌", tone: "danger" },
+  excused: { label: "Уваж.", emoji: "📎", tone: "gold" },
+  rescheduled_by_teacher: { label: "Перенос мной", emoji: "🔄", tone: "neutral" },
 };
 
 const HW_STATUS: Record<HomeworkStatus, { label: string; emoji: string; tone: "success" | "danger" | "gold" | "neutral" }> = {
