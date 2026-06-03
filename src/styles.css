@@ -264,15 +264,9 @@
 
 .animate-glass-pop { animation: glass-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-@keyframes page-in {
-  0%   { opacity: 0; }
-  100% { opacity: 1; }
-}
-/* NOTE: do NOT animate `transform`, `filter`, `backdrop-filter`, or `perspective`
-   on this wrapper — any of them would establish a containing block for fixed
-   descendants (modals, FAB, bottom nav), shifting them off-screen on wider
-   viewports. Opacity-only is safe. */
-.animate-page-in { animation: page-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* page-in animation intentionally disabled to avoid flashing prior routes
+   during navigation. Keep class as a no-op for backwards compatibility. */
+.animate-page-in { }
 
 @keyframes sheet-up {
   0%   { opacity: 0; transform: translateY(28px) scale(0.985); }
