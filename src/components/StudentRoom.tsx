@@ -10,9 +10,11 @@ import {
   useFinance,
   useMut,
   initials,
+  STUDENT_STATUS_META,
   type HomeworkStatus,
   type AttendanceStatus,
   type Attendance,
+  type StudentStatus,
 } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
