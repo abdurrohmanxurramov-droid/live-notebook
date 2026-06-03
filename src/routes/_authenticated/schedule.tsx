@@ -9,6 +9,7 @@ import { CalendarDays, Plus, Trash2, Clock, Check, X, ArrowRight } from "lucide-
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listLessons, setLessonStatus, moveLesson, type LessonStatus } from "@/lib/lessons.functions";
+import { Calendar } from "@/components/calendar/Calendar";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
@@ -70,7 +71,11 @@ function SchedulePage() {
         </Button>
       </header>
 
+      <Calendar />
+
       <UpcomingLessons studentsById={studentsById} />
+
+
 
 
       {slots.length === 0 ? (

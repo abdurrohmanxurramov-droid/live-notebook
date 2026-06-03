@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect, Link, useRouter, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { QuickActionsFab } from "@/components/QuickActionsFab";
 
 function AuthErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
@@ -65,6 +66,7 @@ function PageShell() {
   return (
     <div key={pathname} className="animate-page-in">
       <Outlet />
+      <QuickActionsFab />
     </div>
   );
 }
