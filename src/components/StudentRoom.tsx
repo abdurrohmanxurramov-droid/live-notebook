@@ -12,6 +12,7 @@ import {
   initials,
   type HomeworkStatus,
   type AttendanceStatus,
+  type Attendance,
 } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
