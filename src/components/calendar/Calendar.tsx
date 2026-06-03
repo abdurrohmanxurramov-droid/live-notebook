@@ -260,10 +260,38 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const today = iso(new Date());
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const dragState = useRef<{ active: boolean; startX: number; startLeft: number; moved: boolean }>({ active: false, startX: 0, startLeft: 0, moved: false });
+
+  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // ignore clicks starting on interactive controls
+    const target = e.target as HTMLElement;
+    if (target.closest("button, a, [draggable='true']")) return;
+    dragState.current = { active: true, startX: e.clientX, startLeft: el.scrollLeft, moved: false };
+  };
+  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const s = dragState.current;
+    if (!s.active || !scrollRef.current) return;
+    const dx = e.clientX - s.startX;
+    if (Math.abs(dx) > 4) s.moved = true;
+    scrollRef.current.scrollLeft = s.startLeft - dx;
+  };
+  const endDrag = () => { dragState.current.active = false; };
+
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[640px]">
+    <div
+      ref={scrollRef}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={endDrag}
+      onMouseLeave={endDrag}
+      className="overflow-x-auto overflow-y-hidden scrollbar-hide drag-scroll overscroll-x-contain select-none"
+    >
+      <div className="min-w-[560px] w-full">
         <div className="grid" style={{ gridTemplateColumns: "40px repeat(7, minmax(0,1fr))" }}>
+
           <div />
           {days.map((d) => {
             const ds = iso(d);
