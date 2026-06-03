@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
@@ -22,6 +22,13 @@ function HomeworkPage() {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | HomeworkStatus>("all");
   const [studentFilter, setStudentFilter] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1") {
+      setOpen(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const studentMap = useMemo(() => Object.fromEntries(students.map((s) => [s.id, s])), [students]);
 

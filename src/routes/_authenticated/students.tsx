@@ -30,6 +30,13 @@ function StudentsPage() {
   const [editStudent, setEditStudent] = useState<Student | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1") {
+      setOpen(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
   // Archived students: fetched only when needed
   const { data: archivedStudents = [] } = useQuery({
     queryKey: ["students", "archived"],
