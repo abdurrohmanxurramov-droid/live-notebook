@@ -45,11 +45,20 @@ export function StudentRoom({ id }: { id: string }) {
   const hw = useMemo(() => homework.filter((h) => h.student_id === id), [homework, id]);
   const fin = useMemo(() => finance.filter((f) => f.student_id === id), [finance, id]);
 
-  const presentCount = att.filter((a) => a.status === "present").length;
-  const cyclesCompleted = Math.floor(presentCount / LESSONS_PER_CYCLE);
-  const progress = presentCount % LESSONS_PER_CYCLE;
+  // Основная шкала: present + absent (всё что ученик "съел")
+  const countedCount = att.filter((a) => a.status === "present" || a.status === "absent").length;
+  const cyclesCompleted = Math.floor(countedCount / LESSONS_PER_CYCLE);
+  const progress = countedCount % LESSONS_PER_CYCLE;
   const paidCount = fin.filter((f) => f.is_paid).length;
-  const needsPayment = cyclesCompleted > paidCount;
+  const unpaidCount = fin.filter((f) => !f.is_paid).length;
+  const needsPayment = unpaidCount > 0;
+
+  // Уваж. причины — отдельная шкала
+  const excusedCount = att.filter((a) => a.status === "excused").length;
+  const excusedReached = excusedCount >= EXCUSED_LIMIT;
+
+  // Долг учителя — переносы, не возмещённые
+  const teacherDebt = att.filter((a) => a.status === "rescheduled_by_teacher" && !a.compensated).length;
 
   const [tab, setTab] = useState<"att" | "hw" | "fin">("att");
 
@@ -79,7 +88,7 @@ export function StudentRoom({ id }: { id: string }) {
           <div className="flex items-center justify-between">
             <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Цикл уроков</div>
             {needsPayment ? (
-              <Badge tone="danger">Нужна оплата</Badge>
+              <Badge tone="danger">Нужна оплата ({unpaidCount})</Badge>
             ) : (
               <Badge tone={progress === 0 && cyclesCompleted > 0 ? "success" : "neutral"}>
                 {progress} / {LESSONS_PER_CYCLE}
@@ -90,16 +99,45 @@ export function StudentRoom({ id }: { id: string }) {
             <div className="h-full bg-accent transition-all" style={{ width: `${(progress / LESSONS_PER_CYCLE) * 100}%` }} />
           </div>
           <div className="mt-2 text-[11px] text-muted-foreground">
-            Всего уроков: <span className="num text-foreground">{presentCount}</span> · Завершено циклов:{" "}
+            Засчитано: <span className="num text-foreground">{countedCount}</span> · Циклов:{" "}
             <span className="num text-foreground">{cyclesCompleted}</span> · Оплачено:{" "}
             <span className="num text-foreground">{paidCount}</span>
           </div>
         </div>
 
+        <div className="mt-2 rounded-xl bg-secondary p-3">
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Шансы на перенос</div>
+            <Badge tone={excusedReached ? "danger" : excusedCount > 0 ? "gold" : "neutral"}>
+              {excusedCount} / {EXCUSED_LIMIT}
+            </Badge>
+          </div>
+          <div className="mt-2 grid grid-cols-3 gap-1.5">
+            {Array.from({ length: EXCUSED_LIMIT }).map((_, i) => (
+              <div
+                key={i}
+                className={`h-2 rounded-full ${i < excusedCount ? "bg-[color:var(--gold,theme(colors.amber.500))] bg-accent" : "bg-card"}`}
+              />
+            ))}
+          </div>
+          {excusedReached && (
+            <div className="mt-1.5 text-[11px] text-destructive">Лимит исчерпан — новые уваж. причины не принимаются</div>
+          )}
+        </div>
+
+        {teacherDebt > 0 && (
+          <div className="mt-2 rounded-xl bg-destructive/10 p-3">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-medium uppercase tracking-wide text-destructive">Я должен ученику</div>
+              <Badge tone="danger">{teacherDebt} ур.</Badge>
+            </div>
+          </div>
+        )}
+
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          <Mini n={att.length} label="Уроков" />
+          <Mini n={att.length} label="Записей" />
           <Mini n={hw.filter((h) => h.status === "done").length} label="ДЗ ✓" />
-          <Mini n={fin.filter((f) => !f.is_paid).length} label="Долгов" />
+          <Mini n={unpaidCount} label="Долгов" />
         </div>
       </Card>
 
@@ -113,9 +151,8 @@ export function StudentRoom({ id }: { id: string }) {
         <AttendanceTab
           studentId={id}
           att={att}
-          presentCountBefore={presentCount}
-          needsPayment={needsPayment}
-          oldestUnpaid={fin.filter((f) => !f.is_paid).slice(-1)[0]}
+          countedBefore={countedCount}
+          excusedCount={excusedCount}
         />
       )}
       {tab === "hw" && <HomeworkTab studentId={id} hw={hw} />}
