@@ -40,6 +40,12 @@ function SettingsPage() {
     setDark(isDark);
     const s = pushSupported();
     setSupported(s);
+    try {
+      setInIframe(window.self !== window.top);
+    } catch {
+      setInIframe(true);
+    }
+    if (typeof Notification !== "undefined") setPermission(Notification.permission);
     if (s) isSubscribed().then(setSubscribed).catch(() => {});
   }, []);
 
