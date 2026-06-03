@@ -319,82 +319,53 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const today = iso(new Date());
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef<{ active: boolean; startX: number; startLeft: number; moved: boolean }>({ active: false, startX: 0, startLeft: 0, moved: false });
-
-  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    // ignore clicks starting on interactive controls
-    const target = e.target as HTMLElement;
-    if (target.closest("button, a, [draggable='true']")) return;
-    dragState.current = { active: true, startX: e.clientX, startLeft: el.scrollLeft, moved: false };
-  };
-  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const s = dragState.current;
-    if (!s.active || !scrollRef.current) return;
-    const dx = e.clientX - s.startX;
-    if (Math.abs(dx) > 4) s.moved = true;
-    scrollRef.current.scrollLeft = s.startLeft - dx;
-  };
-  const endDrag = () => { dragState.current.active = false; };
 
   return (
-    <div
-      ref={scrollRef}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={endDrag}
-      onMouseLeave={endDrag}
-      className="overflow-x-auto overflow-y-hidden scrollbar-hide drag-scroll overscroll-x-contain select-none"
-    >
-      <div className="min-w-[560px] w-full">
-        <div className="grid" style={{ gridTemplateColumns: "40px repeat(7, minmax(0,1fr))" }}>
-
-          <div />
-          {days.map((d) => {
-            const ds = iso(d);
-            return (
-              <div key={ds} className={`px-1 pb-1 text-center text-[11px] font-semibold ${ds===today?"text-accent":"text-muted-foreground"}`}>
-                {d.toLocaleDateString("ru-RU",{weekday:"short"})}<br/>
-                <span className="text-foreground">{d.getDate()}</span>
-              </div>
-            );
-          })}
+    <div className="w-full select-none">
+      <div className="grid" style={{ gridTemplateColumns: "32px repeat(7, minmax(0,1fr))" }}>
+        <div />
+        {days.map((d) => {
+          const ds = iso(d);
+          return (
+            <div key={ds} className={`px-0.5 pb-1 text-center text-[10px] font-semibold leading-tight ${ds===today?"text-accent":"text-muted-foreground"}`}>
+              {d.toLocaleDateString("ru-RU",{weekday:"short"})}<br/>
+              <span className="text-[12px] text-foreground">{d.getDate()}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="relative grid rounded-xl border border-border bg-card/40" style={{ gridTemplateColumns: "32px repeat(7, minmax(0,1fr))" }}>
+        <div>
+          {SLOTS.map((s) => (
+            <div key={slotTime(s)} className="flex items-start justify-end pr-0.5 text-[9px] text-muted-foreground" style={{ height: SLOT_PX }}>
+              {s.m === 0 ? `${s.h}` : ""}
+            </div>
+          ))}
         </div>
-        <div className="relative grid rounded-xl border border-border bg-card/40" style={{ gridTemplateColumns: "40px repeat(7, minmax(0,1fr))" }}>
-          <div>
-            {SLOTS.map((s) => (
-              <div key={slotTime(s)} className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground" style={{ height: SLOT_PX }}>
-                {s.m === 0 ? `${s.h}:00` : ""}
+        {days.map((d) => {
+          const ds = iso(d);
+          const dayLessons = lessons.filter((l) => l.scheduled_date === ds);
+          return (
+            <div key={ds} className="relative border-l border-border">
+              {SLOTS.map((s) => {
+                const t = slotTime(s);
+                return (
+                  <SlotCell
+                    key={t}
+                    slot={s}
+                    onClick={() => onSlot({ date: ds, time: t })}
+                    onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, ds, t); }}
+                  />
+                );
+              })}
+              <div className="pointer-events-none absolute inset-0">
+                {dayLessons.map((l) => (
+                  <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} compact />
+                ))}
               </div>
-            ))}
-          </div>
-          {days.map((d) => {
-            const ds = iso(d);
-            const dayLessons = lessons.filter((l) => l.scheduled_date === ds);
-            return (
-              <div key={ds} className="relative border-l border-border">
-                {SLOTS.map((s) => {
-                  const t = slotTime(s);
-                  return (
-                    <SlotCell
-                      key={t}
-                      slot={s}
-                      onClick={() => onSlot({ date: ds, time: t })}
-                      onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, ds, t); }}
-                    />
-                  );
-                })}
-                <div className="pointer-events-none absolute inset-0">
-                  {dayLessons.map((l) => (
-                    <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} compact />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
