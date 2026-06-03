@@ -13,7 +13,9 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { BottomNav } from "../components/BottomNav";
+import { SplashScreen } from "../components/SplashScreen";
 import { supabase } from "@/integrations/supabase/client";
+import { installGlobalHaptics } from "@/lib/haptics";
 
 function NotFoundComponent() {
   return (
@@ -112,6 +114,7 @@ function RootComponent() {
   const hideNav = pathname === "/auth";
 
   useEffect(() => {
+    installGlobalHaptics();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       router.invalidate();
       queryClient.invalidateQueries();
@@ -122,6 +125,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeBoot />
+      <SplashScreen />
       <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
         <Outlet />
       </div>

@@ -289,6 +289,13 @@
 }
 .stagger-item { animation: stagger-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
+@keyframes splash-in {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.9); filter: blur(10px); }
+  60%  { opacity: 1; transform: translateY(0) scale(1.02); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+.animate-splash-in { animation: splash-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .glass, .glass-strong, body, .liquid-pill, .liquid-pill::after,
   .animate-page-in, .animate-sheet-up, .animate-backdrop-in, .stagger-item {
