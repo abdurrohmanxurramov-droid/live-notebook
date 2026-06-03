@@ -26,11 +26,20 @@ export function QuickActionsFab() {
       <button
         onClick={() => setOpen(true)}
         aria-label="Быстрые действия"
-        className="md:hidden fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg active:scale-95 transition-transform"
+        className="md:hidden fixed right-4 z-40 group relative flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground overflow-hidden ring-1 ring-white/40 shadow-[0_12px_30px_-8px_color-mix(in_oklab,var(--accent)_55%,transparent),inset_0_1px_0_0_rgba(255,255,255,0.45)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-105 active:scale-95"
         style={{ bottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}
       >
-        <Plus className="h-6 w-6" strokeWidth={2.5} />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/35 via-white/0 to-white/0"
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -inset-y-1 -left-1/2 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
+        />
+        <Plus className="relative h-6 w-6 transition-transform duration-300 group-hover:rotate-90" strokeWidth={2.5} />
       </button>
+
 
       <Sheet open={open} onClose={() => setOpen(false)} title="Быстрые действия">
         <div className="grid gap-2">
