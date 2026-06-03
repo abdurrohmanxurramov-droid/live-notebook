@@ -21,6 +21,7 @@ function Home() {
   const { data: rates } = useRates();
   const { data: schedule = [] } = useSchedule();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     document.body.style.overflow = openId ? "hidden" : "";
