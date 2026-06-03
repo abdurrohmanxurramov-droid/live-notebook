@@ -265,13 +265,13 @@
 .animate-glass-pop { animation: glass-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @keyframes page-in {
-  0%   { opacity: 0; filter: blur(6px); }
-  60%  { filter: blur(0); }
-  100% { opacity: 1; filter: blur(0); }
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
 }
-/* NOTE: do NOT animate `transform` here — a non-none transform on this
-   wrapper would become a containing block for fixed-positioned children
-   (modals, FAB, bottom nav), shifting them off-screen on wide viewports. */
+/* NOTE: do NOT animate `transform`, `filter`, `backdrop-filter`, or `perspective`
+   on this wrapper — any of them would establish a containing block for fixed
+   descendants (modals, FAB, bottom nav), shifting them off-screen on wider
+   viewports. Opacity-only is safe. */
 .animate-page-in { animation: page-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @keyframes sheet-up {
