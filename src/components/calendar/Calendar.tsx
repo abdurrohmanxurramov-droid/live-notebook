@@ -228,16 +228,17 @@ function DayView({ date, lessons, studentName, onDrop, onSlot, onLesson }: {
   const day = lessons.filter((l) => l.scheduled_date === date);
   return (
     <div className="relative rounded-xl border border-border bg-card/40">
-      {HOURS.map((h) => (
-        <HourRow
-          key={h}
-          h={h}
-          onClick={() => onSlot({ date, time: `${String(h).padStart(2,"0")}:00` })}
-          onDrop={(time) => {
-            const id = window.__draggingLessonId; if (id) onDrop(id, date, time);
-          }}
-        />
-      ))}
+      {SLOTS.map((s) => {
+        const t = slotTime(s);
+        return (
+          <SlotRow
+            key={t}
+            slot={s}
+            onClick={() => onSlot({ date, time: t })}
+            onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, date, t); }}
+          />
+        );
+      })}
       <div className="pointer-events-none absolute inset-y-0 left-12 right-2">
         {day.map((l) => (
           <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} />
@@ -276,8 +277,10 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
         </div>
         <div className="relative grid rounded-xl border border-border bg-card/40" style={{ gridTemplateColumns: "40px repeat(7, minmax(0,1fr))" }}>
           <div>
-            {HOURS.map((h) => (
-              <div key={h} className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground" style={{ height: HOUR_PX }}>{h}:00</div>
+            {SLOTS.map((s) => (
+              <div key={slotTime(s)} className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground" style={{ height: SLOT_PX }}>
+                {s.m === 0 ? `${s.h}:00` : ""}
+              </div>
             ))}
           </div>
           {days.map((d) => {
@@ -285,14 +288,17 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
             const dayLessons = lessons.filter((l) => l.scheduled_date === ds);
             return (
               <div key={ds} className="relative border-l border-border">
-                {HOURS.map((h) => (
-                  <SlotCell
-                    key={h}
-                    onClick={() => onSlot({ date: ds, time: `${String(h).padStart(2,"0")}:00` })}
-                    onDrop={(time) => { const id = window.__draggingLessonId; if (id) onDrop(id, ds, time); }}
-                    h={h}
-                  />
-                ))}
+                {SLOTS.map((s) => {
+                  const t = slotTime(s);
+                  return (
+                    <SlotCell
+                      key={t}
+                      slot={s}
+                      onClick={() => onSlot({ date: ds, time: t })}
+                      onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, ds, t); }}
+                    />
+                  );
+                })}
                 <div className="pointer-events-none absolute inset-0">
                   {dayLessons.map((l) => (
                     <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} compact />
@@ -373,15 +379,18 @@ function MonthView({ start, cursor, lessons, studentName, onDrop, onSlot, onMore
 
 /* -------------------- PARTS -------------------- */
 
-function HourRow({ h, onClick, onDrop }: { h: number; onClick: () => void; onDrop: (time: string) => void }) {
+function SlotRow({ slot, onClick, onDrop }: { slot: { h: number; m: number }; onClick: () => void; onDrop: () => void }) {
+  const isHour = slot.m === 0;
   return (
-    <div className="flex border-b border-border last:border-b-0" style={{ height: HOUR_PX }}>
-      <div className="flex w-12 shrink-0 items-start justify-end pr-1 pt-0.5 text-[10px] text-muted-foreground">{h}:00</div>
+    <div className={`flex ${isHour ? "border-b border-border" : "border-b border-border/40"} last:border-b-0`} style={{ height: SLOT_PX }}>
+      <div className="flex w-12 shrink-0 items-start justify-end pr-1 pt-0.5 text-[10px] text-muted-foreground">
+        {isHour ? `${slot.h}:00` : ""}
+      </div>
       <button
         type="button"
         onClick={onClick}
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => { e.preventDefault(); onDrop(`${String(h).padStart(2,"0")}:00`); }}
+        onDrop={(e) => { e.preventDefault(); onDrop(); }}
         className="flex-1 hover:bg-accent/5"
         aria-label="Создать урок"
       />
@@ -389,15 +398,16 @@ function HourRow({ h, onClick, onDrop }: { h: number; onClick: () => void; onDro
   );
 }
 
-function SlotCell({ h, onClick, onDrop }: { h: number; onClick: () => void; onDrop: (time: string) => void }) {
+function SlotCell({ slot, onClick, onDrop }: { slot: { h: number; m: number }; onClick: () => void; onDrop: () => void }) {
+  const isHour = slot.m === 0;
   return (
     <button
       type="button"
       onClick={onClick}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); onDrop(`${String(h).padStart(2,"0")}:00`); }}
-      className="block w-full border-b border-border hover:bg-accent/5"
-      style={{ height: HOUR_PX }}
+      onDrop={(e) => { e.preventDefault(); onDrop(); }}
+      className={`block w-full ${isHour ? "border-b border-border" : "border-b border-border/40"} hover:bg-accent/5`}
+      style={{ height: SLOT_PX }}
     />
   );
 }
@@ -410,10 +420,9 @@ function PositionedBlock({ lesson, studentName, onClick, compact }: {
 }) {
   const [hh, mm] = lesson.scheduled_time.slice(0,5).split(":").map(Number);
   const startMin = hh * 60 + mm;
-  const baseMin = HOURS[0] * 60;
-  const top = ((startMin - baseMin) / 60) * HOUR_PX;
-  const height = Math.max(22, (lesson.duration_min / 60) * HOUR_PX - 2);
-  if (top < 0 || top > HOURS.length * HOUR_PX) return null;
+  const top = ((startMin - BASE_MIN) / 30) * SLOT_PX;
+  const height = Math.max(SLOT_PX - 2, (lesson.duration_min / 30) * SLOT_PX - 2);
+  if (top < 0 || top > SLOTS.length * SLOT_PX) return null;
   return (
     <div
       draggable
