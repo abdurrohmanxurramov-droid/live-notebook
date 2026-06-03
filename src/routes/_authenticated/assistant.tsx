@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Send, Sparkles, Loader2, Wrench, CheckCircle2, AlertCircle } from "lucide-react";
+import { Send, Sparkles, Loader2, Wrench, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 
-import { chatWithAssistant } from "@/lib/ai.functions";
+import { chatWithAssistant, getChatHistory, clearChatHistory } from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/_authenticated/assistant")({ component: AssistantPage });
 
@@ -29,35 +29,57 @@ const TOOL_LABELS: Record<string, string> = {
   list_homework: "посмотрел ДЗ",
 };
 
+const WELCOME: Msg = {
+  role: "assistant",
+  content:
+    "Привет! Я ваш ИИ-агент с памятью. Помню все наши прошлые разговоры и могу сам делать дела: добавлять учеников, ставить уроки, отмечать оплаты, выдавать ДЗ. Просто скажите что нужно.",
+};
+
 function AssistantPage() {
   const chat = useServerFn(chatWithAssistant);
+  const loadHistory = useServerFn(getChatHistory);
+  const clearHistory = useServerFn(clearChatHistory);
   const qc = useQueryClient();
-  const [messages, setMessages] = useState<Msg[]>([
-    {
-      role: "assistant",
-      content:
-        "Привет! Я ваш ИИ-помощник. Могу не только подсказать, но и сам делать дела: добавить ученика, поставить урок в расписание, отметить оплату, выдать ДЗ. Просто скажите что нужно.",
-    },
-  ]);
+
+  const [messages, setMessages] = useState<Msg[]>([WELCOME]);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Загрузка истории из БД
+  const historyQ = useQuery({
+    queryKey: ["chat-history"],
+    queryFn: () => loadHistory(),
+  });
+
+  useEffect(() => {
+    if (historyQ.data && historyQ.data.length > 0) {
+      const loaded: Msg[] = historyQ.data.map((m: any) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
+      setMessages([WELCOME, ...loaded]);
+    }
+  }, [historyQ.data]);
+
   const mut = useMutation({
     mutationFn: async (userText: string) => {
-      const next: Msg[] = [...messages, { role: "user", content: userText }];
-      setMessages(next);
-      const payload = next.map(({ role, content }) => ({ role, content }));
-      return await chat({ data: { messages: payload } });
+      setMessages((m) => [...m, { role: "user", content: userText }]);
+      return await chat({ data: { userText } });
     },
     onSuccess: (res) => {
       setMessages((m) => [...m, { role: "assistant", content: res.reply, actions: res.actions }]);
-      if (res.actions?.length) {
-        // Обновим все связанные кэши
-        qc.invalidateQueries();
-      }
+      if (res.actions?.length) qc.invalidateQueries();
     },
     onError: (e: Error) =>
       setMessages((m) => [...m, { role: "assistant", content: `⚠️ ${e.message}` }]),
+  });
+
+  const clearMut = useMutation({
+    mutationFn: () => clearHistory(),
+    onSuccess: () => {
+      setMessages([WELCOME]);
+      qc.invalidateQueries({ queryKey: ["chat-history"] });
+    },
   });
 
   useEffect(() => {
@@ -83,10 +105,22 @@ function AssistantPage() {
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/20">
           <Sparkles className="h-5 w-5 text-accent" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-base font-semibold">ИИ-помощник</h1>
-          <p className="text-xs text-muted-foreground">Может сам управлять учениками и расписанием</p>
+          <p className="text-xs text-muted-foreground">С памятью · сам управляет всем</p>
         </div>
+        {messages.length > 1 && (
+          <button
+            onClick={() => {
+              if (confirm("Очистить всю историю чата?")) clearMut.mutate();
+            }}
+            disabled={clearMut.isPending}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive disabled:opacity-40"
+            title="Очистить историю"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
       </header>
 
       <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto pb-2">
@@ -123,8 +157,9 @@ function AssistantPage() {
         ))}
         {mut.isPending && (
           <div className="flex justify-start">
-            <div className="glass rounded-2xl rounded-bl-md px-4 py-2.5">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <div className="glass flex items-center gap-2 rounded-2xl rounded-bl-md px-4 py-2.5 text-xs text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>ИИ думает…</span>
             </div>
           </div>
         )}
