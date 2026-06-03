@@ -4,17 +4,17 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
-import { useStudents, useFinance, useMut, initials, type Student } from "@/lib/db";
+import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, type Student, type StudentStatus } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil } from "lucide-react";
+import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil, AlertCircle } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/students")({ component: StudentsPage });
 
 type DebtFilter = "all" | "debt" | "paid" | "none";
-type StatusFilter = "active" | "archived";
+type StatusFilter = "all" | StudentStatus | "trash";
 type SortBy = "name_asc" | "name_desc" | "created_desc" | "created_asc" | "days_desc" | "days_asc";
 
 function StudentsPage() {
@@ -24,7 +24,7 @@ function StudentsPage() {
   const [subjectFilter, setSubjectFilter] = useState<string>("");
   const [debtFilter, setDebtFilter] = useState<DebtFilter>("all");
   const [upcomingOnly, setUpcomingOnly] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortBy>("created_desc");
   const [open, setOpen] = useState(false);
   const [editStudent, setEditStudent] = useState<Student | null>(null);
@@ -37,10 +37,10 @@ function StudentsPage() {
     }
   }, []);
 
-  // Archived students: fetched only when needed
-  const { data: archivedStudents = [] } = useQuery({
-    queryKey: ["students", "archived"],
-    enabled: statusFilter === "archived",
+  // Soft-deleted students (Trash)
+  const { data: trashStudents = [] } = useQuery({
+    queryKey: ["students", "trash"],
+    enabled: statusFilter === "trash",
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("students")
@@ -77,7 +77,30 @@ function StudentsPage() {
     },
   });
 
-  const students = statusFilter === "archived" ? archivedStudents : activeStudents;
+  const baseList = statusFilter === "trash" ? trashStudents : activeStudents;
+
+  // Stats: counts per status from active (non-deleted) students
+  const statusCounts = useMemo(() => {
+    const c: Record<StudentStatus, number> = { active: 0, paused: 0, completed: 0, archived: 0 };
+    activeStudents.forEach((s) => { c[s.status] = (c[s.status] ?? 0) + 1; });
+    return c;
+  }, [activeStudents]);
+
+  // Overdue map: student_id -> { amount, days }
+  const today = new Date().toISOString().slice(0, 10);
+  const overdueByStudent = useMemo(() => {
+    const m = new Map<string, { amount: number; days: number }>();
+    for (const f of finance) {
+      if (f.is_paid || !f.pay_date || f.pay_date >= today) continue;
+      const days = Math.floor((Date.parse(today) - Date.parse(f.pay_date)) / 86400000);
+      const cur = m.get(f.student_id) ?? { amount: 0, days: 0 };
+      cur.amount += Number(f.amount);
+      cur.days = Math.max(cur.days, days);
+      m.set(f.student_id, cur);
+    }
+    return m;
+  }, [finance, today]);
+
 
   const subjects = useMemo(() => {
     const set = new Set<string>();
@@ -89,7 +112,8 @@ function StudentsPage() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const list = students.filter((s) => {
+    const list = baseList.filter((s) => {
+      if (statusFilter !== "all" && statusFilter !== "trash" && s.status !== statusFilter) return false;
       if (needle && !((s.name + " " + (s.subject ?? "") + " " + (s.phone ?? "")).toLowerCase().includes(needle)))
         return false;
       if (subjectFilter && (s.subject ?? "") !== subjectFilter) return false;
@@ -121,7 +145,7 @@ function StudentsPage() {
       }
     });
     return sorted;
-  }, [students, q, subjectFilter, debtFilter, upcomingOnly, upcomingByStudent, finance, sortBy]);
+  }, [baseList, statusFilter, q, subjectFilter, debtFilter, upcomingOnly, upcomingByStudent, finance, sortBy]);
 
   const softDelFn = useServerFn(softDeleteStudent);
   const del = useMut(async (id: string) => {
@@ -202,26 +226,42 @@ function StudentsPage() {
           <Chip active={upcomingOnly} onClick={() => setUpcomingOnly((v) => !v)}>
             Урок в ближайшие 7 дней
           </Chip>
-          <Chip active={statusFilter === "active"} onClick={() => setStatusFilter("active")}>Активные</Chip>
-          <Chip active={statusFilter === "archived"} onClick={() => setStatusFilter("archived")}>Архив</Chip>
         </div>
       </Card>
+
+      {/* Status stats + filter */}
+      <div className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        <StatusStat label="Все" count={activeStudents.length} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+        {(["active", "paused", "completed", "archived"] as StudentStatus[]).map((st) => (
+          <StatusStat
+            key={st}
+            label={STUDENT_STATUS_META[st].label}
+            count={statusCounts[st]}
+            tone={STUDENT_STATUS_META[st].tone}
+            active={statusFilter === st}
+            onClick={() => setStatusFilter(st)}
+          />
+        ))}
+        <StatusStat label="Корзина" count={trashStudents.length} active={statusFilter === "trash"} onClick={() => setStatusFilter("trash")} />
+      </div>
 
       <SectionTitle>{filtered.length} {filtered.length === 1 ? "ученик" : "учеников"}</SectionTitle>
 
       {filtered.length === 0 ? (
         <Empty
           icon={<GraduationCap className="h-8 w-8" />}
-          title={students.length === 0 ? "Список пуст" : "Никого не найдено"}
-          hint={students.length === 0 ? "Нажмите «Добавить», чтобы начать" : "Попробуйте изменить фильтры"}
+          title={baseList.length === 0 ? "Список пуст" : "Никого не найдено"}
+          hint={baseList.length === 0 ? "Нажмите «Добавить», чтобы начать" : "Попробуйте изменить фильтры"}
         />
       ) : (
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
           {filtered.map((s) => {
             const fin = finance.filter((f) => f.student_id === s.id);
             const hasUnpaid = fin.some((f) => !f.is_paid);
+            const overdue = overdueByStudent.get(s.id);
+            const statusMeta = STUDENT_STATUS_META[s.status];
             return (
-              <Card key={s.id} className="p-4">
+              <Card key={s.id} className={`p-4 ${overdue ? "ring-1 ring-destructive/60" : ""}`}>
                 <div className="flex items-start gap-3">
                   <Link to="/students/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-start gap-3">
                     <Avatar initials={initials(s.name)} />
@@ -274,19 +314,27 @@ function StudentsPage() {
                       <BookOpen className="h-3 w-3" /> {s.subject || "—"}
                     </span>
                   )}
-                  {fin.length === 0 ? (
-                    <Badge>Без платежей</Badge>
-                  ) : hasUnpaid ? (
-                    <Badge tone="danger">Должник</Badge>
-                  ) : (
-                    <Badge tone="success">Оплачено</Badge>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+                    {overdue ? (
+                      <Badge tone="danger">
+                        <AlertCircle className="mr-0.5 inline h-3 w-3" />Долг {overdue.days}д
+                      </Badge>
+                    ) : fin.length === 0 ? (
+                      <Badge>Без платежей</Badge>
+                    ) : hasUnpaid ? (
+                      <Badge tone="danger">Должник</Badge>
+                    ) : (
+                      <Badge tone="success">Оплачено</Badge>
+                    )}
+                  </div>
                 </div>
               </Card>
             );
           })}
         </div>
       )}
+
 
       <AddStudentSheet open={open} onClose={() => setOpen(false)} />
       <EditStudentSheet student={editStudent} onClose={() => setEditStudent(null)} />
@@ -642,5 +690,40 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         </>
       )}
     </Sheet>
+  );
+}
+
+function StatusStat({
+  label,
+  count,
+  tone,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  tone?: "success" | "gold" | "neutral" | "danger";
+  active: boolean;
+  onClick: () => void;
+}) {
+  const toneRing: Record<string, string> = {
+    success: "ring-[color:var(--success,theme(colors.emerald.500))]/40",
+    gold: "ring-accent/40",
+    neutral: "ring-border",
+    danger: "ring-destructive/40",
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition-all ${
+        active
+          ? "border-accent bg-accent/15 shadow-sm"
+          : `border-border bg-card ring-1 ring-transparent ${tone ? toneRing[tone] : ""}`
+      }`}
+    >
+      <div className="num text-base text-foreground leading-none">{count}</div>
+      <div className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+    </button>
   );
 }

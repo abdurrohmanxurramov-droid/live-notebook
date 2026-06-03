@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Home,
   GraduationCap,
@@ -13,6 +14,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Sheet } from "./Sheet";
+import { sb } from "@/lib/sb";
 
 const mainTabs = [
   { to: "/", label: "Главная", icon: Home },
@@ -39,6 +41,23 @@ export function BottomNav() {
   const activeKey: Key = moreActive
     ? "__more__"
     : (mainTabs.find((t) => t.to === pathname)?.to as Key) ?? "/";
+
+  // Overdue indicator for Finance tab
+  const { data: overdueCount = 0 } = useQuery({
+    queryKey: ["finance", "overdue-count"],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { count, error } = await (await sb())
+        .from("finance")
+        .select("id", { count: "exact", head: true })
+        .eq("is_paid", false)
+        .is("deleted_at", null)
+        .lt("pay_date", today);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
 
   const listRef = useRef<HTMLUListElement>(null);
   const itemRefs = useRef<Map<Key, HTMLLIElement>>(new Map());
@@ -96,12 +115,22 @@ export function BottomNav() {
                     to={t.to}
                     className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
                   >
-                    <Icon
-                      className={`h-[18px] w-[18px] transition-all duration-500 ${
-                        active ? "text-accent scale-110" : "text-muted-foreground scale-100"
-                      }`}
-                      strokeWidth={active ? 2.4 : 1.8}
-                    />
+                    <span className="relative">
+                      <Icon
+                        className={`h-[18px] w-[18px] transition-all duration-500 ${
+                          active ? "text-accent scale-110" : "text-muted-foreground scale-100"
+                        }`}
+                        strokeWidth={active ? 2.4 : 1.8}
+                      />
+                      {t.to === "/finance" && overdueCount > 0 && (
+                        <span
+                          aria-label={`Просрочено платежей: ${overdueCount}`}
+                          className="absolute -right-1.5 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold leading-none text-destructive-foreground ring-2 ring-background"
+                        >
+                          {overdueCount > 9 ? "9+" : overdueCount}
+                        </span>
+                      )}
+                    </span>
                     <span
                       className={`text-[10px] font-medium tracking-wide transition-colors duration-500 ${
                         active ? "text-foreground" : "text-muted-foreground"
