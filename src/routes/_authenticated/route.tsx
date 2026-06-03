@@ -55,7 +55,16 @@ export const Route = createFileRoute("/_authenticated")({
     }
     return { user: data.user };
   },
-  component: () => <Outlet />,
+  component: PageShell,
   errorComponent: AuthErrorComponent,
   notFoundComponent: AuthNotFound,
 });
+
+function PageShell() {
+  const { pathname } = useLocation();
+  return (
+    <div key={pathname} className="animate-page-in">
+      <Outlet />
+    </div>
+  );
+}
