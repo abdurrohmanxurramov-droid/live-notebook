@@ -76,10 +76,10 @@ export function BottomNav() {
             {indicator && (
               <span
                 aria-hidden
-                className="liquid-pill pointer-events-none absolute top-1 bottom-1 rounded-lg"
+                className="liquid-pill pointer-events-none absolute top-1 bottom-1 rounded-[22px]"
                 style={{
-                  transform: `translateX(${indicator.x + 4}px)`,
-                  width: Math.max(indicator.w - 8, 24),
+                  transform: `translateX(${indicator.x}px)`,
+                  width: indicator.w,
                   transition: ready
                     ? "transform 520ms cubic-bezier(0.34, 1.3, 0.4, 1), width 520ms cubic-bezier(0.34, 1.3, 0.4, 1)"
                     : "none",
