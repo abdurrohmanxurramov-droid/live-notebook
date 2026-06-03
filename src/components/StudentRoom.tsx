@@ -87,6 +87,9 @@ export function StudentRoom({ id }: { id: string }) {
           </div>
         </div>
 
+        <StatusSwitcher studentId={student.id} current={student.status} />
+
+
         <div className="mt-4 rounded-xl bg-secondary p-3">
           <div className="flex items-center justify-between">
             <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Цикл уроков</div>
