@@ -187,22 +187,29 @@ function Mini({ n, label }: { n: number; label: string }) {
 function AttendanceTab({
   studentId,
   att,
-  presentCountBefore,
-  needsPayment,
-  oldestUnpaid,
+  countedBefore,
+  excusedCount,
 }: {
   studentId: string;
-  att: any[];
-  presentCountBefore: number;
-  needsPayment: boolean;
-  oldestUnpaid: any | undefined;
+  att: Attendance[];
+  countedBefore: number;
+  excusedCount: number;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
-  const [status, setStatus] = useState<keyof typeof ATT_STATUS>("present");
+  const [status, setStatus] = useState<AttendanceStatus>("present");
   const [note, setNote] = useState("");
 
+  const getSettingsFn = useServerFn(getSettings);
+  const { data: settings } = useQuery({
+    queryKey: ["user_settings"],
+    queryFn: () => getSettingsFn({}),
+  });
+
   const add = useMut(async () => {
+    if (status === "excused" && excusedCount >= EXCUSED_LIMIT) {
+      throw new Error(`Лимит уваж. причин (${EXCUSED_LIMIT}) исчерпан`);
+    }
     const sup = await sb();
     const { error } = await sup.from("attendance").insert({
       student_id: studentId,
@@ -212,17 +219,21 @@ function AttendanceTab({
     });
     if (error) throw error;
 
-    if (status === "present") {
-      const newCount = presentCountBefore + 1;
-      if (newCount % LESSONS_PER_CYCLE === 0 && oldestUnpaid && !oldestUnpaid.is_paid) {
-        const { error: e2 } = await sup
-          .from("finance")
-          .update({ is_paid: true, pay_date: date })
-          .eq("id", oldestUnpaid.id);
+    // Авто-долг: если урок засчитан (был/не был) и достигнут предел 12
+    if (status === "present" || status === "absent") {
+      const newCount = countedBefore + 1;
+      if (newCount > 0 && newCount % LESSONS_PER_CYCLE === 0) {
+        const price = (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE;
+        const currency = settings?.default_currency ?? "RUB";
+        const { error: e2 } = await sup.from("finance").insert({
+          student_id: studentId,
+          amount: price,
+          currency,
+          is_paid: false,
+          pay_date: date,
+        });
         if (e2) throw e2;
-        toast.success("12 уроков! Оплата отмечена как полученная 💰");
-      } else if (newCount % LESSONS_PER_CYCLE === 0) {
-        toast.success("Цикл из 12 уроков завершён — добавьте оплату");
+        toast.success("Цикл 12 уроков завершён — создан новый долг 💰");
       }
     }
   }, ["attendance", "finance"]);
@@ -232,23 +243,30 @@ function AttendanceTab({
     if (error) throw error;
   }, ["attendance"]);
 
+  const toggleCompensated = useMut(async (r: Attendance) => {
+    const { error } = await (await sb())
+      .from("attendance")
+      .update({ compensated: !r.compensated })
+      .eq("id", r.id);
+    if (error) throw error;
+  }, ["attendance"]);
+
+  const excusedReached = excusedCount >= EXCUSED_LIMIT;
+  const willBlock = status === "excused" && excusedReached;
+
   return (
     <>
       <Card className="mt-4 p-4">
-        {needsPayment && (
-          <div className="mb-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            ⚠️ Цикл из 12 уроков пройден — добавьте оплату во вкладке «Оплаты»
-          </div>
-        )}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Дата">
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
           <Field label="Статус">
-            <Select value={status} onChange={(e) => setStatus(e.target.value as any)}>
-              {Object.entries(ATT_STATUS).map(([k, v]) => (
-                <option key={k} value={k}>
+            <Select value={status} onChange={(e) => setStatus(e.target.value as AttendanceStatus)}>
+              {(Object.entries(ATT_STATUS) as [AttendanceStatus, typeof ATT_STATUS[AttendanceStatus]][]).map(([k, v]) => (
+                <option key={k} value={k} disabled={k === "excused" && excusedReached}>
                   {v.emoji} {v.label}
+                  {k === "excused" ? ` (${excusedCount}/${EXCUSED_LIMIT})` : ""}
                 </option>
               ))}
             </Select>
@@ -257,17 +275,22 @@ function AttendanceTab({
         <Field label="Заметка">
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="..." />
         </Field>
+        {willBlock && (
+          <div className="mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            ⚠️ Лимит уваж. причин (3) исчерпан — выберите другой статус
+          </div>
+        )}
         <Button
           variant="gold"
           className="mt-3 w-full"
-          disabled={add.isPending}
+          disabled={add.isPending || willBlock}
           onClick={async () => {
             try {
               await add.mutateAsync(undefined as never);
               setNote("");
               toast.success("Записано");
-            } catch (e: any) {
-              toast.error(e?.message ?? "Ошибка");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Ошибка");
             }
           }}
         >
@@ -281,30 +304,50 @@ function AttendanceTab({
       ) : (
         <div className="space-y-2">
           {att.map((r) => {
-            const cfg = ATT_STATUS[r.status as keyof typeof ATT_STATUS];
+            const cfg = ATT_STATUS[r.status];
+            const isReschedule = r.status === "rescheduled_by_teacher";
             return (
-              <Card key={r.id} className="flex items-center gap-3 p-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-lg">
-                  {cfg?.emoji ?? "·"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[14px] font-semibold text-foreground">
-                    {new Date(r.date).toLocaleDateString("ru-RU")}
+              <Card key={r.id} className="p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-lg">
+                    {cfg?.emoji ?? "·"}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {cfg?.label}
-                    {r.note ? ` · ${r.note}` : ""}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[14px] font-semibold text-foreground">
+                      {new Date(r.date).toLocaleDateString("ru-RU")}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {cfg?.label}
+                      {isReschedule && r.compensated ? " · возмещён" : ""}
+                      {r.note ? ` · ${r.note}` : ""}
+                    </div>
                   </div>
+                  <button
+                    onClick={async () => {
+                      await del.mutateAsync(r.id);
+                      toast.success("Удалено");
+                    }}
+                    className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={async () => {
-                    await del.mutateAsync(r.id);
-                    toast.success("Удалено");
-                  }}
-                  className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
+                {isReschedule && (
+                  <button
+                    onClick={async () => {
+                      await toggleCompensated.mutateAsync(r);
+                      toast.success(r.compensated ? "Снято с возмещения" : "Отмечено как возмещён");
+                    }}
+                    className={`mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-semibold transition-colors ${
+                      r.compensated
+                        ? "bg-[color:var(--success)]/15 text-[color:var(--success)]"
+                        : "bg-secondary text-muted-foreground"
+                    }`}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    {r.compensated ? "Возмещён" : "Отметить возмещённым"}
+                  </button>
+                )}
               </Card>
             );
           })}
