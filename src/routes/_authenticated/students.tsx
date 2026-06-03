@@ -344,7 +344,7 @@ function StudentsPage() {
         <p className="text-sm text-muted-foreground">
           Ученик и все связанные записи отправятся в Корзину. Их можно восстановить в Настройках.
         </p>
-        <div className="mt-5 flex gap-2">
+        <div className="mt-8 flex gap-3 pb-2">
           <Button variant="outline" className="flex-1" onClick={() => setConfirmId(null)}>
             Отмена
           </Button>
@@ -481,7 +481,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
           <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 ..." />
         </Field>
       </div>
-      <div className="mt-5 flex gap-2">
+      <div className="mt-8 flex gap-3 pb-2">
         <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
         <Button
           variant="gold"
@@ -668,7 +668,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
             </Field>
           </div>
 
-          <div className="mt-5 flex gap-2">
+          <div className="mt-8 flex gap-3 pb-2">
             <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
             <Button
               variant="gold"
