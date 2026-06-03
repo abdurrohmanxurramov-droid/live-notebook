@@ -1,11 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Card, SectionTitle, Avatar, Badge, Empty, Button } from "@/components/ui-bits";
+import { CountUp } from "@/components/CountUp";
 import { StudentRoom } from "@/components/StudentRoom";
-import { useStudents, useFinance, useRates, useSchedule, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META } from "@/lib/db";
+import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META } from "@/lib/db";
+import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check } from "lucide-react";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check, BookOpen, TrendingUp, PlayCircle } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
 
