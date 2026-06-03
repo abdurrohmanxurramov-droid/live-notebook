@@ -303,3 +303,37 @@
   }
   .glass::after { display: none; }
 }
+
+/* Tap visual feedback (haptic-style) */
+@keyframes tap-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+.tap-pulse:active { animation: tap-pulse 220ms ease-out; }
+
+/* Print-friendly reports */
+@media print {
+  @page { margin: 14mm; }
+  html, body { background: #fff !important; color: #000 !important; }
+  body * { visibility: hidden !important; }
+  .print-area, .print-area * { visibility: visible !important; }
+  .print-area {
+    position: absolute; inset: 0; left: 0; top: 0; width: 100%;
+    padding: 0 !important; background: #fff !important; color: #000 !important;
+  }
+  .no-print { display: none !important; }
+  .print-area .glass, .print-area .glass-strong {
+    background: #fff !important; border: 1px solid #ddd !important;
+    backdrop-filter: none !important; box-shadow: none !important;
+  }
+  .print-area table { border-collapse: collapse; width: 100%; }
+  .print-area th, .print-area td {
+    border: 1px solid #999; padding: 6px 8px; font-size: 12px; text-align: left;
+  }
+  .print-area th { background: #f3f3f3 !important; }
+  .print-area h1 { font-size: 22px; margin: 0 0 4px; }
+  .print-area h2 { font-size: 16px; margin: 18px 0 8px; }
+  .print-area .page-break { page-break-after: always; }
+}
+

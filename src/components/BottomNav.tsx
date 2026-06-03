@@ -12,6 +12,7 @@ import {
   BookOpen,
   Sparkles,
   MoreHorizontal,
+  FileText,
 } from "lucide-react";
 import { Sheet } from "./Sheet";
 import { sb } from "@/lib/sb";
@@ -26,6 +27,7 @@ const mainTabs = [
 const moreTabs = [
   { to: "/attendance", label: "Журнал", icon: CalendarCheck, hint: "Посещаемость" },
   { to: "/homework", label: "Домашние задания", icon: BookOpen, hint: "Список и статусы" },
+  { to: "/reports", label: "Отчёты", icon: FileText, hint: "Печать и PDF" },
   { to: "/analytics", label: "Аналитика", icon: BarChart3, hint: "Сводка и графики" },
   { to: "/assistant", label: "ИИ-помощник", icon: Sparkles, hint: "Подсказки и расчёты" },
   { to: "/settings", label: "Настройки", icon: Settings, hint: "Тема, push, курсы" },

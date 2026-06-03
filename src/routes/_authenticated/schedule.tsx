@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listLessons, setLessonStatus, moveLesson, type LessonStatus } from "@/lib/lessons.functions";
 import { Calendar } from "@/components/calendar/Calendar";
+import { SwipeableLessonCard } from "@/components/SwipeableLessonCard";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
@@ -331,8 +332,9 @@ function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: s
             const st = studentsById.get(l.student_id);
             const time = String(l.scheduled_time).slice(0, 5);
             const isPast = l.scheduled_date < from;
-            return (
-              <Card key={l.id} className="p-3">
+            const planned = l.status === "planned";
+            const cardInner = (
+              <Card className="p-3 tap-pulse">
                 <div className="flex items-center gap-3">
                   <div className="flex w-20 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-2">
                     <span className="num text-xs leading-tight text-accent">{l.scheduled_date.slice(5)}</span>
@@ -349,20 +351,31 @@ function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: s
                   </div>
                   <Badge tone={statusTone(l.status as LessonStatus)}>{statusLabel(l.status as LessonStatus)}</Badge>
                 </div>
-                {l.status === "planned" && (
+                {planned && (
                   <div className="mt-3 flex gap-2">
-                    <Button variant="outline" className="flex-1" onClick={() => changeStatus(l.id, "completed")}>
+                    <Button variant="outline" className="flex-1" data-haptic="success" onClick={() => changeStatus(l.id, "completed")}>
                       <Check className="h-4 w-4" /> Провёл
                     </Button>
-                    <Button variant="outline" className="flex-1" onClick={() => changeStatus(l.id, "cancelled")}>
+                    <Button variant="outline" className="flex-1" data-haptic="warning" onClick={() => changeStatus(l.id, "cancelled")}>
                       <X className="h-4 w-4" /> Отменил
                     </Button>
-                    <Button variant="outline" className="flex-1" onClick={() => setMoveTarget({ id: l.id, date: l.scheduled_date, time })} disabled={isPast}>
+                    <Button variant="outline" className="flex-1" data-haptic="medium" onClick={() => setMoveTarget({ id: l.id, date: l.scheduled_date, time })} disabled={isPast}>
                       <ArrowRight className="h-4 w-4" /> Перенёс
                     </Button>
                   </div>
                 )}
               </Card>
+            );
+            return (
+              <SwipeableLessonCard
+                key={l.id}
+                enabled={planned}
+                onComplete={() => changeStatus(l.id, "completed")}
+                onCancel={() => changeStatus(l.id, "cancelled")}
+                onReschedule={isPast ? undefined : () => setMoveTarget({ id: l.id, date: l.scheduled_date, time })}
+              >
+                {cardInner}
+              </SwipeableLessonCard>
             );
           })}
         </div>
