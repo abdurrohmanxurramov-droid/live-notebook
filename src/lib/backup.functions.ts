@@ -34,6 +34,45 @@ export const exportBackup = createServerFn({ method: "GET" })
     };
   });
 
+const CSV_TABLES = ["students", "finance", "attendance", "homework", "lessons"] as const;
+
+function csvEscape(v: unknown): string {
+  if (v === null || v === undefined) return "";
+  let s: string;
+  if (typeof v === "object") s = JSON.stringify(v);
+  else s = String(v);
+  if (/[",\n\r]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function rowsToCsv(rows: Record<string, unknown>[]): string {
+  if (rows.length === 0) return "";
+  const headers = Array.from(
+    rows.reduce<Set<string>>((acc, r) => {
+      Object.keys(r).forEach((k) => acc.add(k));
+      return acc;
+    }, new Set<string>())
+  );
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    lines.push(headers.map((h) => csvEscape(r[h])).join(","));
+  }
+  return lines.join("\n");
+}
+
+export const exportCsv = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const out: Record<string, string> = {};
+    for (const t of CSV_TABLES) {
+      const { data, error } = await supabase.from(t).select("*");
+      if (error) throw new Error(`${t}: ${error.message}`);
+      out[t] = rowsToCsv((data ?? []) as Record<string, unknown>[]);
+    }
+    return out as Record<(typeof CSV_TABLES)[number], string>;
+  });
+
 const importSchema = z.object({
   json: z.object({
     version: z.number(),

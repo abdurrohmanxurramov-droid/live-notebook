@@ -9,6 +9,9 @@ const DEFAULTS = {
   week_starts_on: 1,
   remind_before_min: 60,
   locale: "ru" as const,
+  remind_lessons: true,
+  remind_payments: true,
+  remind_homework: true,
 };
 
 export const getSettings = createServerFn({ method: "GET" })

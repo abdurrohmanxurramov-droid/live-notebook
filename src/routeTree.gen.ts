@@ -21,7 +21,9 @@ import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAssistantRouteImport } from './routes/_authenticated/assistant'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedStudentsIdRouteImport } from './routes/_authenticated/students.$id'
+import { Route as ApiPublicHooksPaymentRemindersRouteImport } from './routes/api/public/hooks/payment-reminders'
 import { Route as ApiPublicHooksLessonRemindersRouteImport } from './routes/api/public/hooks/lesson-reminders'
+import { Route as ApiPublicHooksHomeworkRemindersRouteImport } from './routes/api/public/hooks/homework-reminders'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -82,10 +84,22 @@ const AuthenticatedStudentsIdRoute = AuthenticatedStudentsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedStudentsRoute,
 } as any)
+const ApiPublicHooksPaymentRemindersRoute =
+  ApiPublicHooksPaymentRemindersRouteImport.update({
+    id: '/api/public/hooks/payment-reminders',
+    path: '/api/public/hooks/payment-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksLessonRemindersRoute =
   ApiPublicHooksLessonRemindersRouteImport.update({
     id: '/api/public/hooks/lesson-reminders',
     path: '/api/public/hooks/lesson-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksHomeworkRemindersRoute =
+  ApiPublicHooksHomeworkRemindersRouteImport.update({
+    id: '/api/public/hooks/homework-reminders',
+    path: '/api/public/hooks/homework-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
 
@@ -101,7 +115,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/students/$id': typeof AuthenticatedStudentsIdRoute
+  '/api/public/hooks/homework-reminders': typeof ApiPublicHooksHomeworkRemindersRoute
   '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
+  '/api/public/hooks/payment-reminders': typeof ApiPublicHooksPaymentRemindersRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -115,7 +131,9 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRouteWithChildren
   '/': typeof AuthenticatedIndexRoute
   '/students/$id': typeof AuthenticatedStudentsIdRoute
+  '/api/public/hooks/homework-reminders': typeof ApiPublicHooksHomeworkRemindersRoute
   '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
+  '/api/public/hooks/payment-reminders': typeof ApiPublicHooksPaymentRemindersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,7 +149,9 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRouteWithChildren
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/students/$id': typeof AuthenticatedStudentsIdRoute
+  '/api/public/hooks/homework-reminders': typeof ApiPublicHooksHomeworkRemindersRoute
   '/api/public/hooks/lesson-reminders': typeof ApiPublicHooksLessonRemindersRoute
+  '/api/public/hooks/payment-reminders': typeof ApiPublicHooksPaymentRemindersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,7 +167,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/students'
     | '/students/$id'
+    | '/api/public/hooks/homework-reminders'
     | '/api/public/hooks/lesson-reminders'
+    | '/api/public/hooks/payment-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -161,7 +183,9 @@ export interface FileRouteTypes {
     | '/students'
     | '/'
     | '/students/$id'
+    | '/api/public/hooks/homework-reminders'
     | '/api/public/hooks/lesson-reminders'
+    | '/api/public/hooks/payment-reminders'
   id:
     | '__root__'
     | '/_authenticated'
@@ -176,13 +200,17 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/_authenticated/'
     | '/_authenticated/students/$id'
+    | '/api/public/hooks/homework-reminders'
     | '/api/public/hooks/lesson-reminders'
+    | '/api/public/hooks/payment-reminders'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicHooksHomeworkRemindersRoute: typeof ApiPublicHooksHomeworkRemindersRoute
   ApiPublicHooksLessonRemindersRoute: typeof ApiPublicHooksLessonRemindersRoute
+  ApiPublicHooksPaymentRemindersRoute: typeof ApiPublicHooksPaymentRemindersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -271,11 +299,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentsIdRouteImport
       parentRoute: typeof AuthenticatedStudentsRoute
     }
+    '/api/public/hooks/payment-reminders': {
+      id: '/api/public/hooks/payment-reminders'
+      path: '/api/public/hooks/payment-reminders'
+      fullPath: '/api/public/hooks/payment-reminders'
+      preLoaderRoute: typeof ApiPublicHooksPaymentRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/lesson-reminders': {
       id: '/api/public/hooks/lesson-reminders'
       path: '/api/public/hooks/lesson-reminders'
       fullPath: '/api/public/hooks/lesson-reminders'
       preLoaderRoute: typeof ApiPublicHooksLessonRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/homework-reminders': {
+      id: '/api/public/hooks/homework-reminders'
+      path: '/api/public/hooks/homework-reminders'
+      fullPath: '/api/public/hooks/homework-reminders'
+      preLoaderRoute: typeof ApiPublicHooksHomeworkRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -324,7 +366,9 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicHooksHomeworkRemindersRoute: ApiPublicHooksHomeworkRemindersRoute,
   ApiPublicHooksLessonRemindersRoute: ApiPublicHooksLessonRemindersRoute,
+  ApiPublicHooksPaymentRemindersRoute: ApiPublicHooksPaymentRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
