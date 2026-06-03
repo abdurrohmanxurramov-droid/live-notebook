@@ -98,7 +98,7 @@ function Home() {
       <SectionTitle>Быстрые действия</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
         <QuickAction to="/attendance" icon={<CalendarPlus className="h-5 w-5" />} label="Урок" />
-        <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="ДЗ" />
+        <QuickAction to="/students" icon={<Search className="h-5 w-5" />} label="Поиск" />
         <QuickAction to="/finance" icon={<Plus className="h-5 w-5" />} label="Оплата" />
         <QuickAction to="/students" icon={<UserPlus className="h-5 w-5" />} label="Ученик" />
       </div>
