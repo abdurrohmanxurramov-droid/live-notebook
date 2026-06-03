@@ -314,19 +314,27 @@ function StudentsPage() {
                       <BookOpen className="h-3 w-3" /> {s.subject || "—"}
                     </span>
                   )}
-                  {fin.length === 0 ? (
-                    <Badge>Без платежей</Badge>
-                  ) : hasUnpaid ? (
-                    <Badge tone="danger">Должник</Badge>
-                  ) : (
-                    <Badge tone="success">Оплачено</Badge>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
+                    {overdue ? (
+                      <Badge tone="danger">
+                        <AlertCircle className="mr-0.5 inline h-3 w-3" />Долг {overdue.days}д
+                      </Badge>
+                    ) : fin.length === 0 ? (
+                      <Badge>Без платежей</Badge>
+                    ) : hasUnpaid ? (
+                      <Badge tone="danger">Должник</Badge>
+                    ) : (
+                      <Badge tone="success">Оплачено</Badge>
+                    )}
+                  </div>
                 </div>
               </Card>
             );
           })}
         </div>
       )}
+
 
       <AddStudentSheet open={open} onClose={() => setOpen(false)} />
       <EditStudentSheet student={editStudent} onClose={() => setEditStudent(null)} />
