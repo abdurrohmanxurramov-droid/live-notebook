@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       attendance: {
         Row: {
+          compensated: boolean
           created_at: string
           date: string
           deleted_at: string | null
@@ -26,6 +27,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          compensated?: boolean
           created_at?: string
           date: string
           deleted_at?: string | null
@@ -36,6 +38,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          compensated?: boolean
           created_at?: string
           date?: string
           deleted_at?: string | null
