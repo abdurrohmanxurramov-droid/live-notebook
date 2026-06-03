@@ -198,19 +198,7 @@ function AnalyticsPage() {
 
           <SectionTitle
             action={
-              <div className="flex gap-1 rounded-full bg-secondary p-0.5">
-                {([6, 12] as const).map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setRange(n)}
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
-                      range === n ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-                    }`}
-                  >
-                    {n} мес
-                  </button>
-                ))}
-              </div>
+              <RangePill value={range} onChange={setRange} options={[6, 12]} />
             }
           >
             Доход по месяцам
