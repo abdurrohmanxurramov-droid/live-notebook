@@ -32,24 +32,29 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
+  const message = error?.message ?? "Неизвестная ошибка";
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold text-foreground">Что-то пошло не так</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
-        <button
-          onClick={() => { router.invalidate(); reset(); }}
-          className="mt-6 rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground"
-        >
-          Повторить
-        </button>
+        <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+        <div className="mt-6 flex justify-center gap-2">
+          <button
+            onClick={() => { router.invalidate(); reset?.(); }}
+            className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground"
+          >
+            Повторить
+          </button>
+          <Link to="/" className="rounded-xl border border-border px-4 py-2 text-sm text-foreground">
+            На главную
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  ssr: false,
   head: () => ({
     meta: [
       { charSet: "utf-8" },
