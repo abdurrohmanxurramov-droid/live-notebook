@@ -256,10 +256,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function statusTone(s: LessonStatus): "default" | "gold" | "green" | "red" | "muted" {
-  if (s === "completed") return "green";
-  if (s === "cancelled") return "red";
-  if (s === "moved") return "muted";
+function statusTone(s: LessonStatus): "neutral" | "success" | "danger" | "gold" {
+  if (s === "completed") return "success";
+  if (s === "cancelled") return "danger";
+  if (s === "moved") return "neutral";
   return "gold";
 }
 function statusLabel(s: LessonStatus) {
@@ -342,7 +342,7 @@ function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: s
                       {st?.subject ?? ""}
                     </div>
                   </div>
-                  <Badge tone={statusTone(l.status as LessonStatus) as any}>{statusLabel(l.status as LessonStatus)}</Badge>
+                  <Badge tone={statusTone(l.status as LessonStatus)}>{statusLabel(l.status as LessonStatus)}</Badge>
                 </div>
                 {l.status === "planned" && (
                   <div className="mt-3 flex gap-2">
