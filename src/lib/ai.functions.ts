@@ -1,23 +1,21 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 type Msg = { role: "user" | "assistant" | "system"; content: string };
 
 export const chatWithAssistant = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: { messages: Msg[] }) => input)
-  .handler(async ({ data, context }) => {
+  .handler(async ({ data }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY не настроен");
 
-    const { supabase } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Собираем контекст: ученики, расписание, финансы, проведённые уроки
     const [{ data: students }, { data: slots }, { data: finance }, { data: lessons }] = await Promise.all([
-      supabase.from("students").select("id, name, subject, days_per_week"),
-      supabase.from("schedule_slots").select("student_id, day_of_week, start_time, duration_min"),
-      supabase.from("finance").select("student_id, amount, currency, is_paid, pay_date").order("created_at", { ascending: false }).limit(30),
-      supabase.from("lessons_conducted").select("student_id, lessons_done"),
+      supabaseAdmin.from("students").select("id, name, subject, days_per_week"),
+      supabaseAdmin.from("schedule_slots").select("student_id, day_of_week, start_time, duration_min"),
+      supabaseAdmin.from("finance").select("student_id, amount, currency, is_paid, pay_date").order("created_at", { ascending: false }).limit(30),
+      supabaseAdmin.from("lessons_conducted").select("student_id, lessons_done"),
     ]);
 
     const lessonsByStudent = new Map<string, number>();
