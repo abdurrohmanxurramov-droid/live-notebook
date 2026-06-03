@@ -146,7 +146,7 @@ export function BottomNav() {
 
       <Sheet open={open} onClose={() => setOpen(false)} title="Ещё">
         <div className="grid gap-2">
-          {moreTabs.map((t) => {
+          {moreTabs.map((t, i) => {
             const Icon = t.icon;
             const active = pathname === t.to;
             return (
@@ -154,14 +154,25 @@ export function BottomNav() {
                 key={t.to}
                 to={t.to}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 rounded-2xl p-3 transition-colors ${
-                  active ? "bg-accent/15" : "bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10"
+                style={{ animationDelay: `${60 + i * 55}ms` }}
+                className={`stagger-item group relative flex items-center gap-3 overflow-hidden rounded-2xl p-3 transition-all duration-300 ease-out hover:-translate-y-0.5 active:scale-[0.98] ${
+                  active
+                    ? "bg-accent/15 ring-1 ring-accent/30"
+                    : "bg-white/60 dark:bg-white/5 hover:bg-white/85 dark:hover:bg-white/10 backdrop-blur-xl"
                 }`}
               >
-                <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? "bg-accent text-accent-foreground" : "bg-accent/15 text-accent"}`}>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100 dark:via-white/10"
+                />
+                <span
+                  className={`relative flex h-10 w-10 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 ${
+                    active ? "bg-accent text-accent-foreground" : "bg-accent/15 text-accent"
+                  }`}
+                >
                   <Icon className="h-5 w-5" />
                 </span>
-                <span className="flex flex-col text-left">
+                <span className="relative flex flex-col text-left">
                   <span className="text-[15px] font-semibold text-foreground">{t.label}</span>
                   <span className="text-xs text-muted-foreground">{t.hint}</span>
                 </span>
