@@ -138,6 +138,26 @@ function SettingsPage() {
       </Card>
 
       <SectionTitle>Уведомления</SectionTitle>
+      {inIframe && (
+        <Card className="mb-2 border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <div className="mb-2 font-medium text-foreground">Push не работает в превью</div>
+          <div className="mb-3 text-muted-foreground">
+            Браузер блокирует уведомления внутри встроенного окна Lovable. Откройте приложение в отдельной вкладке, чтобы включить push.
+          </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.open(window.location.href, "_blank", "noopener")}
+          >
+            Открыть в новой вкладке
+          </Button>
+        </Card>
+      )}
+      {!inIframe && permission === "denied" && (
+        <Card className="mb-2 border-destructive/30 bg-destructive/5 p-4 text-sm text-muted-foreground">
+          Уведомления заблокированы в браузере. Разрешите их в настройках сайта и обновите страницу.
+        </Card>
+      )}
       <Card className="p-4">
         <button
           type="button"
