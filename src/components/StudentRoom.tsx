@@ -151,7 +151,7 @@ export function StudentRoom({ id }: { id: string }) {
         <TabBtn active={tab === "att"} onClick={() => setTab("att")} icon={<CalendarCheck className="h-4 w-4" />} label="Посещения" />
         <TabBtn active={tab === "hw"} onClick={() => setTab("hw")} icon={<BookOpen className="h-4 w-4" />} label="ДЗ" />
         <TabBtn active={tab === "fin"} onClick={() => setTab("fin")} icon={<Wallet className="h-4 w-4" />} label="Оплаты" />
-        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<History className="h-4 w-4" />} label="История" />
+        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<HistoryIcon className="h-4 w-4" />} label="История" />
       </div>
 
       {tab === "att" && (
