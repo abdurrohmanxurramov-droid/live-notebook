@@ -1,7 +1,7 @@
 {
-  "name": "Живой Блокнот",
-  "short_name": "Блокнот",
-  "description": "Живой Блокнот — CRM для преподавателей",
+  "name": "Live Notebook",
+  "short_name": "Live Notebook",
+  "description": "Live Notebook — CRM for teachers",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
