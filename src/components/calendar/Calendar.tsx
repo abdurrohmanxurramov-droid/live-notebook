@@ -58,8 +58,16 @@ function startOfMonthGrid(d: Date) {
   return startOfWeek(first);
 }
 
-const HOURS = Array.from({ length: 15 }, (_, i) => i + 8); // 8..22
-const HOUR_PX = 56;
+// Получасовые слоты с 08:00 до 22:00 включительно
+const SLOTS: { h: number; m: number }[] = (() => {
+  const out: { h: number; m: number }[] = [];
+  for (let h = 8; h <= 22; h++) { out.push({ h, m: 0 }); if (h < 22) out.push({ h, m: 30 }); }
+  return out;
+})();
+const SLOT_PX = 32;
+const HOUR_PX = SLOT_PX * 2;
+const BASE_MIN = 8 * 60;
+const slotTime = (s: { h: number; m: number }) => `${String(s.h).padStart(2,"0")}:${String(s.m).padStart(2,"0")}`;
 
 export function Calendar() {
   const [view, setView] = useState<View>("week");
