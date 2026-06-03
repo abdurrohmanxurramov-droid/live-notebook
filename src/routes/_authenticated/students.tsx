@@ -625,20 +625,32 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     }
   }, ["students", "schedule", "finance"]);
 
-  const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => (
-    <button
-      type="button"
-      onClick={() => setPattern(value)}
-      className={`flex-1 rounded-2xl border p-3 text-left transition-all ${
-        pattern === value
-          ? "border-accent bg-accent/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]"
-          : "border-white/60 bg-white/40 dark:bg-white/5 dark:border-white/10"
-      } backdrop-blur-md`}
-    >
-      <div className="text-sm font-semibold text-foreground">{label}</div>
-      <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>
-    </button>
-  );
+  const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => {
+    const active = pattern === value;
+    return (
+      <button
+        type="button"
+        onClick={() => setPattern(value)}
+        className={`group relative flex-1 overflow-hidden rounded-2xl border p-3 text-left backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-0.5 active:scale-[0.97] ${
+          active
+            ? "border-accent/60 bg-accent/15 shadow-[0_12px_28px_-12px_color-mix(in_oklab,var(--accent)_50%,transparent),inset_0_1px_0_0_rgba(255,255,255,0.6)] ring-1 ring-accent/30"
+            : "border-white/60 bg-white/55 hover:bg-white/80 dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 shadow-[0_8px_22px_-14px_rgba(20,33,61,0.25)]"
+        }`}
+      >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/45 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100 dark:via-white/10"
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/40 via-white/0 to-white/0 opacity-70"
+        />
+        <div className="relative text-sm font-semibold text-foreground">{label}</div>
+        <div className="relative mt-0.5 text-[11px] text-muted-foreground">{hint}</div>
+      </button>
+    );
+  };
+
 
   return (
     <Sheet open={!!student} onClose={onClose} title="Редактировать ученика">
