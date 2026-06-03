@@ -272,3 +272,128 @@ function pluralDays(n: number) {
   if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "дня / нед";
   return "дней / нед";
 }
+
+function PaymentsWidget() {
+  const { data: students = [] } = useStudents();
+  const { data: finance = [] } = useFinance();
+  const studentsById = useMemo(() => {
+    const m = new Map<string, (typeof students)[number]>();
+    students.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [students]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const in7 = new Date();
+  in7.setDate(in7.getDate() + 7);
+  const in7iso = in7.toISOString().slice(0, 10);
+
+  const overdueRows = useMemo(() => {
+    const map = new Map<string, { amount: number; currency: string; days: number; firstId: string }>();
+    for (const f of finance) {
+      if (f.is_paid || !f.pay_date || f.pay_date >= today) continue;
+      const days = Math.floor((Date.parse(today) - Date.parse(f.pay_date)) / 86400000);
+      const cur = map.get(f.student_id);
+      if (cur) {
+        cur.amount += Number(f.amount);
+        cur.days = Math.max(cur.days, days);
+      } else {
+        map.set(f.student_id, { amount: Number(f.amount), currency: f.currency, days, firstId: f.id });
+      }
+    }
+    return Array.from(map.entries())
+      .map(([sid, v]) => ({ studentId: sid, ...v }))
+      .sort((a, b) => b.days - a.days);
+  }, [finance, today]);
+
+  const upcomingRows = useMemo(() => {
+    return finance
+      .filter((f) => !f.is_paid && f.pay_date && f.pay_date >= today && f.pay_date <= in7iso)
+      .sort((a, b) => (a.pay_date ?? "").localeCompare(b.pay_date ?? ""));
+  }, [finance, today, in7iso]);
+
+  const totalUnpaid = overdueRows.reduce((acc, r) => acc + r.amount, 0);
+
+  const markPaid = useMut(async (id: string) => {
+    const { error } = await (await sb()).from("finance").update({ is_paid: true }).eq("id", id);
+    if (error) throw error;
+  }, ["finance"]);
+
+  if (overdueRows.length === 0 && upcomingRows.length === 0) return null;
+
+  return (
+    <>
+      <SectionTitle action={<Link to="/finance" className="text-xs font-medium text-accent">Все →</Link>}>
+        Платежи
+      </SectionTitle>
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Просрочено всего</div>
+            <div className="mt-1 num text-2xl text-destructive">
+              {overdueRows.length === 0 ? "—" : formatMoney(totalUnpaid, overdueRows[0]?.currency ?? "RUB")}
+            </div>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+            <AlertCircle className="h-5 w-5" />
+          </div>
+        </div>
+
+        {overdueRows.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {overdueRows.slice(0, 5).map((r) => {
+              const st = studentsById.get(r.studentId);
+              if (!st) return null;
+              return (
+                <div key={r.studentId} className="flex items-center gap-2 rounded-xl bg-destructive/5 p-2.5">
+                  <Avatar initials={initials(st.name)} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-semibold text-foreground">{st.name}</div>
+                    <div className="text-[11px] text-destructive">
+                      {formatMoney(r.amount, r.currency)} · {r.days} дн просрочки
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      markPaid.mutate(r.firstId, {
+                        onSuccess: () => toast.success("Платёж отмечен"),
+                        onError: (e: any) => toast.error(e?.message ?? "Ошибка"),
+                      });
+                    }}
+                    disabled={markPaid.isPending}
+                    className="h-8 px-2 text-xs"
+                  >
+                    <Check className="h-3.5 w-3.5" /> Оплачен
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {upcomingRows.length > 0 && (
+          <div className="mt-3">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Ближайшие 7 дней</div>
+            <div className="mt-2 space-y-1.5">
+              {upcomingRows.slice(0, 5).map((f) => {
+                const st = studentsById.get(f.student_id);
+                if (!st) return null;
+                return (
+                  <div key={f.id} className="flex items-center justify-between rounded-xl bg-secondary px-3 py-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate text-[13px] text-foreground">{st.name}</span>
+                    </div>
+                    <div className="num text-[12px] text-foreground shrink-0">
+                      {formatMoney(Number(f.amount), f.currency)} · {f.pay_date?.slice(5)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </Card>
+    </>
+  );
+}
