@@ -76,12 +76,27 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
   );
 }
 
-export function Empty({ icon, title, hint }: { icon: ReactNode; title: string; hint?: string }) {
+export function Empty({ icon, title, hint, action }: { icon: ReactNode; title: string; hint?: string; action?: ReactNode }) {
   return (
     <Card className="flex flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-3 text-muted-foreground">{icon}</div>
       <p className="text-sm font-medium text-foreground">{title}</p>
       {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {action && <div className="mt-4">{action}</div>}
     </Card>
+  );
+}
+
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-xl bg-secondary/60 ${className}`} />;
+}
+
+export function ListSkeleton({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={i} className="h-20 w-full" />
+      ))}
+    </div>
   );
 }
