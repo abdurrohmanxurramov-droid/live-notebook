@@ -407,3 +407,176 @@ function PaymentsWidget() {
     </>
   );
 }
+
+function useDashData() {
+  const { data: students = [] } = useStudents();
+  const { data: finance = [] } = useFinance();
+  const { data: schedule = [] } = useSchedule();
+  const { data: attendance = [] } = useAttendance();
+  const { data: homework = [] } = useHomework();
+  const getSettingsFn = useServerFn(getSettings);
+  const { data: settings } = useQuery({ queryKey: ["user_settings"], queryFn: () => getSettingsFn({}) });
+  return { students, finance, schedule, attendance, homework, settings };
+}
+
+function todayDowMon0() { return (new Date().getDay() + 6) % 7; }
+
+function TodayOverview() {
+  const { students, finance, schedule, homework, settings } = useDashData();
+  const todayDow = todayDowMon0();
+  const today = new Date().toISOString().slice(0, 10);
+  const todayLessons = useMemo(
+    () => schedule.filter((s) => s.day_of_week === todayDow).sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    [schedule, todayDow]
+  );
+  const price = Number(settings?.default_lesson_price ?? 0);
+  const currency = settings?.default_currency ?? "RUB";
+  const expectedToday = todayLessons.length * price;
+  const studentsUnpaid = useMemo(() => {
+    const ids = new Set<string>();
+    for (const f of finance) if (!f.is_paid) ids.add(f.student_id);
+    return ids.size;
+  }, [finance]);
+  const hwWaiting = useMemo(() => homework.filter((h) => h.status === "assigned").length, [homework]);
+  void students;
+
+  const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
+
+  return (
+    <>
+      <SectionTitle>Сегодня</SectionTitle>
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="p-4">
+          <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
+          <div className="mt-3 num text-2xl text-foreground">
+            <CountUp value={todayLessons.length} />
+          </div>
+          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков сегодня</div>
+          {timesLine && <div className="mt-1 truncate text-[11px] num text-muted-foreground">{timesLine}</div>}
+        </Card>
+        <Card className="p-4">
+          <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
+          <div className="mt-3 num text-2xl text-foreground">
+            <CountUp value={expectedToday} format={(n) => formatMoney(n, currency)} />
+          </div>
+          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидаемый доход</div>
+        </Card>
+        <Card className="p-4">
+          <AlertTriangle className="h-5 w-5 text-destructive" strokeWidth={2.2} />
+          <div className="mt-3 num text-2xl text-foreground">
+            <CountUp value={studentsUnpaid} />
+          </div>
+          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">С неоплаченным</div>
+        </Card>
+        <Card className="p-4">
+          <BookOpen className="h-5 w-5 text-accent" strokeWidth={2.2} />
+          <div className="mt-3 num text-2xl text-foreground">
+            <CountUp value={hwWaiting} />
+          </div>
+          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">ДЗ на проверку</div>
+        </Card>
+      </div>
+      {void today}
+    </>
+  );
+}
+
+function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
+  const { students, schedule } = useDashData();
+  const studentsById = useMemo(() => {
+    const m = new Map<string, (typeof students)[number]>();
+    students.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [students]);
+  const next = useMemo(() => {
+    const now = new Date();
+    const dow = todayDowMon0();
+    const hm = now.toTimeString().slice(0, 5);
+    const todayUpcoming = schedule
+      .filter((s) => s.day_of_week === dow && s.start_time.slice(0, 5) >= hm)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    if (todayUpcoming[0]) return { slot: todayUpcoming[0], when: "Сегодня" };
+    for (let i = 1; i <= 7; i++) {
+      const d = (dow + i) % 7;
+      const list = schedule.filter((s) => s.day_of_week === d).sort((a, b) => a.start_time.localeCompare(b.start_time));
+      if (list[0]) {
+        const dateName = new Date(Date.now() + i * 86400000).toLocaleDateString("ru-RU", { weekday: "long" });
+        return { slot: list[0], when: i === 1 ? "Завтра" : dateName };
+      }
+    }
+    return null;
+  }, [schedule]);
+
+  if (!next) return null;
+  const st = studentsById.get(next.slot.student_id);
+  if (!st) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(st.id)}
+      className="mt-3 block w-full text-left"
+    >
+      <Card className="flex items-center gap-3 p-4 transition-colors active:bg-secondary">
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
+          <PlayCircle className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Продолжить — {next.when}</div>
+          <div className="name-italic truncate text-[15px] font-semibold text-foreground">{st.name}</div>
+          <div className="text-[11px] text-muted-foreground num">
+            {next.slot.start_time.slice(0, 5)} · {next.slot.duration_min} мин · {st.subject || "Урок"}
+          </div>
+        </div>
+      </Card>
+    </button>
+  );
+}
+
+function WeekSummary() {
+  const { schedule, finance, attendance, settings } = useDashData();
+  const now = new Date();
+  const dow = todayDowMon0();
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(monday.getDate() - dow);
+  const sunday = new Date(monday);
+  sunday.setDate(sunday.getDate() + 6);
+  const mondayIso = monday.toISOString().slice(0, 10);
+  const sundayIso = sunday.toISOString().slice(0, 10);
+
+  const weekLessons = schedule.length;
+  const price = Number(settings?.default_lesson_price ?? 0);
+  const currency = settings?.default_currency ?? "RUB";
+  const expectedWeek = weekLessons * price;
+
+  const rate = useMemo(() => {
+    const weekAtt = attendance.filter((a) => a.date >= mondayIso && a.date <= sundayIso);
+    const counted = weekAtt.filter((a) => a.status === "present" || a.status === "absent");
+    if (counted.length === 0) return 0;
+    return Math.round((counted.filter((a) => a.status === "present").length / counted.length) * 100);
+  }, [attendance, mondayIso, sundayIso]);
+  void finance;
+
+  return (
+    <>
+      <SectionTitle>Эта неделя</SectionTitle>
+      <div className="grid grid-cols-3 gap-3">
+        <Card className="p-4">
+          <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
+          <div className="mt-3 num text-2xl text-foreground"><CountUp value={weekLessons} /></div>
+          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков</div>
+        </Card>
+        <Card className="p-4">
+          <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
+          <div className="mt-3 num text-2xl text-foreground"><CountUp value={expectedWeek} format={(n) => formatMoney(n, currency)} /></div>
+          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидается</div>
+        </Card>
+        <Card className="p-4">
+          <TrendingUp className="h-5 w-5 text-accent" strokeWidth={2.2} />
+          <div className="mt-3 num text-2xl text-foreground"><CountUp value={rate} format={(n) => `${n}%`} /></div>
+          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Посещаемость</div>
+        </Card>
+      </div>
+    </>
+  );
+}
