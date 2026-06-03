@@ -152,7 +152,7 @@ function HomeworkCard({ h, studentName }: { h: Homework; studentName: string }) 
   }, ["homework"]);
 
   const del = useMut(async () => {
-    const { error } = await (await sb()).from("homework").delete().eq("id", h.id);
+    const { error } = await (await sb()).from("homework").update({ deleted_at: new Date().toISOString() }).eq("id", h.id);
     if (error) throw error;
   }, ["homework"]);
 

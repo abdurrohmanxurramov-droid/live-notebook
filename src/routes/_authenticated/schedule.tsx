@@ -54,7 +54,7 @@ function SchedulePage() {
   const todayDow = jsDayToMon(new Date().getDay());
 
   const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("schedule_slots").delete().eq("id", id);
+    const { error } = await (await sb()).from("schedule_slots").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) throw error;
   }, ["schedule"]);
 

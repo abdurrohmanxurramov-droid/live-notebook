@@ -185,7 +185,7 @@ function AttendanceTab({
   }, ["attendance", "finance"]);
 
   const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("attendance").delete().eq("id", id);
+    const { error } = await (await sb()).from("attendance").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) throw error;
   }, ["attendance"]);
 
@@ -295,7 +295,7 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
   }, ["homework"]);
 
   const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("homework").delete().eq("id", id);
+    const { error } = await (await sb()).from("homework").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) throw error;
   }, ["homework"]);
 
@@ -419,7 +419,7 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: any[] }) {
   }, ["finance"]);
 
   const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("finance").delete().eq("id", id);
+    const { error } = await (await sb()).from("finance").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) throw error;
   }, ["finance"]);
 
