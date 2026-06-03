@@ -3,7 +3,7 @@ import { savePushSubscription, removePushSubscription } from "./push.functions";
 
 // VAPID public key (safe to expose; private key lives in server secret)
 export const VAPID_PUBLIC_KEY =
-  "BMsPV2ojnxOy0BNfmip6b0_ZBBsO4BAlZFBjcRaAMS65s-LAlImbacmmuNspD1I3tgfieXXzw4LCBX0EPGUfuwg";
+  "BOqs7lcS-CLcidBplomA3VRNHkpNkizYWKb3OCipTVfT-01tD8mCH_5JZXVuf1EVmDI50n3wAsfeUja-_Z1aQa4";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
