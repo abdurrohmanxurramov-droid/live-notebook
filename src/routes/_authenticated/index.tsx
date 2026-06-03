@@ -424,7 +424,6 @@ function todayDowMon0() { return (new Date().getDay() + 6) % 7; }
 function TodayOverview() {
   const { students, finance, schedule, homework, settings } = useDashData();
   const todayDow = todayDowMon0();
-  const today = new Date().toISOString().slice(0, 10);
   const todayLessons = useMemo(
     () => schedule.filter((s) => s.day_of_week === todayDow).sort((a, b) => a.start_time.localeCompare(b.start_time)),
     [schedule, todayDow]
