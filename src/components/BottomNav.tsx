@@ -42,6 +42,23 @@ export function BottomNav() {
     ? "__more__"
     : (mainTabs.find((t) => t.to === pathname)?.to as Key) ?? "/";
 
+  // Overdue indicator for Finance tab
+  const { data: overdueCount = 0 } = useQuery({
+    queryKey: ["finance", "overdue-count"],
+    queryFn: async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { count, error } = await (await sb())
+        .from("finance")
+        .select("id", { count: "exact", head: true })
+        .eq("is_paid", false)
+        .is("deleted_at", null)
+        .lt("pay_date", today);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 60_000,
+  });
+
   const listRef = useRef<HTMLUListElement>(null);
   const itemRefs = useRef<Map<Key, HTMLLIElement>>(new Map());
   const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
