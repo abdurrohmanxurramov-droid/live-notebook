@@ -99,7 +99,7 @@ export function BottomNav() {
 
   return (
     <>
-      <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3 safe-bottom pointer-events-none">
+      <div className="fixed inset-x-0 bottom-0 z-40 px-3 [--safe-bottom-offset:0.75rem] safe-bottom pointer-events-none">
         <nav className="glass-strong pointer-events-auto mx-auto max-w-2xl rounded-[28px]">
           <ul ref={listRef} className="relative flex items-stretch px-1.5 py-1">
             {indicator && (

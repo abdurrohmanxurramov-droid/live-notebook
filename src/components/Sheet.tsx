@@ -43,7 +43,7 @@ export function Sheet({
         }`}
       />
       <div
-        className={`glass-strong relative z-10 w-full max-w-md rounded-t-[28px] p-5 sm:rounded-[28px] safe-bottom
+        className={`glass-strong relative z-10 w-full max-w-md rounded-t-[28px] p-5 sm:rounded-[28px] [--safe-bottom-offset:1.25rem] safe-bottom
           transition-all duration-[460ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform
           ${visible ? "translate-y-0 scale-100 opacity-100" : "translate-y-8 scale-[0.985] opacity-0"}`}
       >
