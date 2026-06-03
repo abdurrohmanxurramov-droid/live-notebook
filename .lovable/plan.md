@@ -1,57 +1,95 @@
-## Что добавим
 
-### 1. CSV-экспорт (5 отдельных файлов)
-- В `src/lib/backup.functions.ts` добавить новую серверную функцию `exportCsv`, возвращающую `{ students, finance, attendance, homework, lessons }` — массивы CSV-строк (UTF-8 + BOM, разделитель `,`, экранирование кавычек). Существующий JSON-экспорт не трогаем.
-- В `src/components/settings/BackupSection.tsx` добавить кнопку «Экспорт в CSV» рядом с JSON. По клику — вызвать `exportCsv`, упаковать каждый файл `students.csv / finance.csv / attendance.csv / homework.csv / lessons.csv` в zip через крошечную ручную реализацию zip (uncompressed STORE) либо просто скачивать 5 файлов подряд через `<a download>`. Выбираем второй вариант — без новых зависимостей.
+## Goal
 
-### 2. Фильтры и сортировка учеников (`src/routes/_authenticated/students.tsx`)
-Над списком (под поиском) — компактная панель `Card` с контролами:
-- **Поиск по имени** — уже есть, оставляем.
-- **Предмет** — `Select` со списком уникальных `subject` из `students` + «Все».
-- **Долг** — кнопки-чипы: «Все / Должники / Оплачено / Без платежей» (используем уже считающийся `hasUnpaid` + `fin.length`).
-- **Скоро урок** — чип «Урок в ближайшие 7 дней» (фильтр по таблице `lessons`, `status='planned'`, `scheduled_date` в диапазоне). Подтягиваем уроки через существующий хук (`useLessons`) или быстрый локальный запрос в `db.ts`.
-- **Активные / архив** — чипы «Активные / Архив». «Архив» = `deleted_at IS NOT NULL`. Сейчас `useStudents` отдаёт только активных — расширим: добавим параметр `includeArchived` либо отдельный хук `useStudentsAll`, и для «Архив» показываем удалённых (с пометкой). По умолчанию — «Активные».
-- **Сортировка** — `Select`: По имени (А→Я / Я→А), По дате добавления (новые / старые), По дн/нед (больше / меньше).
+Add two self-contained features without touching architecture, DB schema, auth, RLS or design tokens:
 
-Состояние фильтров — локальный `useState`, никакой персистентности. UI — те же `Card / Button / Input / Select / Badge`, существующий дизайн не меняем.
+1. Advanced calendar (Day / Week / Month) on the existing `/schedule` route
+2. Floating Action Button (FAB) with quick-actions bottom sheet on mobile
 
-### 3. Раздельные напоминания
+Existing lessons schema (`lessons` table + `lessons.functions.ts` with `listLessons` / `moveLesson` / `setLessonStatus`) already supports everything needed — no migrations.
 
-**Миграция:** добавить в `user_settings` три булевых колонки:
-- `remind_lessons boolean NOT NULL DEFAULT true`
-- `remind_payments boolean NOT NULL DEFAULT true`
-- `remind_homework boolean NOT NULL DEFAULT true`
+---
 
-**Бэкенд:**
-- В `src/lib/schemas.ts` — расширить `userSettingsSchema` тремя булевыми полями.
-- В `src/lib/settings.functions.ts` — добавить дефолты в `DEFAULTS`.
-- В `src/routes/api/public/hooks/lesson-reminders.ts` — перед отправкой push'а тянуть `user_settings.remind_lessons` для каждого `owner_id` (батчем `.in('user_id', ownerIds)`) и пропускать уроки тех, у кого выключено.
-- Заготовка для оплат и ДЗ: добавить параллельные хуки `payment-reminders.ts` и `homework-reminders.ts` под `/api/public/hooks/` по тому же шаблону (читают `finance` с `is_paid=false`+ближайший `pay_date`, и `homework` с `due_date=сегодня/завтра`, `status='assigned'`), уважают соответствующий флаг. Cron-расписание для них пользователь подключит позже — код будет готов.
+## 1. Advanced Calendar
 
-**UI** (`UserSettingsSection.tsx`): три переключателя `Switch` в новом блоке «Напоминания», под существующим «Напомнить за, мин». Сохраняются через тот же `updateSettings`.
+### Where
+New component `src/components/calendar/Calendar.tsx` mounted at the top of `src/routes/_authenticated/schedule.tsx` (above the existing weekly-slot UI, which stays as-is for managing recurring slots).
 
-### Что НЕ трогаем
-- Существующий JSON backup / import.
-- Дизайн, темы, шрифты, шапки, навигацию.
-- Логику auth, RLS, существующие миграции.
-- Splash, haptics, AI-ассистента.
+### View switcher
+Segmented control: **День / Неделя / Месяц**, plus prev/today/next nav and the visible date label. State stored in local `useState` (no URL params, no persistence — keeps scope tight).
 
-## Технические детали
+### Data
+- Use existing `listLessons({ from, to })` server fn via `useServerFn` + `useQuery`. Range computed per view (day: 1 day; week: Mon–Sun; month: full month grid incl. trailing/leading days).
+- Join with `useStudents()` (already cached) to render names.
+- Status colors from existing tokens: planned = accent, completed = emerald/green token, cancelled = destructive, moved = muted/gold. Use small `Badge` from `ui-bits`.
 
-**Файлы — изменения:**
-- `src/lib/backup.functions.ts` — `+exportCsv` server fn.
-- `src/components/settings/BackupSection.tsx` — кнопка CSV.
-- `src/components/settings/UserSettingsSection.tsx` — блок «Напоминания» (3 Switch).
-- `src/routes/_authenticated/students.tsx` — панель фильтров + сортировка, расширенный `filtered`.
-- `src/lib/db.ts` — добавить `useStudentsAll()` (включая `deleted_at`).
-- `src/lib/schemas.ts` — `+remind_lessons/payments/homework` в `userSettingsSchema`.
-- `src/lib/settings.functions.ts` — дефолты.
-- `src/routes/api/public/hooks/lesson-reminders.ts` — фильтрация по `remind_lessons`.
+### Views
+- **Day**: vertical hour timeline 8:00–22:00, lessons positioned by `scheduled_time` + `duration_min` (absolute positioning inside an hour-row column).
+- **Week**: 7 columns × hour rows, same lesson block component as Day.
+- **Month**: 6×7 grid; each cell shows date + up to 3 lesson chips (`HH:MM Имя`) and "+N ещё" overflow that opens a Sheet listing that day's lessons.
 
-**Файлы — новые:**
-- `src/routes/api/public/hooks/payment-reminders.ts`
-- `src/routes/api/public/hooks/homework-reminders.ts`
+Each lesson chip/block shows: student name, `HH:MM`, status Badge.
 
-**Миграция:** одна, аддитивная — `ALTER TABLE user_settings ADD COLUMN remind_lessons/payments/homework boolean NOT NULL DEFAULT true`. Данные не теряются, существующие пользователи получают `true` по умолчанию. Откат: `DROP COLUMN` (не нужен, изменение безопасное).
+### Drag & drop reschedule
+- Use HTML5 native DnD (no new deps; keeps bundle small). Lesson block is `draggable`; hour-slot cells are drop targets.
+- On drop → call existing `moveLesson({ id, new_date, new_time })` then `invalidateQueries(['lessons', ...])`.
+- Day/Week support DnD between time slots; Month supports DnD between days (time preserved). Touch fallback: long-press opens a "Перенести" action that shows date/time pickers (reuses existing UI).
 
-**CSV-формат:** UTF-8 с BOM (`\uFEFF`), заголовки — реальные имена колонок БД, даты — ISO, числа — точкой. Это открывается в Excel/Google Sheets «из коробки».
+### Quick create on empty slot
+- Clicking an empty hour cell (Day/Week) or empty day cell (Month) opens a Sheet with: student `Select`, date (prefilled), time (prefilled), duration (from `user_settings.default_lesson_duration`). Submits via direct `supabase.from('lessons').insert({...})` with `owner_id` from session (matches existing pattern in `useMut`).
+
+### Lesson click
+- Click on existing lesson → small Sheet with status actions (planned/completed/cancelled) calling `setLessonStatus`, plus a "Перенести" button (opens move dialog) and "Удалить" calling `deleteLesson`.
+
+---
+
+## 2. Quick Actions FAB
+
+### Where
+New component `src/components/QuickActionsFab.tsx`, mounted once in `src/routes/_authenticated/route.tsx` (the authenticated layout) so it appears on every authenticated page.
+
+### Visibility
+Mobile only: `md:hidden`. Positioned `fixed bottom-24 right-4 z-50` (above BottomNav). Circular 56px button with `+` icon, accent background, large tap target for one-handed use.
+
+### Action sheet
+Tapping FAB opens existing `<Sheet>` (bottom sheet) titled "Быстрые действия" with 5 large rows:
+1. **Добавить ученика** → navigate `/students` and trigger its "Add" sheet via a `?new=1` query param read by the page.
+2. **Добавить платёж** → `/finance?new=1`
+3. **Отметить посещаемость** → `/attendance` (today preselected)
+4. **Добавить ДЗ** → `/homework?new=1`
+5. **Запланировать урок** → opens the same quick-create lesson sheet from the calendar (extracted to a shared hook/component so both entry points reuse it)
+
+Each row: 44px icon tile + bold label + short hint (matches the existing "Ещё" sheet style).
+
+### One-handed optimization
+- FAB on the right (default thumb zone); sheet rows are tall (≥64px) and sorted by frequency (student/payment first).
+- Sheet auto-closes on action.
+
+---
+
+## Files
+
+**New**
+- `src/components/calendar/Calendar.tsx` — view switcher + view router
+- `src/components/calendar/DayView.tsx`
+- `src/components/calendar/WeekView.tsx`
+- `src/components/calendar/MonthView.tsx`
+- `src/components/calendar/LessonBlock.tsx` — draggable lesson card
+- `src/components/calendar/QuickCreateLessonSheet.tsx` — reused by calendar + FAB
+- `src/components/QuickActionsFab.tsx`
+
+**Edited (small)**
+- `src/routes/_authenticated/schedule.tsx` — mount `<Calendar />` at top; keep slots UI below
+- `src/routes/_authenticated/route.tsx` — render `<QuickActionsFab />`
+- `src/routes/_authenticated/students.tsx`, `finance.tsx`, `homework.tsx` — read `?new=1` to auto-open existing add sheets (one `useEffect` each, ~5 lines)
+
+**No changes**: DB schema, RLS, auth, server fns (reuses `listLessons`, `moveLesson`, `setLessonStatus`, `deleteLesson`), design tokens, `BottomNav`, existing recurring-slots UI.
+
+---
+
+## Out of scope (explicit)
+
+- No recurring-event editing from calendar (slots UI already covers it).
+- No timezone work (uses existing local-date convention).
+- No desktop FAB (mobile only, as requested).
+- No new npm packages (native DnD, existing Sheet/Badge/Select).
