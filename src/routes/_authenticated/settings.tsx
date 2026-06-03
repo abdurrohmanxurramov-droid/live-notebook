@@ -18,6 +18,8 @@ function SettingsPage() {
   const [dark, setDark] = useState(false);
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [inIframe, setInIframe] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission | "unknown">("unknown");
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const testFn = useServerFn(sendTestPush);
