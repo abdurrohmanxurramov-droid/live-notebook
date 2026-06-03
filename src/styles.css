@@ -427,6 +427,18 @@
   .print-area .page-break { page-break-after: always; }
 }
 
+/* Hide scrollbars but keep scroll/drag functionality (for calendar etc.) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.drag-scroll { cursor: grab; }
+.drag-scroll:active { cursor: grabbing; }
+
+
 /* Remove native select dropdown arrows app-wide; tap still opens picker.
    Replaced with a soft custom chevron for affordance. */
 @layer base {
