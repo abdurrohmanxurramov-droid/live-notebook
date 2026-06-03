@@ -132,6 +132,7 @@ export function Calendar() {
   };
 
   return (
+    <>
     <Card className="mt-4 p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
@@ -139,12 +140,10 @@ export function Calendar() {
           <button onClick={() => setCursor(new Date(new Date().setHours(0,0,0,0)))} className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Сегодня</button>
           <button onClick={() => step(1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Вперёд"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <ViewSwitch view={view} setView={setView} />
+        <div className="text-xs capitalize text-muted-foreground">{label}</div>
       </div>
 
-      <div className="mt-2 px-1 text-xs capitalize text-muted-foreground">{label}</div>
-
-      <div className="mt-3">
+      <div className="mt-3 pb-2">
         {isLoading ? (
           <div className="h-40 animate-pulse rounded-xl bg-secondary/60" />
         ) : view === "day" ? (
@@ -155,6 +154,7 @@ export function Calendar() {
           <MonthView start={startOfMonthGrid(cursor)} cursor={cursor} lessons={lessons} studentName={studentName} onDrop={handleDrop} onSlot={(d) => setCreateSlot({ date: d, time: "10:00" })} onMore={setMoreDay} onLesson={setActive} />
         )}
       </div>
+
 
       <QuickCreateLessonSheet
         open={!!createSlot}
