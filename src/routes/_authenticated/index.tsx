@@ -213,6 +213,7 @@ function Home() {
             );
           })}
         </div>
+        </>
       )}
 
       {openId && (
