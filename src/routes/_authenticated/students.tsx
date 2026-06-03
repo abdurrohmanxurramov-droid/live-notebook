@@ -4,11 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
-import { useStudents, useFinance, useMut, initials, type Student } from "@/lib/db";
+import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, type Student, type StudentStatus } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil } from "lucide-react";
+import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil, AlertCircle } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/students")({ component: StudentsPage });
