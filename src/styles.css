@@ -198,6 +198,51 @@
   .dark .glass-strong::before {
     background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0) 45%, rgba(255,255,255,0) 55%, rgba(255,255,255,0.08));
   }
+
+  .liquid-pill {
+    background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.45));
+    backdrop-filter: blur(18px) saturate(180%);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255,255,255,0.9),
+      inset 0 -1px 0 0 rgba(255,255,255,0.25),
+      0 8px 24px -10px color-mix(in oklab, var(--accent) 40%, transparent),
+      0 2px 6px -2px rgba(20,33,61,0.18);
+    border: 1px solid rgba(255,255,255,0.55);
+    animation: liquid-breathe 4.5s ease-in-out infinite;
+    will-change: transform, width;
+  }
+  .liquid-pill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%);
+    transform: translateX(-100%);
+    animation: liquid-shimmer 3.2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .dark .liquid-pill {
+    background: linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+    border-color: rgba(255,255,255,0.18);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255,255,255,0.22),
+      inset 0 -1px 0 0 rgba(255,255,255,0.06),
+      0 10px 28px -10px color-mix(in oklab, var(--accent) 50%, transparent);
+  }
+  .dark .liquid-pill::after {
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+  }
+}
+
+@keyframes liquid-breathe {
+  0%, 100% { filter: saturate(1) brightness(1); }
+  50%      { filter: saturate(1.15) brightness(1.05); }
+}
+
+@keyframes liquid-shimmer {
+  0%   { transform: translateX(-110%); }
+  60%  { transform: translateX(110%); }
+  100% { transform: translateX(110%); }
 }
 
 @keyframes glass-in {
@@ -220,6 +265,6 @@
 .animate-glass-pop { animation: glass-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .glass, .glass-strong, body { animation: none !important; }
+  .glass, .glass-strong, body, .liquid-pill, .liquid-pill::after { animation: none !important; }
   .glass::after { display: none; }
 }

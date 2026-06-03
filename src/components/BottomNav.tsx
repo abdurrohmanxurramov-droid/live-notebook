@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   Home,
   GraduationCap,
@@ -29,35 +29,87 @@ const moreTabs = [
   { to: "/settings", label: "Настройки", icon: Settings, hint: "Тема, push, курсы" },
 ] as const;
 
+const allKeys = [...mainTabs.map((t) => t.to), "__more__"] as const;
+type Key = (typeof allKeys)[number];
+
 export function BottomNav() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const moreActive = moreTabs.some((t) => t.to === pathname);
+  const activeKey: Key = moreActive
+    ? "__more__"
+    : (mainTabs.find((t) => t.to === pathname)?.to as Key) ?? "/";
+
+  const listRef = useRef<HTMLUListElement>(null);
+  const itemRefs = useRef<Map<Key, HTMLLIElement>>(new Map());
+  const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const el = itemRefs.current.get(activeKey);
+    if (!list || !el) return;
+    const listRect = list.getBoundingClientRect();
+    const rect = el.getBoundingClientRect();
+    setIndicator({ x: rect.left - listRect.left, w: rect.width });
+    const t = setTimeout(() => setReady(true), 30);
+    return () => clearTimeout(t);
+  }, [activeKey]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const list = listRef.current;
+      const el = itemRefs.current.get(activeKey);
+      if (!list || !el) return;
+      const listRect = list.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      setIndicator({ x: rect.left - listRect.left, w: rect.width });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [activeKey]);
+
+  const setRef = (key: Key) => (node: HTMLLIElement | null) => {
+    if (node) itemRefs.current.set(key, node);
+    else itemRefs.current.delete(key);
+  };
 
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3 safe-bottom pointer-events-none">
         <nav className="glass-strong pointer-events-auto mx-auto max-w-2xl rounded-[28px]">
-          <ul className="flex items-stretch justify-between px-1.5 py-1">
+          <ul ref={listRef} className="relative flex items-stretch justify-between px-1.5 py-1">
+            {indicator && (
+              <span
+                aria-hidden
+                className="liquid-pill pointer-events-none absolute top-1 bottom-1 rounded-2xl"
+                style={{
+                  transform: `translateX(${indicator.x}px)`,
+                  width: indicator.w,
+                  transition: ready
+                    ? "transform 520ms cubic-bezier(0.34, 1.3, 0.4, 1), width 520ms cubic-bezier(0.34, 1.3, 0.4, 1)"
+                    : "none",
+                }}
+              />
+            )}
+
             {mainTabs.map((t) => {
               const active = pathname === t.to;
               const Icon = t.icon;
               return (
-                <li key={t.to} className="flex-1">
+                <li key={t.to} ref={setRef(t.to as Key)} className="relative z-10 flex-1">
                   <Link
                     to={t.to}
-                    className={`relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-2xl transition-all ${
-                      active ? "bg-white/50 dark:bg-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]" : ""
-                    }`}
+                    className="relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-2xl"
                   >
                     <Icon
-                      className={`h-[18px] w-[18px] transition-colors ${
-                        active ? "text-accent" : "text-muted-foreground"
+                      className={`h-[18px] w-[18px] transition-all duration-500 ${
+                        active ? "text-accent scale-110" : "text-muted-foreground scale-100"
                       }`}
                       strokeWidth={active ? 2.4 : 1.8}
                     />
                     <span
-                      className={`text-[10px] font-medium tracking-wide transition-colors ${
+                      className={`text-[10px] font-medium tracking-wide transition-colors duration-500 ${
                         active ? "text-foreground" : "text-muted-foreground"
                       }`}
                     >
@@ -67,20 +119,20 @@ export function BottomNav() {
                 </li>
               );
             })}
-            <li className="flex-1">
+            <li ref={setRef("__more__")} className="relative z-10 flex-1">
               <button
                 type="button"
                 onClick={() => setOpen(true)}
-                className={`relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl transition-all ${
-                  moreActive ? "bg-white/50 dark:bg-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6)]" : ""
-                }`}
+                className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
               >
                 <MoreHorizontal
-                  className={`h-[18px] w-[18px] transition-colors ${moreActive ? "text-accent" : "text-muted-foreground"}`}
+                  className={`h-[18px] w-[18px] transition-all duration-500 ${
+                    moreActive ? "text-accent scale-110" : "text-muted-foreground scale-100"
+                  }`}
                   strokeWidth={moreActive ? 2.4 : 1.8}
                 />
                 <span
-                  className={`text-[10px] font-medium tracking-wide transition-colors ${
+                  className={`text-[10px] font-medium tracking-wide transition-colors duration-500 ${
                     moreActive ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
