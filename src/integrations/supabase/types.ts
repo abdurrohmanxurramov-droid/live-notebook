@@ -151,38 +151,59 @@ export type Database = {
           },
         ]
       }
-      lessons_conducted: {
+      lessons: {
         Row: {
           created_at: string
+          duration_min: number
           id: string
-          lessons_done: number
+          moved_from_id: string | null
+          notes: string | null
           owner_id: string
+          scheduled_date: string
+          scheduled_time: string
+          source_slot_id: string | null
+          status: Database["public"]["Enums"]["lesson_status"]
           student_id: string
+          updated_at: string
         }
         Insert: {
           created_at?: string
+          duration_min?: number
           id?: string
-          lessons_done?: number
+          moved_from_id?: string | null
+          notes?: string | null
           owner_id: string
+          scheduled_date: string
+          scheduled_time: string
+          source_slot_id?: string | null
+          status?: Database["public"]["Enums"]["lesson_status"]
           student_id: string
+          updated_at?: string
         }
         Update: {
           created_at?: string
+          duration_min?: number
           id?: string
-          lessons_done?: number
+          moved_from_id?: string | null
+          notes?: string | null
           owner_id?: string
+          scheduled_date?: string
+          scheduled_time?: string
+          source_slot_id?: string | null
+          status?: Database["public"]["Enums"]["lesson_status"]
           student_id?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "lessons_conducted_student_fk"
-            columns: ["student_id"]
+            foreignKeyName: "lessons_moved_from_id_fkey"
+            columns: ["moved_from_id"]
             isOneToOne: false
-            referencedRelation: "students"
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lessons_conducted_student_id_fkey"
+            foreignKeyName: "lessons_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "students"
@@ -317,13 +338,28 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_lessons_conducted: {
+        Row: {
+          lessons_done: number | null
+          owner_id: string | null
+          student_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      lesson_status: "planned" | "completed" | "cancelled" | "moved"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -450,6 +486,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      lesson_status: ["planned", "completed", "cancelled", "moved"],
+    },
   },
 } as const
