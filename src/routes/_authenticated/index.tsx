@@ -97,6 +97,8 @@ function Home() {
         })}
       </div>
 
+      <PaymentsWidget />
+
       <SectionTitle>Быстрые действия</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
         <QuickAction to="/attendance" icon={<CalendarPlus className="h-5 w-5" />} label="Урок" />
@@ -106,6 +108,7 @@ function Home() {
       </div>
 
       <SectionTitle action={<Link to="/schedule" className="text-xs font-medium text-accent">Открыть →</Link>}>
+
         Сегодня
       </SectionTitle>
       {todayLessons.length === 0 ? (
