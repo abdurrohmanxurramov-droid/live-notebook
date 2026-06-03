@@ -1,22 +1,42 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { Send, Sparkles, Loader2 } from "lucide-react";
+import { Send, Sparkles, Loader2, Wrench, CheckCircle2, AlertCircle } from "lucide-react";
 
 import { chatWithAssistant } from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/_authenticated/assistant")({ component: AssistantPage });
 
-type Msg = { role: "user" | "assistant"; content: string };
+type Action = { tool: string; args: any; result: any; ok: boolean };
+type Msg = { role: "user" | "assistant"; content: string; actions?: Action[] };
+
+const TOOL_LABELS: Record<string, string> = {
+  list_students: "посмотрел учеников",
+  add_student: "добавил ученика",
+  update_student: "обновил ученика",
+  delete_student: "удалил ученика",
+  add_schedule_slot: "добавил слот в расписание",
+  list_schedule: "посмотрел расписание",
+  delete_schedule_slot: "удалил слот",
+  add_lesson: "добавил урок",
+  list_lessons: "посмотрел уроки",
+  update_lesson_status: "изменил статус урока",
+  add_finance: "добавил оплату",
+  list_finance: "посмотрел финансы",
+  mark_attendance: "отметил посещение",
+  add_homework: "выдал ДЗ",
+  list_homework: "посмотрел ДЗ",
+};
 
 function AssistantPage() {
   const chat = useServerFn(chatWithAssistant);
+  const qc = useQueryClient();
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
       content:
-        "Привет! Я ваш ИИ-помощник. Спросите о расписании, оплатах, прогрессе учеников — или попросите идею для урока.",
+        "Привет! Я ваш ИИ-помощник. Могу не только подсказать, но и сам делать дела: добавить ученика, поставить урок в расписание, отметить оплату, выдать ДЗ. Просто скажите что нужно.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -26,10 +46,16 @@ function AssistantPage() {
     mutationFn: async (userText: string) => {
       const next: Msg[] = [...messages, { role: "user", content: userText }];
       setMessages(next);
-      const res = await chat({ data: { messages: next } });
-      return res.reply;
+      const payload = next.map(({ role, content }) => ({ role, content }));
+      return await chat({ data: { messages: payload } });
     },
-    onSuccess: (reply) => setMessages((m) => [...m, { role: "assistant", content: reply }]),
+    onSuccess: (res) => {
+      setMessages((m) => [...m, { role: "assistant", content: res.reply, actions: res.actions }]);
+      if (res.actions?.length) {
+        // Обновим все связанные кэши
+        qc.invalidateQueries();
+      }
+    },
     onError: (e: Error) =>
       setMessages((m) => [...m, { role: "assistant", content: `⚠️ ${e.message}` }]),
   });
@@ -46,9 +72,9 @@ function AssistantPage() {
   };
 
   const suggestions = [
-    "Сколько ученикам осталось уроков?",
+    "Добавь ученика Аню, английский, 2 раза в неделю",
+    "Поставь Ане урок завтра в 18:00",
     "Кто не оплатил в этом месяце?",
-    "Идея для урока английского для подростка",
   ];
 
   return (
@@ -59,13 +85,13 @@ function AssistantPage() {
         </div>
         <div>
           <h1 className="text-base font-semibold">ИИ-помощник</h1>
-          <p className="text-xs text-muted-foreground">Знает ваших учеников и расписание</p>
+          <p className="text-xs text-muted-foreground">Может сам управлять учениками и расписанием</p>
         </div>
       </header>
 
       <div ref={scrollRef} className="flex-1 space-y-2 overflow-y-auto pb-2">
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+          <div key={i} className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}>
             <div
               className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                 m.role === "user"
@@ -75,6 +101,24 @@ function AssistantPage() {
             >
               {m.content}
             </div>
+            {m.actions && m.actions.length > 0 && (
+              <div className="mt-1 flex max-w-[85%] flex-col gap-1">
+                {m.actions.map((a, j) => (
+                  <div
+                    key={j}
+                    className="glass flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-[11px] text-muted-foreground"
+                  >
+                    {a.ok ? (
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <AlertCircle className="h-3 w-3 text-rose-500" />
+                    )}
+                    <Wrench className="h-3 w-3" />
+                    <span>{TOOL_LABELS[a.tool] ?? a.tool}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {mut.isPending && (
@@ -110,7 +154,7 @@ function AssistantPage() {
               onSend();
             }
           }}
-          placeholder="Спросите что-нибудь…"
+          placeholder="Скажите что сделать…"
           rows={1}
           className="max-h-32 min-h-[36px] flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground"
         />
