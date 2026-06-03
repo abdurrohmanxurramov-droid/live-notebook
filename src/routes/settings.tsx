@@ -72,26 +72,31 @@ function SettingsPage() {
       <p className="mt-1 text-sm text-muted-foreground">Тема, уведомления, курсы</p>
 
       <SectionTitle>Внешний вид</SectionTitle>
-      <Card className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
-            {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-          </div>
-          <div>
-            <div className="text-[15px] font-semibold text-foreground">Тёмная тема</div>
-            <div className="text-xs text-muted-foreground">Сменить оформление</div>
-          </div>
-        </div>
+      <Card>
         <button
+          type="button"
           onClick={toggle}
-          className={`relative h-7 w-12 rounded-full transition-colors ${dark ? "bg-accent" : "bg-secondary"}`}
-          aria-label="Тема"
+          aria-label="Переключить тему"
+          className="flex w-full items-center justify-between p-4 text-left"
         >
+          <span className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
+              {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[15px] font-semibold text-foreground">Тёмная тема</span>
+              <span className="text-xs text-muted-foreground">Сменить оформление</span>
+            </span>
+          </span>
           <span
-            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-              dark ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
+            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${dark ? "bg-accent" : "bg-secondary"}`}
+          >
+            <span
+              className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                dark ? "translate-x-[22px]" : "translate-x-0.5"
+              }`}
+            />
+          </span>
         </button>
       </Card>
 
