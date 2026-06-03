@@ -13,9 +13,9 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
     const { supabase } = context;
 
     const [{ data: students }, { data: slots }, { data: finance }, { data: lessons }] = await Promise.all([
-      supabase.from("students").select("id, name, subject, days_per_week"),
-      supabase.from("schedule_slots").select("student_id, day_of_week, start_time, duration_min"),
-      supabase.from("finance").select("student_id, amount, currency, is_paid, pay_date").order("created_at", { ascending: false }).limit(30),
+      supabase.from("students").select("id, name, subject, days_per_week").is("deleted_at", null),
+      supabase.from("schedule_slots").select("student_id, day_of_week, start_time, duration_min").is("deleted_at", null),
+      supabase.from("finance").select("student_id, amount, currency, is_paid, pay_date").is("deleted_at", null).order("created_at", { ascending: false }).limit(30),
       supabase.from("v_lessons_conducted").select("student_id, lessons_done"),
     ]);
 

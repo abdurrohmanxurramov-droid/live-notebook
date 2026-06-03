@@ -127,13 +127,14 @@ export const regenerateLessons = createServerFn({ method: "POST" })
 
     const [{ data: slots, error: eSlots }, { data: existing, error: eEx }, { data: attendance, error: eAtt }] =
       await Promise.all([
-        supabase.from("schedule_slots").select("id, student_id, day_of_week, start_time, duration_min"),
+        supabase.from("schedule_slots").select("id, student_id, day_of_week, start_time, duration_min").is("deleted_at", null),
         supabase
           .from("lessons")
           .select("student_id, scheduled_date, scheduled_time, status")
+          .is("deleted_at", null)
           .gte("scheduled_date", fromStr)
           .lte("scheduled_date", toStr),
-        supabase.from("attendance").select("student_id, date, status").gte("date", fromStr).lte("date", toStr),
+        supabase.from("attendance").select("student_id, date, status").is("deleted_at", null).gte("date", fromStr).lte("date", toStr),
       ]);
     if (eSlots) throw new Error(eSlots.message);
     if (eEx) throw new Error(eEx.message);
