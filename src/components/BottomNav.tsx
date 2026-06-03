@@ -78,8 +78,8 @@ export function BottomNav() {
                 aria-hidden
                 className="liquid-pill pointer-events-none absolute top-1 bottom-1 rounded-2xl"
                 style={{
-                  transform: `translateX(${indicator.x + 4}px)`,
-                  width: indicator.w - 8,
+                  transform: `translateX(${indicator.x + 10}px)`,
+                  width: Math.max(indicator.w - 20, 24),
                   transition: ready
                     ? "transform 520ms cubic-bezier(0.34, 1.3, 0.4, 1), width 520ms cubic-bezier(0.34, 1.3, 0.4, 1)"
                     : "none",
