@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           date: string
+          deleted_at: string | null
           id: string
           note: string | null
           owner_id: string
@@ -27,6 +28,7 @@ export type Database = {
         Insert: {
           created_at?: string
           date: string
+          deleted_at?: string | null
           id?: string
           note?: string | null
           owner_id: string
@@ -36,6 +38,7 @@ export type Database = {
         Update: {
           created_at?: string
           date?: string
+          deleted_at?: string | null
           id?: string
           note?: string | null
           owner_id?: string
@@ -64,6 +67,7 @@ export type Database = {
           amount: number
           created_at: string
           currency: string
+          deleted_at: string | null
           id: string
           is_paid: boolean
           owner_id: string
@@ -74,6 +78,7 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: string
+          deleted_at?: string | null
           id?: string
           is_paid?: boolean
           owner_id: string
@@ -84,6 +89,7 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: string
+          deleted_at?: string | null
           id?: string
           is_paid?: boolean
           owner_id?: string
@@ -111,6 +117,7 @@ export type Database = {
         Row: {
           assigned_date: string
           created_at: string
+          deleted_at: string | null
           due_date: string | null
           id: string
           note: string | null
@@ -122,6 +129,7 @@ export type Database = {
         Insert: {
           assigned_date?: string
           created_at?: string
+          deleted_at?: string | null
           due_date?: string | null
           id?: string
           note?: string | null
@@ -133,6 +141,7 @@ export type Database = {
         Update: {
           assigned_date?: string
           created_at?: string
+          deleted_at?: string | null
           due_date?: string | null
           id?: string
           note?: string | null
@@ -154,6 +163,7 @@ export type Database = {
       lessons: {
         Row: {
           created_at: string
+          deleted_at: string | null
           duration_min: number
           id: string
           moved_from_id: string | null
@@ -168,6 +178,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           moved_from_id?: string | null
@@ -182,6 +193,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           moved_from_id?: string | null
@@ -272,6 +284,7 @@ export type Database = {
         Row: {
           created_at: string
           day_of_week: number
+          deleted_at: string | null
           duration_min: number
           id: string
           owner_id: string
@@ -281,6 +294,7 @@ export type Database = {
         Insert: {
           created_at?: string
           day_of_week: number
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           owner_id: string
@@ -290,6 +304,7 @@ export type Database = {
         Update: {
           created_at?: string
           day_of_week?: number
+          deleted_at?: string | null
           duration_min?: number
           id?: string
           owner_id?: string
@@ -310,6 +325,7 @@ export type Database = {
         Row: {
           created_at: string
           days_per_week: number
+          deleted_at: string | null
           id: string
           name: string
           owner_id: string
@@ -319,6 +335,7 @@ export type Database = {
         Insert: {
           created_at?: string
           days_per_week?: number
+          deleted_at?: string | null
           id?: string
           name: string
           owner_id: string
@@ -328,11 +345,48 @@ export type Database = {
         Update: {
           created_at?: string
           days_per_week?: number
+          deleted_at?: string | null
           id?: string
           name?: string
           owner_id?: string
           phone?: string | null
           subject?: string | null
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string
+          default_currency: string
+          default_lesson_duration: number
+          default_lesson_price: number
+          locale: string
+          remind_before_min: number
+          updated_at: string
+          user_id: string
+          week_starts_on: number
+        }
+        Insert: {
+          created_at?: string
+          default_currency?: string
+          default_lesson_duration?: number
+          default_lesson_price?: number
+          locale?: string
+          remind_before_min?: number
+          updated_at?: string
+          user_id: string
+          week_starts_on?: number
+        }
+        Update: {
+          created_at?: string
+          default_currency?: string
+          default_lesson_duration?: number
+          default_lesson_price?: number
+          locale?: string
+          remind_before_min?: number
+          updated_at?: string
+          user_id?: string
+          week_starts_on?: number
         }
         Relationships: []
       }
