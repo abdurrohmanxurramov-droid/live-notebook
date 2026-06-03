@@ -2,78 +2,77 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { broadcast, sendPushTo, type PushPayload } from "@/lib/push.server";
 
-// Runs every minute (pg_cron). Finds schedule slots starting in ~10 minutes
-// in Europe/Moscow time and sends a Web Push to all subscribed devices.
+// Runs every minute (pg_cron). Finds lessons starting in ~10 minutes
+// in Europe/Moscow time and sends Web Push to all subscribed devices of each owner.
 async function handle() {
-  // Current moment in Europe/Moscow
   const fmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Moscow",
-    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   });
   const parts = fmt.formatToParts(new Date());
-  const wd = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
-  const hh = parts.find((p) => p.type === "hour")?.value ?? "00";
-  const mm = parts.find((p) => p.type === "minute")?.value ?? "00";
-  // Convert weekday short name to schedule's 0=Mon..6=Sun
-  const map: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
-  const dow = map[wd] ?? 0;
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const dateStr = `${get("year")}-${get("month")}-${get("day")}`;
+  const hh = get("hour");
+  const mm = get("minute");
   const nowMin = parseInt(hh, 10) * 60 + parseInt(mm, 10);
-  const targetMin = nowMin + 10; // lessons starting 10 min from now
+  const targetMin = nowMin + 10;
+  const targetHH = String(Math.floor(targetMin / 60) % 24).padStart(2, "0");
+  const targetMM = String(targetMin % 60).padStart(2, "0");
+  const targetTime = `${targetHH}:${targetMM}:00`;
 
-  // Pull today's slots; filter in JS (time math with timezone is awkward in SQL)
-  const { data: slots, error } = await supabaseAdmin
-    .from("schedule_slots")
-    .select("id, student_id, owner_id, day_of_week, start_time, duration_min");
+  // Only planned lessons at exact target time today
+  const { data: lessons, error } = await supabaseAdmin
+    .from("lessons")
+    .select("id, student_id, owner_id, scheduled_date, scheduled_time, status")
+    .eq("scheduled_date", dateStr)
+    .eq("scheduled_time", targetTime)
+    .eq("status", "planned");
   if (error) throw new Error(error.message);
 
-  const matches = (slots ?? []).filter((s) => {
-    if (s.day_of_week !== dow) return false;
-    const [shStr, smStr] = String(s.start_time).split(":");
-    const slotMin = parseInt(shStr, 10) * 60 + parseInt(smStr, 10);
-    return slotMin === targetMin;
-  });
-
-  if (matches.length === 0) {
-    return { ok: true, checked: slots?.length ?? 0, matched: 0, sent: 0 };
+  if (!lessons || lessons.length === 0) {
+    return { ok: true, matched: 0, sent: 0, dateStr, targetTime };
   }
 
-  const ids = Array.from(new Set(matches.map((m) => m.student_id)));
+  const ids = Array.from(new Set(lessons.map((l) => l.student_id)));
   const { data: students } = await supabaseAdmin
     .from("students")
     .select("id, name, subject")
     .in("id", ids);
   const byId = new Map((students ?? []).map((s) => [s.id, s]));
 
-  // Get all subscriptions, group by owner_id
+  const ownerIds = Array.from(new Set(lessons.map((l) => l.owner_id)));
   const { data: subs } = await supabaseAdmin
     .from("push_subscriptions")
-    .select("endpoint, p256dh, auth, owner_id");
-  const subsByOwner = new Map<string, typeof subs>();
+    .select("endpoint, p256dh, auth, owner_id")
+    .in("owner_id", ownerIds);
+  const subsByOwner = new Map<string, NonNullable<typeof subs>>();
   (subs ?? []).forEach((s) => {
     const arr = subsByOwner.get(s.owner_id) ?? [];
     arr.push(s);
-    subsByOwner.set(s.owner_id, arr as any);
+    subsByOwner.set(s.owner_id, arr);
   });
 
   let sent = 0;
-  for (const m of matches) {
-    const student = byId.get(m.student_id);
-    const startHH = String(m.start_time).slice(0, 5);
+  for (const l of lessons) {
+    const student = byId.get(l.student_id);
+    const startHH = String(l.scheduled_time).slice(0, 5);
     const payload: PushPayload = {
       title: `Через 10 минут — ${student?.name ?? "урок"}`,
       body: `${student?.subject ? student.subject + " · " : ""}Начало в ${startHH}`,
       url: "/schedule",
-      tag: `lesson-${m.id}-${dow}-${startHH}`,
+      tag: `lesson-${l.id}`,
     };
-    const ownerSubs = subsByOwner.get(m.owner_id) ?? [];
+    const ownerSubs = subsByOwner.get(l.owner_id) ?? [];
     const results = await Promise.all(ownerSubs.map((s) => sendPushTo(s, payload)));
     sent += results.filter((r) => r.ok).length;
   }
 
-  return { ok: true, matched: matches.length, sent };
+  return { ok: true, matched: lessons.length, sent };
 }
 
 export const Route = createFileRoute("/api/public/hooks/lesson-reminders")({
