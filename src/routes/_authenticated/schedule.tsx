@@ -181,15 +181,22 @@ function SchedulePage() {
 function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: students = [] } = useStudents();
   const [studentId, setStudentId] = useState("");
-  const [day, setDay] = useState("0");
+  const [query, setQuery] = useState("");
+  const [day, setDay] = useState(0);
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return students;
+    return students.filter((s) => s.name.toLowerCase().includes(q));
+  }, [students, query]);
 
   const add = useMut(async () => {
     if (!studentId) throw new Error("Выберите ученика");
     const { error } = await (await sb()).from("schedule_slots").insert({
       student_id: studentId,
-      day_of_week: Number(day),
+      day_of_week: day,
       start_time: `${time}:00`,
       duration_min: Math.max(15, Math.min(240, Number(duration) || 60)),
     });
@@ -205,19 +212,61 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
       ) : (
         <div className="space-y-3">
           <Field label="Ученик">
-            <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-              <option value="">— Выберите —</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </Select>
+            <Input
+              type="text"
+              inputMode="search"
+              placeholder="Поиск ученика…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-white/60 dark:border-white/10 bg-white/40 dark:bg-white/5 p-1">
+              {filtered.length === 0 ? (
+                <p className="px-3 py-2 text-xs text-muted-foreground">Никого не нашли</p>
+              ) : (
+                filtered.map((s) => {
+                  const active = studentId === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setStudentId(s.id)}
+                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                        active ? "bg-accent text-accent-foreground" : "hover:bg-secondary text-foreground"
+                      }`}
+                    >
+                      <Avatar initials={initials(s.name)} />
+                      <span className="name-italic truncate font-semibold">{s.name}</span>
+                      {s.subject && (
+                        <span className={`ml-auto text-[11px] ${active ? "opacity-80" : "text-muted-foreground"}`}>
+                          {s.subject}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </Field>
           <Field label="День недели">
-            <Select value={day} onChange={(e) => setDay(e.target.value)}>
-              {DAYS_FULL.map((d, i) => (
-                <option key={i} value={i}>{d}</option>
-              ))}
-            </Select>
+            <div className="grid grid-cols-7 gap-1.5">
+              {DAYS.map((d, i) => {
+                const active = day === i;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setDay(i)}
+                    className={`min-h-[44px] rounded-xl text-sm font-semibold transition-colors ${
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "border border-white/60 dark:border-white/10 bg-white/40 dark:bg-white/5 text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <Field label="Время">
@@ -239,7 +288,7 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
             try {
               await add.mutateAsync(undefined as never);
               toast.success("Урок добавлен");
-              setStudentId(""); setDay("0"); setTime("16:00"); setDuration("60");
+              setStudentId(""); setQuery(""); setDay(0); setTime("16:00"); setDuration("60");
               onClose();
             } catch (e: any) {
               toast.error(e?.message ?? "Ошибка");
@@ -252,6 +301,7 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
     </Sheet>
   );
 }
+
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
