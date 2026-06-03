@@ -51,7 +51,7 @@ function FinancePage() {
       {students.length === 0 ? (
         <Empty icon={<Wallet className="h-8 w-8" />} title="Нет учеников" hint="Сначала добавьте ученика" />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
           {students.map((s) => (
             <StudentFinanceCard key={s.id} studentId={s.id} name={s.name} />
           ))}
