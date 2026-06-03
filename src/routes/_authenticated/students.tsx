@@ -230,7 +230,7 @@ function StudentsPage() {
       </Card>
 
       {/* Status stats + filter */}
-      <div className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+      <div className="mt-4 -mx-1 flex gap-1.5 overflow-x-auto px-1 pt-2 pb-1">
         <StatusStat label="Все" count={activeStudents.length} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
         {(["active", "paused", "completed", "archived"] as StudentStatus[]).map((st) => (
           <StatusStat
