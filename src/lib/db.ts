@@ -1,6 +1,7 @@
 import { sb } from "@/lib/sb";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+export type StudentStatus = "active" | "paused" | "completed" | "archived";
 export type Student = {
   id: string;
   name: string;
@@ -8,6 +9,14 @@ export type Student = {
   subject: string | null;
   phone: string | null;
   created_at: string;
+  status: StudentStatus;
+};
+
+export const STUDENT_STATUS_META: Record<StudentStatus, { label: string; tone: "success" | "gold" | "neutral" | "danger" }> = {
+  active: { label: "Активный", tone: "success" },
+  paused: { label: "На паузе", tone: "gold" },
+  completed: { label: "Завершён", tone: "neutral" },
+  archived: { label: "Архив", tone: "danger" },
 };
 
 export type Finance = {
