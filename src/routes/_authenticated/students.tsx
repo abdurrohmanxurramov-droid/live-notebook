@@ -131,7 +131,7 @@ function StudentsPage() {
 
       <Sheet open={!!confirmId} onClose={() => setConfirmId(null)} title="Удалить ученика?">
         <p className="text-sm text-muted-foreground">
-          Все связанные платежи и записи посещаемости также будут удалены.
+          Ученик и все связанные записи отправятся в Корзину. Их можно восстановить в Настройках.
         </p>
         <div className="mt-5 flex gap-2">
           <Button variant="outline" className="flex-1" onClick={() => setConfirmId(null)}>
@@ -144,7 +144,7 @@ function StudentsPage() {
               if (!confirmId) return;
               try {
                 await del.mutateAsync(confirmId);
-                toast.success("Ученик удалён");
+                toast.success("Ученик перемещён в Корзину");
                 setConfirmId(null);
               } catch (e: any) {
                 toast.error(e?.message ?? "Ошибка");
