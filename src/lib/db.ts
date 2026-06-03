@@ -65,6 +65,7 @@ export function useStudents() {
       const { data, error } = await (await sb())
         .from("students")
         .select("*")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Student[];
@@ -79,6 +80,7 @@ export function useFinance() {
       const { data, error } = await (await sb())
         .from("finance")
         .select("*")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Finance[];
@@ -93,6 +95,7 @@ export function useAttendance() {
       const { data, error } = await (await sb())
         .from("attendance")
         .select("*")
+        .is("deleted_at", null)
         .order("date", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Attendance[];
@@ -107,6 +110,7 @@ export function useSchedule() {
       const { data, error } = await (await sb())
         .from("schedule_slots")
         .select("*")
+        .is("deleted_at", null)
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
       if (error) throw error;
@@ -122,6 +126,7 @@ export function useHomework() {
       const { data, error } = await (await sb())
         .from("homework")
         .select("*")
+        .is("deleted_at", null)
         .order("assigned_date", { ascending: false })
         .order("created_at", { ascending: false });
       if (error) throw error;

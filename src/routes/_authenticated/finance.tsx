@@ -254,7 +254,7 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
 
 function PaymentRow({ f, name }: { f: any; name: string }) {
   const del = useMut(async () => {
-    const { error } = await (await sb()).from("finance").delete().eq("id", f.id);
+    const { error } = await (await sb()).from("finance").update({ deleted_at: new Date().toISOString() }).eq("id", f.id);
     if (error) throw error;
   }, ["finance"]);
   const toggle = useMut(async () => {

@@ -29,6 +29,7 @@ export const listLessons = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabase
       .from("lessons")
       .select("id, student_id, scheduled_date, scheduled_time, duration_min, status, notes, moved_from_id")
+      .is("deleted_at", null)
       .gte("scheduled_date", data.from)
       .lte("scheduled_date", data.to)
       .order("scheduled_date", { ascending: true })
@@ -105,7 +106,7 @@ export const deleteLesson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("lessons").delete().eq("id", data.id);
+    const { error } = await context.supabase.from("lessons").update({ deleted_at: new Date().toISOString() }).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -126,13 +127,14 @@ export const regenerateLessons = createServerFn({ method: "POST" })
 
     const [{ data: slots, error: eSlots }, { data: existing, error: eEx }, { data: attendance, error: eAtt }] =
       await Promise.all([
-        supabase.from("schedule_slots").select("id, student_id, day_of_week, start_time, duration_min"),
+        supabase.from("schedule_slots").select("id, student_id, day_of_week, start_time, duration_min").is("deleted_at", null),
         supabase
           .from("lessons")
           .select("student_id, scheduled_date, scheduled_time, status")
+          .is("deleted_at", null)
           .gte("scheduled_date", fromStr)
           .lte("scheduled_date", toStr),
-        supabase.from("attendance").select("student_id, date, status").gte("date", fromStr).lte("date", toStr),
+        supabase.from("attendance").select("student_id, date, status").is("deleted_at", null).gte("date", fromStr).lte("date", toStr),
       ]);
     if (eSlots) throw new Error(eSlots.message);
     if (eEx) throw new Error(eEx.message);

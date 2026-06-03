@@ -5,6 +5,8 @@ import { Card, Button, Input, Avatar, Badge, Empty, SectionTitle } from "@/compo
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useFinance, useMut, initials, type Student } from "@/lib/db";
 import { sb } from "@/lib/sb";
+import { softDeleteStudent } from "@/lib/softdelete.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil } from "lucide-react";
 
 
@@ -19,13 +21,13 @@ function StudentsPage() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const filtered = students.filter((s) =>
-    (s.name + " " + (s.subject ?? "")).toLowerCase().includes(q.toLowerCase())
+    (s.name + " " + (s.subject ?? "") + " " + (s.phone ?? "")).toLowerCase().includes(q.toLowerCase())
   );
 
+  const softDelFn = useServerFn(softDeleteStudent);
   const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("students").delete().eq("id", id);
-    if (error) throw error;
-  }, ["students", "finance", "attendance"]);
+    await softDelFn({ data: { id } });
+  }, ["students", "finance", "attendance", "schedule", "homework", "lessons"]);
 
   return (
     <div className="px-4 pt-6">
@@ -129,7 +131,7 @@ function StudentsPage() {
 
       <Sheet open={!!confirmId} onClose={() => setConfirmId(null)} title="Удалить ученика?">
         <p className="text-sm text-muted-foreground">
-          Все связанные платежи и записи посещаемости также будут удалены.
+          Ученик и все связанные записи отправятся в Корзину. Их можно восстановить в Настройках.
         </p>
         <div className="mt-5 flex gap-2">
           <Button variant="outline" className="flex-1" onClick={() => setConfirmId(null)}>
@@ -142,7 +144,7 @@ function StudentsPage() {
               if (!confirmId) return;
               try {
                 await del.mutateAsync(confirmId);
-                toast.success("Ученик удалён");
+                toast.success("Ученик перемещён в Корзину");
                 setConfirmId(null);
               } catch (e: any) {
                 toast.error(e?.message ?? "Ошибка");

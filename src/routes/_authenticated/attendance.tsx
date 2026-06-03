@@ -36,7 +36,7 @@ function AttendancePage() {
   }, ["attendance"]);
 
   const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("attendance").delete().eq("id", id);
+    const { error } = await (await sb()).from("attendance").update({ deleted_at: new Date().toISOString() }).eq("id", id);
     if (error) throw error;
   }, ["attendance"]);
 
