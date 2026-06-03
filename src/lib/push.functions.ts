@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const savePushSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
       .object({
@@ -13,11 +14,13 @@ export const savePushSubscription = createServerFn({ method: "POST" })
       })
       .parse(input)
   )
-  .handler(async ({ data }) => {
-    const { error } = await supabaseAdmin
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase
       .from("push_subscriptions")
       .upsert(
         {
+          owner_id: userId,
           endpoint: data.endpoint,
           p256dh: data.p256dh,
           auth: data.auth,
@@ -30,9 +33,10 @@ export const savePushSubscription = createServerFn({ method: "POST" })
   });
 
 export const removePushSubscription = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ endpoint: z.string().url().max(2000) }).parse(input))
-  .handler(async ({ data }) => {
-    const { error } = await supabaseAdmin
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase
       .from("push_subscriptions")
       .delete()
       .eq("endpoint", data.endpoint);
@@ -41,10 +45,11 @@ export const removePushSubscription = createServerFn({ method: "POST" })
   });
 
 export const sendTestPush = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ endpoint: z.string().url().max(2000) }).parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const { sendPushTo } = await import("./push.server");
-    const { data: sub } = await supabaseAdmin
+    const { data: sub } = await context.supabase
       .from("push_subscriptions")
       .select("*")
       .eq("endpoint", data.endpoint)
