@@ -230,7 +230,7 @@ function StudentsPage() {
       </Card>
 
       {/* Status stats + filter */}
-      <div className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+      <div className="mt-4 -mx-1 flex gap-1.5 overflow-x-auto px-1 pt-2 pb-1">
         <StatusStat label="Все" count={activeStudents.length} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
         {(["active", "paused", "completed", "archived"] as StudentStatus[]).map((st) => (
           <StatusStat
@@ -716,7 +716,7 @@ function StatusStat({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition-all ${
+      className={`shrink-0 min-w-[88px] rounded-2xl border px-3 py-2 text-center transition-all ${
         active
           ? "border-accent bg-accent/15 shadow-sm"
           : `border-border bg-card ring-1 ring-transparent ${tone ? toneRing[tone] : ""}`
