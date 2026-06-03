@@ -72,60 +72,68 @@ function SettingsPage() {
       <p className="mt-1 text-sm text-muted-foreground">Тема, уведомления, курсы</p>
 
       <SectionTitle>Внешний вид</SectionTitle>
-      <Card className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
-            {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-          </div>
-          <div>
-            <div className="text-[15px] font-semibold text-foreground">Тёмная тема</div>
-            <div className="text-xs text-muted-foreground">Сменить оформление</div>
-          </div>
-        </div>
+      <Card>
         <button
+          type="button"
           onClick={toggle}
-          className={`relative h-7 w-12 rounded-full transition-colors ${dark ? "bg-accent" : "bg-secondary"}`}
-          aria-label="Тема"
+          aria-label="Переключить тему"
+          className="flex w-full items-center justify-between p-4 text-left"
         >
+          <span className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">
+              {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[15px] font-semibold text-foreground">Тёмная тема</span>
+              <span className="text-xs text-muted-foreground">Сменить оформление</span>
+            </span>
+          </span>
           <span
-            className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-              dark ? "translate-x-5" : "translate-x-0.5"
-            }`}
-          />
+            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${dark ? "bg-accent" : "bg-secondary"}`}
+          >
+            <span
+              className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                dark ? "translate-x-[22px]" : "translate-x-0.5"
+              }`}
+            />
+          </span>
         </button>
       </Card>
 
       <SectionTitle>Уведомления</SectionTitle>
       <Card className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-full ${subscribed ? "bg-emerald-500/15 text-emerald-500" : "bg-accent/15 text-accent"}`}>
+        <button
+          type="button"
+          onClick={togglePush}
+          disabled={!supported || busy}
+          aria-label="Переключить уведомления"
+          className="flex w-full items-center justify-between text-left disabled:opacity-60"
+        >
+          <span className="flex items-center gap-3">
+            <span className={`flex h-10 w-10 items-center justify-center rounded-full ${subscribed ? "bg-emerald-500/15 text-emerald-500" : "bg-accent/15 text-accent"}`}>
               {subscribed ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-            </div>
-            <div>
-              <div className="text-[15px] font-semibold text-foreground">Push за 10 минут до урока</div>
-              <div className="text-xs text-muted-foreground">
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[15px] font-semibold text-foreground">Push за 10 минут до урока</span>
+              <span className="text-xs text-muted-foreground">
                 {!supported
                   ? "Браузер не поддерживает (на iOS установите PWA на главный экран)"
                   : subscribed
                   ? "Включено на этом устройстве"
                   : "Получать напоминания по расписанию"}
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={togglePush}
-            disabled={!supported || busy}
-            className={`relative h-7 w-12 rounded-full transition-colors disabled:opacity-50 ${subscribed ? "bg-accent" : "bg-secondary"}`}
-            aria-label="Push"
+              </span>
+            </span>
+          </span>
+          <span
+            className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${subscribed ? "bg-accent" : "bg-secondary"}`}
           >
             <span
               className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
-                subscribed ? "translate-x-5" : "translate-x-0.5"
+                subscribed ? "translate-x-[22px]" : "translate-x-0.5"
               }`}
             />
-          </button>
-        </div>
+          </span>
+        </button>
         {subscribed && (
           <Button onClick={testPush} disabled={busy} variant="outline" className="mt-3 w-full">
             Отправить тестовое уведомление
