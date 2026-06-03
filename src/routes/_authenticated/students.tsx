@@ -53,7 +53,7 @@ function StudentsPage() {
           hint={students.length === 0 ? "Нажмите «Добавить», чтобы начать" : "Попробуйте другое имя"}
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
           {filtered.map((s) => {
             const fin = finance.filter((f) => f.student_id === s.id);
             const hasUnpaid = fin.some((f) => !f.is_paid);
@@ -101,13 +101,13 @@ function StudentsPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-between">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   {s.phone ? (
-                    <a href={`tel:${s.phone}`} className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <a href={`tel:${s.phone}`} className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
                       <Phone className="h-3 w-3" /> {s.phone}
                     </a>
                   ) : (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
                       <BookOpen className="h-3 w-3" /> {s.subject || "—"}
                     </span>
                   )}
