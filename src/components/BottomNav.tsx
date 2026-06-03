@@ -123,6 +123,8 @@ export function BottomNav() {
                 <li key={t.to} ref={setRef(t.to as Key)} className="relative z-10 flex-1">
                   <Link
                     to={t.to}
+                    onPointerDown={moveTo(t.to as Key)}
+                    onClick={moveTo(t.to as Key)}
                     className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
                   >
                     <span className="relative">
