@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, ListSkeleton } from "@/components/ui-bits";
+import { Switch } from "@/components/ui/switch";
 import { getSettings, updateSettings } from "@/lib/settings.functions";
 
 export function UserSettingsSection() {
