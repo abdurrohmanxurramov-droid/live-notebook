@@ -368,7 +368,7 @@ function MonthView({ start, cursor, lessons, studentName, onDrop, onSlot, onMore
               const t = dragged ? dragged.scheduled_time.slice(0,5) : "10:00";
               onDrop(id, ds, t);
             }}}
-            className={`min-h-[68px] cursor-pointer rounded-lg border p-1 text-left transition-colors ${inMonth?"border-border bg-card/40":"border-transparent bg-secondary/30 opacity-60"} ${isToday?"ring-1 ring-accent":""}`}
+            className={`group relative min-h-[68px] cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(20,33,61,0.25)] active:scale-[0.98] ${inMonth?"border-border bg-card/40 hover:bg-card/70":"border-transparent bg-secondary/30 opacity-60"} ${isToday?"ring-1 ring-accent":""}`}
           >
             <div className={`text-[11px] font-semibold ${isToday?"text-accent":"text-foreground"}`}>{d.getDate()}</div>
             <div className="mt-0.5 space-y-0.5">
