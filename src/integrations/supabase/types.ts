@@ -398,6 +398,9 @@ export type Database = {
           default_lesson_price: number
           locale: string
           remind_before_min: number
+          remind_homework: boolean
+          remind_lessons: boolean
+          remind_payments: boolean
           updated_at: string
           user_id: string
           week_starts_on: number
@@ -409,6 +412,9 @@ export type Database = {
           default_lesson_price?: number
           locale?: string
           remind_before_min?: number
+          remind_homework?: boolean
+          remind_lessons?: boolean
+          remind_payments?: boolean
           updated_at?: string
           user_id: string
           week_starts_on?: number
@@ -420,6 +426,9 @@ export type Database = {
           default_lesson_price?: number
           locale?: string
           remind_before_min?: number
+          remind_homework?: boolean
+          remind_lessons?: boolean
+          remind_payments?: boolean
           updated_at?: string
           user_id?: string
           week_starts_on?: number
