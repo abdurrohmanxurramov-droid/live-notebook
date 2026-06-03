@@ -10,6 +10,9 @@ import { regenerateLessons } from "@/lib/lessons.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { UserSettingsSection } from "@/components/settings/UserSettingsSection";
+import { TrashSection } from "@/components/settings/TrashSection";
+import { BackupSection } from "@/components/settings/BackupSection";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
@@ -198,6 +201,9 @@ function SettingsPage() {
         )}
       </Card>
 
+      <SectionTitle>Настройки по умолчанию</SectionTitle>
+      <UserSettingsSection />
+
       <SectionTitle>Курсы валют</SectionTitle>
       <RatesCard />
 
@@ -211,6 +217,11 @@ function SettingsPage() {
         </Button>
       </Card>
 
+      <SectionTitle>Резервные копии</SectionTitle>
+      <BackupSection />
+
+      <SectionTitle>Корзина</SectionTitle>
+      <TrashSection />
 
       <SectionTitle>Аккаунт</SectionTitle>
       <Card className="p-4">
