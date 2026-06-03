@@ -1,82 +1,89 @@
-# Фаза 2 — Таблица `lessons` + история календаря
+# Фаза 3 — Полировка и устойчивость
 
 ## 1. Миграция БД (одной транзакцией)
 
-### 1.1 Enum + таблица `lessons`
+### 1.1 Soft delete везде
+Добавить `deleted_at timestamptz` в: `students`, `lessons`, `attendance`, `finance`, `homework`, `schedule_slots`.
+- Индексы `WHERE deleted_at IS NULL` на горячих колонках.
+- RLS политики оставляем как есть (читаем `WHERE deleted_at IS NULL` в server fn).
+- Каскадного хард-удаления не меняем — добавим server fn `softDeleteStudent` (помечает student + связанные записи).
+
+### 1.2 Таблица `user_settings`
 ```sql
-CREATE TYPE lesson_status AS ENUM ('planned','completed','cancelled','moved');
-
-CREATE TABLE public.lessons (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id uuid NOT NULL,
-  student_id uuid NOT NULL REFERENCES public.students(id) ON DELETE CASCADE,
-  scheduled_date date NOT NULL,
-  scheduled_time time NOT NULL,
-  duration_min int NOT NULL DEFAULT 60,
-  status lesson_status NOT NULL DEFAULT 'planned',
-  notes text,
-  source_slot_id uuid,            -- из какого schedule_slot создан
-  moved_from_id uuid REFERENCES public.lessons(id) ON DELETE SET NULL,
+CREATE TABLE public.user_settings (
+  user_id uuid PRIMARY KEY,
+  default_currency text NOT NULL DEFAULT 'RUB',
+  default_lesson_duration int NOT NULL DEFAULT 60,
+  default_lesson_price numeric NOT NULL DEFAULT 0,
+  week_starts_on smallint NOT NULL DEFAULT 1,
+  remind_before_min int NOT NULL DEFAULT 60,
+  locale text NOT NULL DEFAULT 'ru',
   created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (student_id, scheduled_date, scheduled_time)
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX ON public.lessons (owner_id, scheduled_date);
-CREATE INDEX ON public.lessons (student_id, scheduled_date);
 ```
-+ GRANT authenticated/service_role, RLS `auth.uid() = owner_id`, триггер `set_owner_id`, триггер `update_updated_at`.
++ GRANT, RLS `auth.uid() = user_id`, триггер `update_updated_at`.
 
-### 1.2 FK на студентов для целостности
-Добавить `ON DELETE CASCADE` на `attendance.student_id`, `finance.student_id`, `homework.student_id`, `schedule_slots.student_id`, `push_subscriptions` (FK не нужен).
+### 1.3 Резервные копии (export)
+Без отдельной таблицы. Server fn `exportBackup()` собирает JSON со всеми пользовательскими таблицами, отдаёт файл скачиванием. `importBackup()` принимает JSON и делает upsert по id (с пометкой owner_id из auth.uid()).
 
-### 1.3 Удалить `lessons_conducted`
-Drop таблицы — заменим вьюхой `v_lessons_conducted` (`COUNT(*) FILTER (WHERE status='completed')` GROUP BY student_id).
+## 2. Server functions
 
-## 2. Server functions (`src/lib/lessons.functions.ts`)
-Все под `requireSupabaseAuth`:
-- `listLessons({ from, to })` — для календаря
-- `setLessonStatus({ id, status, notes? })` — Провёл/Отменил
-- `moveLesson({ id, new_date, new_time })` — старая → `moved`, новая строка с `moved_from_id`
-- `regenerateLessons()` — окно −3 мес … +1 мес:
-  - читает `schedule_slots`
-  - разворачивает в даты по `day_of_week`
-  - upsert по UNIQUE (skip конфликтов)
-  - для прошлых дат: смотрит `attendance` → `completed/cancelled`, иначе `completed`
-  - для будущих: `planned`
-  - не трогает существующие `cancelled/moved/completed`
-- При INSERT/UPDATE/DELETE `schedule_slots` — вызывать `regenerateLessons` (триггер БД или явный вызов из UI)
+### 2.1 `src/lib/settings.functions.ts`
+- `getSettings()` — read-or-create row.
+- `updateSettings(partial)` — Zod-валидация полей.
+
+### 2.2 `src/lib/backup.functions.ts`
+- `exportBackup()` → `{ version, exported_at, tables: {...} }`.
+- `importBackup({ json })` → upsert, dry-run + counts.
+
+### 2.3 Soft delete
+В `students.functions.ts` / `lessons.functions.ts` / `finance.functions.ts` / `homework.functions.ts`:
+- `softDelete{Entity}(id)` — `UPDATE ... SET deleted_at = now()`.
+- `restore{Entity}(id)` — `SET deleted_at = NULL`.
+- Все list-функции фильтруют `WHERE deleted_at IS NULL` (опционально `include_deleted`).
+
+### 2.4 Zod-схемы
+`src/lib/schemas.ts` — общие схемы для студента, урока, платежа, ДЗ. Используются и на сервере (`inputValidator`), и в формах (`zodResolver`).
 
 ## 3. UI
 
-### 3.1 `/schedule`
-- Календарь читает `lessons` (через `listLessons` + useSuspenseQuery)
-- На каждом уроке: бейдж статуса + кнопки **Провёл / Отменил / Перенёс**
-- «Перенёс» — Dialog с DatePicker + TimePicker
-- Фильтр по статусу (планируемые / все)
+### 3.1 Поиск и фильтры
+- `/students` — поиск по имени/предмету/телефону, фильтр «активные / в архиве».
+- `/finance` — фильтр студент, период, статус оплаты.
+- `/homework` — фильтр студент, статус.
+- `/schedule` — фильтр студент + статус (уже есть частично).
 
-### 3.2 `/students/$id`
-- Заменить чтение `lessons_conducted` на вьюху `v_lessons_conducted`
-- Добавить вкладку «История уроков» (последние 20 из `lessons`)
+### 3.2 Скелетоны
+Заменить `isLoading` спиннеры на shadcn `<Skeleton>` на всех страницах списков.
 
-### 3.3 Settings
-- Кнопка «Пересоздать историю уроков» → `regenerateLessons()`
-- Автозапуск 1 раз: если у пользователя 0 строк в `lessons` и есть `schedule_slots`
+### 3.3 Пустые состояния
+Компонент `<EmptyState icon title description action />`. Подключить на пустые списки.
 
-## 4. Связанные изменения
-- `lesson-reminders` cron → читает из `lessons WHERE scheduled_date = today() AND status = 'planned'` вместо разворота `schedule_slots` (поддерживает переносы/отмены)
-- `ai.functions.ts` → статистика из `lessons` + `v_lessons_conducted`
-- `attendance` остаётся для обратной совместимости, но новые UI пишут в `lessons.status`
+### 3.4 Корзина
+`/settings` → секция «Корзина»: списки удалённых студентов / уроков / платежей / ДЗ с кнопкой «Восстановить».
 
-## 5. Проверка
-1. Миграция применяется без ошибок
-2. После «Пересоздать историю» появляются записи за 3 месяца
-3. Календарь рендерит уроки с правильными статусами
-4. Кнопки Провёл/Отменил меняют статус, счётчик в карточке студента обновляется
-5. Перенос создаёт новую запись, старая = `moved`
-6. Cron-напоминания не приходят на отменённые/перенесённые
+### 3.5 Пользовательские настройки
+`/settings` → секция «Настройки»: валюта по умолчанию, длительность урока, цена, начало недели, напоминание за N минут. Применяются как defaults в формах создания.
 
-## Технические детали
-- UNIQUE `(student_id, date, time)` защищает от дублей при повторной генерации
-- `v_lessons_conducted` — обычная вьюха, RLS наследуется от `lessons`
-- `moved_from_id` self-FK с `ON DELETE SET NULL` — удаление оригинала не каскадит на новую
-- Окно генерации (3 мес / 1 мес) вынесем в константу
+### 3.6 Бэкапы
+`/settings` → секция «Резервные копии»:
+- Кнопка «Скачать бэкап» → JSON-файл.
+- Загрузка JSON → preview + кнопка «Импортировать».
+
+### 3.7 Zod-валидация форм
+Перевести все формы (`StudentForm`, `LessonForm`, `PaymentForm`, `HomeworkForm`) на `react-hook-form` + `zodResolver` со схемами из `src/lib/schemas.ts`.
+
+## 4. Порядок выполнения
+
+1. Миграция (soft delete + user_settings).
+2. `schemas.ts` + server functions (settings, backup, soft delete).
+3. Settings UI (настройки + корзина + бэкапы).
+4. Формы → Zod.
+5. Списки → поиск/фильтры + скелетоны + empty states.
+6. Прогон по экранам, проверка билда.
+
+## 5. Что НЕ делаем в этой фазе
+- Cron-задачи бэкапов (только on-demand).
+- Версионирование схемы импорта (только текущая версия).
+- Pagination — отложим, пока списки маленькие.
