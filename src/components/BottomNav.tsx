@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Home,
   GraduationCap,
@@ -13,6 +14,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Sheet } from "./Sheet";
+import { sb } from "@/lib/sb";
 
 const mainTabs = [
   { to: "/", label: "Главная", icon: Home },
