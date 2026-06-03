@@ -398,56 +398,106 @@ async function execTool(name: string, args: any, supabase: any, userId: string) 
 
 export const chatWithAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { messages: Msg[] }) => input)
+  .inputValidator((input: { userText: string }) => input)
   .handler(async ({ data, context }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY не настроен");
 
     const { supabase, userId } = context;
 
-    // Build initial context: list of students with ids so model can address them
-    const { data: students } = await supabase
-      .from("students")
-      .select("id, name, subject, days_per_week")
-      .is("deleted_at", null);
+    // 1. Сохраняем сообщение пользователя
+    await supabase.from("chat_messages").insert({
+      user_id: userId,
+      role: "user",
+      content: data.userText,
+    });
 
-    const today = new Date().toISOString().slice(0, 10);
+    // 2. Загружаем последние 60 сообщений (история)
+    const { data: history } = await supabase
+      .from("chat_messages")
+      .select("role, content, tool_calls, tool_call_id, name, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(60);
+
+    const prior = (history ?? []).reverse().map((m: any) => {
+      const msg: any = { role: m.role, content: m.content ?? "" };
+      if (m.tool_calls) msg.tool_calls = m.tool_calls;
+      if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
+      if (m.name) msg.name = m.name;
+      return msg;
+    });
+
+    // 3. Собираем богатый контекст
+    const [{ data: students }, { data: slots }, { data: settings }] = await Promise.all([
+      supabase.from("students").select("id, name, subject, days_per_week").is("deleted_at", null),
+      supabase.from("schedule_slots").select("student_id, day_of_week, start_time, duration_min").is("deleted_at", null),
+      supabase.from("user_settings").select("default_currency, default_lesson_price, default_lesson_duration").eq("user_id", userId).maybeSingle(),
+    ]);
+
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    const weekday = ["вс", "пн", "вт", "ср", "чт", "пт", "сб"][today.getDay()];
+    const dayNames = ["", "пн", "вт", "ср", "чт", "пт", "сб", "вс"];
+
     const studentsStr =
       (students ?? [])
-        .map((s: any) => `- ${s.name} (id=${s.id}, ${s.subject ?? "?"}, ${s.days_per_week ?? 0} р/нед)`)
+        .map((s: any) => `- ${s.name} [id=${s.id}] ${s.subject ?? "?"}, ${s.days_per_week ?? 0} р/нед`)
         .join("\n") || "(пока нет учеников)";
 
-    const system: Msg = {
-      role: "system",
-      content: `Ты — умный ИИ-помощник преподавателя в приложении «Живой Блокнот». Ты можешь не только советовать, но и САМ выполнять действия через инструменты: добавлять учеников, ставить уроки в расписание, отмечать оплаты, посещения, выдавать домашки.
+    const slotsStr =
+      (slots ?? [])
+        .map((s: any) => `- ${dayNames[s.day_of_week]} ${s.start_time} (${s.duration_min}мин) ученик=${s.student_id}`)
+        .join("\n") || "(расписание пустое)";
 
-ПРАВИЛА:
-- Отвечай по-русски, кратко, по делу.
-- Если пользователь просит что-то сделать — сразу вызывай нужные инструменты, не переспрашивай каждую мелочь, если можно разумно подставить значения по умолчанию.
-- Для действий с конкретным учеником сначала найди его id в списке ниже. Если ученика нет — создай его через add_student.
-- Можно вызывать несколько инструментов подряд (например: добавить ученика → создать слот в расписании → выдать домашку).
-- После выполнения действий коротко подтверди что сделано.
-- Дни недели: 1=пн, 2=вт, 3=ср, 4=чт, 5=пт, 6=сб, 7=вс.
-- Время — в формате HH:MM (24ч).
+    const settingsStr = settings
+      ? `Валюта по умолчанию: ${settings.default_currency}, цена урока: ${settings.default_lesson_price}, длительность: ${settings.default_lesson_duration}мин`
+      : "Настройки не заданы";
 
-Сегодня: ${today}.
-Ученики:
-${studentsStr}`,
+    const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+    const system = {
+      role: "system" as const,
+      content: `Ты — самостоятельный ИИ-агент-секретарь преподавателя в приложении «Живой Блокнот». Действуй как Claude/Grok: думай пошагово, проактивно выполняй задачи, используй инструменты без лишних вопросов.
+
+ПРИНЦИПЫ:
+1. ДЕЙСТВУЙ. Если пользователь просит что-то сделать — делай это через инструменты, а не описывай словами. Можно вызывать несколько инструментов подряд.
+2. ПОМНИ КОНТЕКСТ. Ты видишь всю историю переписки — ссылайся на прошлые договорённости, имена, факты.
+3. ПОДСТАВЛЯЙ РАЗУМНЫЕ ДЕФОЛТЫ. Длительность 60мин, валюта/цена из настроек, время не указано — ставь 18:00.
+4. РАЗРЕШАЙ НЕОДНОЗНАЧНОСТЬ. "завтра"=${tomorrow}, "на этой неделе" — текущая неделя.
+5. ЦЕПОЧКИ. "Добавь Машу на вт/чт 18:00 и поставь урок завтра" → add_student → add_schedule_slot ×2 → add_lesson.
+6. КОРОТКО ПОДТВЕРЖДАЙ. После действий — 1-2 строки итога, без воды.
+7. УЧЕНИК НЕ НАЙДЕН? Создавай через add_student сам, не спрашивай разрешения.
+8. По-русски, по делу, без бюрократии.
+
+ДНИ НЕДЕЛИ: 1=пн 2=вт 3=ср 4=чт 5=пт 6=сб 7=вс. ВРЕМЯ: HH:MM (24ч).
+
+═══ КОНТЕКСТ ═══
+Сегодня: ${todayStr} (${weekday})
+${settingsStr}
+
+УЧЕНИКИ:
+${studentsStr}
+
+РАСПИСАНИЕ (регулярные слоты):
+${slotsStr}`,
     };
 
-    const messages: any[] = [system, ...data.messages];
+    const messages: any[] = [system, ...prior];
     const actions: ActionLog[] = [];
-    const MAX_STEPS = 8;
+    const MAX_STEPS = 10;
+    let finalReply = "";
 
     for (let step = 0; step < MAX_STEPS; step++) {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+          model: "openai/gpt-5.2",
           messages,
           tools,
           tool_choice: "auto",
+          reasoning: { effort: "medium" },
         }),
       });
 
@@ -466,10 +516,23 @@ ${studentsStr}`,
 
       const toolCalls = msg.tool_calls;
       if (!toolCalls || toolCalls.length === 0) {
-        return { reply: msg.content ?? "", actions };
+        finalReply = msg.content ?? "";
+        await supabase.from("chat_messages").insert({
+          user_id: userId,
+          role: "assistant",
+          content: finalReply,
+        });
+        return { reply: finalReply, actions };
       }
 
-      // Execute each tool call
+      // Сохраняем сообщение ассистента с tool_calls
+      await supabase.from("chat_messages").insert({
+        user_id: userId,
+        role: "assistant",
+        content: msg.content ?? "",
+        tool_calls: toolCalls,
+      });
+
       for (const tc of toolCalls) {
         const fname = tc.function?.name;
         let fargs: any = {};
@@ -487,16 +550,51 @@ ${studentsStr}`,
           result = { error: e?.message ?? String(e) };
         }
         actions.push({ tool: fname, args: fargs, result, ok });
+        const toolContent = JSON.stringify(result).slice(0, 4000);
         messages.push({
           role: "tool",
           tool_call_id: tc.id,
-          content: JSON.stringify(result).slice(0, 4000),
+          content: toolContent,
+        });
+        await supabase.from("chat_messages").insert({
+          user_id: userId,
+          role: "tool",
+          content: toolContent,
+          tool_call_id: tc.id,
+          name: fname,
         });
       }
     }
 
-    return {
-      reply: "Достигнут лимит шагов. Попробуйте уточнить запрос.",
-      actions,
-    };
+    finalReply = "Достигнут лимит шагов. Уточните запрос.";
+    await supabase.from("chat_messages").insert({
+      user_id: userId,
+      role: "assistant",
+      content: finalReply,
+    });
+    return { reply: finalReply, actions };
+  });
+
+export const getChatHistory = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("id, role, content, created_at")
+      .eq("user_id", userId)
+      .in("role", ["user", "assistant"])
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if (error) throw error;
+    return (data ?? []).filter((m: any) => m.content && m.content.trim().length > 0);
+  });
+
+export const clearChatHistory = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { error } = await supabase.from("chat_messages").delete().eq("user_id", userId);
+    if (error) throw error;
+    return { ok: true };
   });
