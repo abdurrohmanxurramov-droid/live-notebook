@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
-import { useStudents, initials } from "@/lib/db";
+import { useStudents } from "@/lib/db";
 import { listLessons, moveLesson, setLessonStatus, deleteLesson, type LessonStatus } from "@/lib/lessons.functions";
 import { QuickCreateLessonSheet } from "./QuickCreateLessonSheet";
 
