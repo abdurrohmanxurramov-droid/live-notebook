@@ -448,11 +448,13 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
   return (
     <Sheet open={open} onClose={onClose} title="Новый ученик">
       <div className="space-y-3">
-        <Field label="Имя">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Например, Анна Иванова" />
-        </Field>
+        <div className="stagger-item" style={{ animationDelay: "40ms" }}>
+          <Field label="Имя">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Например, Анна Иванова" />
+          </Field>
+        </div>
 
-        <div>
+        <div className="stagger-item" style={{ animationDelay: "95ms" }}>
           <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Расписание</span>
           <div className="flex gap-2">
             <PatternBtn value="mwf" label="Пн / Ср / Пт" hint="3 урока в неделю" />
@@ -461,38 +463,49 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
           <button
             type="button"
             onClick={() => setPattern("custom")}
-            className={`mt-2 w-full rounded-2xl border p-3 text-left text-sm transition-all backdrop-blur-md ${
+            className={`group relative mt-2 w-full overflow-hidden rounded-2xl border p-3 text-left text-sm backdrop-blur-xl transition-all duration-300 ease-out hover:-translate-y-0.5 active:scale-[0.98] ${
               pattern === "custom"
-                ? "border-accent bg-accent/15"
-                : "border-white/60 bg-white/40 dark:bg-white/5 dark:border-white/10 text-muted-foreground"
+                ? "border-accent/60 bg-accent/15 text-foreground ring-1 ring-accent/30 shadow-[0_12px_28px_-12px_color-mix(in_oklab,var(--accent)_50%,transparent),inset_0_1px_0_0_rgba(255,255,255,0.6)]"
+                : "border-white/60 bg-white/55 text-muted-foreground hover:bg-white/80 dark:bg-white/5 dark:border-white/10 dark:hover:bg-white/10 shadow-[0_8px_22px_-14px_rgba(20,33,61,0.25)]"
             }`}
           >
-            Свой график (без авто-слотов)
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/45 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100 dark:via-white/10"
+            />
+            <span className="relative">Свой график (без авто-слотов)</span>
           </button>
         </div>
 
-        {pattern !== "custom" ? (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Время">
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        <div className="stagger-item" style={{ animationDelay: "150ms" }}>
+          {pattern !== "custom" ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Время">
+                <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+              </Field>
+              <Field label="Длительность, мин">
+                <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
+              </Field>
+            </div>
+          ) : (
+            <Field label="Дней в неделю (1–7)">
+              <Input type="number" min={1} max={7} value={customDays} onChange={(e) => setCustomDays(e.target.value)} />
             </Field>
-            <Field label="Длительность, мин">
-              <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
-            </Field>
-          </div>
-        ) : (
-          <Field label="Дней в неделю (1–7)">
-            <Input type="number" min={1} max={7} value={customDays} onChange={(e) => setCustomDays(e.target.value)} />
-          </Field>
-        )}
+          )}
+        </div>
 
-        <Field label="Предмет (необязательно)">
-          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Математика" />
-        </Field>
-        <Field label="Телефон (необязательно)">
-          <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 ..." />
-        </Field>
+        <div className="stagger-item" style={{ animationDelay: "205ms" }}>
+          <Field label="Предмет (необязательно)">
+            <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Математика" />
+          </Field>
+        </div>
+        <div className="stagger-item" style={{ animationDelay: "260ms" }}>
+          <Field label="Телефон (необязательно)">
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 ..." />
+          </Field>
+        </div>
       </div>
+
       <div className="mt-8 flex gap-3 pb-2">
         <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
         <Button
