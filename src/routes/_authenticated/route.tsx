@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, Link, useRouter, useLocation } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 
 function AuthErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
@@ -55,7 +55,16 @@ export const Route = createFileRoute("/_authenticated")({
     }
     return { user: data.user };
   },
-  component: () => <Outlet />,
+  component: PageShell,
   errorComponent: AuthErrorComponent,
   notFoundComponent: AuthNotFound,
 });
+
+function PageShell() {
+  const { pathname } = useLocation();
+  return (
+    <div key={pathname} className="animate-page-in">
+      <Outlet />
+    </div>
+  );
+}
