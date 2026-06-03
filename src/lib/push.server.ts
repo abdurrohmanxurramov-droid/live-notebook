@@ -3,7 +3,7 @@ import webpush from "web-push";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const VAPID_PUBLIC =
-  "BMsPV2ojnxOy0BNfmip6b0_ZBBsO4BAlZFBjcRaAMS65s-LAlImbacmmuNspD1I3tgfieXXzw4LCBX0EPGUfuwg";
+  "BOqs7lcS-CLcidBplomA3VRNHkpNkizYWKb3OCipTVfT-01tD8mCH_5JZXVuf1EVmDI50n3wAsfeUja-_Z1aQa4";
 
 let configured = false;
 function configure() {
