@@ -716,7 +716,7 @@ function StatusStat({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition-all ${
+      className={`shrink-0 min-w-[88px] rounded-2xl border px-3 py-2 text-center transition-all ${
         active
           ? "border-accent bg-accent/15 shadow-sm"
           : `border-border bg-card ring-1 ring-transparent ${tone ? toneRing[tone] : ""}`
