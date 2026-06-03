@@ -31,6 +31,9 @@ export const userSettingsSchema = z.object({
   week_starts_on: z.number().int().min(0).max(6),
   remind_before_min: z.number().int().min(5).max(1440),
   locale: z.enum(["ru", "en"]),
+  remind_lessons: z.boolean(),
+  remind_payments: z.boolean(),
+  remind_homework: z.boolean(),
 });
 
 export type UserSettings = z.infer<typeof userSettingsSchema> & {
