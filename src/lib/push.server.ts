@@ -8,7 +8,13 @@ const VAPID_PUBLIC =
 let configured = false;
 function configure() {
   if (configured) return;
-  const subject = process.env.VAPID_SUBJECT || "mailto:teacher@livenote.app";
+  const raw = (process.env.VAPID_SUBJECT || "").trim();
+  let subject = "mailto:teacher@livenote.app";
+  if (/^(mailto:|https?:\/\/)/i.test(raw)) {
+    subject = raw;
+  } else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
+    subject = `mailto:${raw}`;
+  }
   const priv = process.env.VAPID_PRIVATE_KEY;
   if (!priv) throw new Error("VAPID_PRIVATE_KEY is not set");
   webpush.setVapidDetails(subject, VAPID_PUBLIC, priv);
