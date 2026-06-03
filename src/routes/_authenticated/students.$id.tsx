@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { StudentRoom } from "@/components/StudentRoom";
 import { ArrowLeft } from "lucide-react";
 
-export const Route = createFileRoute("/students/$id")({ component: StudentDetailPage });
+export const Route = createFileRoute("/_authenticated/students/$id")({ component: StudentDetailPage });
 
 function StudentDetailPage() {
   const { id } = Route.useParams();

@@ -15,7 +15,7 @@ import {
 import { sb } from "@/lib/sb";
 import { RefreshCw, Trash2, Wallet } from "lucide-react";
 
-export const Route = createFileRoute("/finance")({ component: FinancePage });
+export const Route = createFileRoute("/_authenticated/finance")({ component: FinancePage });
 
 function FinancePage() {
   const { data: students = [] } = useStudents();

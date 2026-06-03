@@ -7,7 +7,7 @@ import { useStudents, useHomework, useMut, initials, type HomeworkStatus, type H
 import { sb } from "@/lib/sb";
 import { BookOpen, Plus, Trash2, Check, X, MinusCircle, Clock, Filter } from "lucide-react";
 
-export const Route = createFileRoute("/homework")({ component: HomeworkPage });
+export const Route = createFileRoute("/_authenticated/homework")({ component: HomeworkPage });
 
 const STATUS: Record<HomeworkStatus, { label: string; tone: "neutral" | "success" | "danger" | "gold"; icon: any }> = {
   assigned: { label: "Задано", tone: "neutral", icon: Clock },

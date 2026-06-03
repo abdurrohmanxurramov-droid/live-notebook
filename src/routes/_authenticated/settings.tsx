@@ -8,7 +8,7 @@ import { pushSupported, isSubscribed, subscribePush, unsubscribePush, getRegistr
 import { sendTestPush } from "@/lib/push.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-export const Route = createFileRoute("/settings")({ component: SettingsPage });
+export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
 function SettingsPage() {
   const [dark, setDark] = useState(false);

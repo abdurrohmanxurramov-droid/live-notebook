@@ -6,7 +6,7 @@ import { Send, Sparkles, Loader2 } from "lucide-react";
 
 import { chatWithAssistant } from "@/lib/ai.functions";
 
-export const Route = createFileRoute("/assistant")({ component: AssistantPage });
+export const Route = createFileRoute("/_authenticated/assistant")({ component: AssistantPage });
 
 type Msg = { role: "user" | "assistant"; content: string };
 

@@ -26,7 +26,7 @@ import {
 } from "@/lib/db";
 import { BarChart3, TrendingUp, Users, AlertTriangle, BookOpen } from "lucide-react";
 
-export const Route = createFileRoute("/analytics")({ component: AnalyticsPage });
+export const Route = createFileRoute("/_authenticated/analytics")({ component: AnalyticsPage });
 
 const MONTHS = ["Янв", "Фев", "Мар", "Апр", "Май", "Июн", "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"];
 const DOW = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
