@@ -63,7 +63,7 @@ export function StudentRoom({ id }: { id: string }) {
   // Долг учителя — переносы, не возмещённые
   const teacherDebt = att.filter((a) => a.status === "rescheduled_by_teacher" && !a.compensated).length;
 
-  const [tab, setTab] = useState<"att" | "hw" | "fin">("att");
+  const [tab, setTab] = useState<"att" | "hw" | "fin" | "timeline">("att");
 
   if (!student) {
     return <Empty icon={<Target className="h-8 w-8" />} title="Ученик не найден" />;
