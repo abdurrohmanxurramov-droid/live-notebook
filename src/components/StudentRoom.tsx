@@ -147,10 +147,11 @@ export function StudentRoom({ id }: { id: string }) {
         </div>
       </Card>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-4 gap-2">
         <TabBtn active={tab === "att"} onClick={() => setTab("att")} icon={<CalendarCheck className="h-4 w-4" />} label="Посещения" />
         <TabBtn active={tab === "hw"} onClick={() => setTab("hw")} icon={<BookOpen className="h-4 w-4" />} label="ДЗ" />
         <TabBtn active={tab === "fin"} onClick={() => setTab("fin")} icon={<Wallet className="h-4 w-4" />} label="Оплаты" />
+        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<History className="h-4 w-4" />} label="История" />
       </div>
 
       {tab === "att" && (
@@ -163,6 +164,7 @@ export function StudentRoom({ id }: { id: string }) {
       )}
       {tab === "hw" && <HomeworkTab studentId={id} hw={hw} />}
       {tab === "fin" && <FinanceTab studentId={id} fin={fin} />}
+      {tab === "timeline" && <TimelineTab att={att} hw={hw} fin={fin} />}
     </div>
   );
 }
