@@ -112,7 +112,8 @@ function StudentsPage() {
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    const list = students.filter((s) => {
+    const list = baseList.filter((s) => {
+      if (statusFilter !== "all" && statusFilter !== "trash" && s.status !== statusFilter) return false;
       if (needle && !((s.name + " " + (s.subject ?? "") + " " + (s.phone ?? "")).toLowerCase().includes(needle)))
         return false;
       if (subjectFilter && (s.subject ?? "") !== subjectFilter) return false;
@@ -144,7 +145,7 @@ function StudentsPage() {
       }
     });
     return sorted;
-  }, [students, q, subjectFilter, debtFilter, upcomingOnly, upcomingByStudent, finance, sortBy]);
+  }, [baseList, statusFilter, q, subjectFilter, debtFilter, upcomingOnly, upcomingByStudent, finance, sortBy]);
 
   const softDelFn = useServerFn(softDeleteStudent);
   const del = useMut(async (id: string) => {
