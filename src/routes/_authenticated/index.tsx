@@ -84,7 +84,11 @@ function Home() {
         </h1>
       </header>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <TodayOverview />
+      <ContinueCard onOpen={(sid) => setOpenId(sid)} />
+      <WeekSummary />
+
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {metrics.map((m) => {
           const Icon = m.icon;
           return (
@@ -98,6 +102,7 @@ function Home() {
       </div>
 
       <PaymentsWidget />
+
 
       <SectionTitle>Быстрые действия</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
