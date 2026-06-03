@@ -18,6 +18,8 @@ function SettingsPage() {
   const [dark, setDark] = useState(false);
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
+  const [inIframe, setInIframe] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission | "unknown">("unknown");
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const testFn = useServerFn(sendTestPush);
@@ -38,6 +40,12 @@ function SettingsPage() {
     setDark(isDark);
     const s = pushSupported();
     setSupported(s);
+    try {
+      setInIframe(window.self !== window.top);
+    } catch {
+      setInIframe(true);
+    }
+    if (typeof Notification !== "undefined") setPermission(Notification.permission);
     if (s) isSubscribed().then(setSubscribed).catch(() => {});
   }, []);
 
@@ -130,6 +138,26 @@ function SettingsPage() {
       </Card>
 
       <SectionTitle>Уведомления</SectionTitle>
+      {inIframe && (
+        <Card className="mb-2 border-amber-500/30 bg-amber-500/5 p-4 text-sm">
+          <div className="mb-2 font-medium text-foreground">Push не работает в превью</div>
+          <div className="mb-3 text-muted-foreground">
+            Браузер блокирует уведомления внутри встроенного окна Lovable. Откройте приложение в отдельной вкладке, чтобы включить push.
+          </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => window.open(window.location.href, "_blank", "noopener")}
+          >
+            Открыть в новой вкладке
+          </Button>
+        </Card>
+      )}
+      {!inIframe && permission === "denied" && (
+        <Card className="mb-2 border-destructive/30 bg-destructive/5 p-4 text-sm text-muted-foreground">
+          Уведомления заблокированы в браузере. Разрешите их в настройках сайта и обновите страницу.
+        </Card>
+      )}
       <Card className="p-4">
         <button
           type="button"
