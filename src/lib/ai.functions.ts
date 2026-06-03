@@ -497,7 +497,6 @@ ${slotsStr}`,
           messages,
           tools,
           tool_choice: "auto",
-          reasoning: { effort: "medium" },
         }),
       });
 
