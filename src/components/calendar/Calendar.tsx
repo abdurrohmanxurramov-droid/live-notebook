@@ -240,7 +240,12 @@ function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) =>
   }, [view]);
 
   return (
-    <div className="glass-strong relative inline-flex rounded-full p-1 text-xs">
+    <div
+      className="glass-strong fixed left-1/2 z-40 inline-flex -translate-x-1/2 rounded-full p-1 text-xs"
+      style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}
+    >
+      <div className="relative inline-flex">
+
       {indicator && (
         <span
           aria-hidden
