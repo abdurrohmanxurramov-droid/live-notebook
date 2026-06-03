@@ -178,7 +178,7 @@ const tools = [
         properties: {
           student_id: { type: "string" },
           date: { type: "string", description: "YYYY-MM-DD" },
-          status: { type: "string", description: "present|absent|late|cancelled" },
+          status: { type: "string", description: "present|absent|excused|rescheduled_by_teacher" },
           note: { type: "string" },
         },
         required: ["student_id", "date", "status"],
