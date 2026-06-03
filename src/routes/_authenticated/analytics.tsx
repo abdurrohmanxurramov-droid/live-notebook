@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -198,19 +198,7 @@ function AnalyticsPage() {
 
           <SectionTitle
             action={
-              <div className="flex gap-1 rounded-full bg-secondary p-0.5">
-                {([6, 12] as const).map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setRange(n)}
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
-                      range === n ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
-                    }`}
-                  >
-                    {n} мес
-                  </button>
-                ))}
-              </div>
+              <RangePill value={range} onChange={setRange} options={[6, 12]} />
             }
           >
             Доход по месяцам
@@ -480,6 +468,79 @@ function ChartTooltip({ active, payload, label, suffix = "" }: any) {
             {suffix}
           </span>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function RangePill<T extends number>({
+  value,
+  onChange,
+  options,
+}: {
+  value: T;
+  onChange: (v: T) => void;
+  options: readonly T[];
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [ind, setInd] = useState({ x: 0, w: 0, ready: false });
+
+  const measure = () => {
+    const idx = options.indexOf(value);
+    const el = itemRefs.current[idx];
+    const wrap = containerRef.current;
+    if (!el || !wrap) return;
+    const er = el.getBoundingClientRect();
+    const wr = wrap.getBoundingClientRect();
+    setInd({ x: er.left - wr.left, w: er.width, ready: true });
+  };
+
+  useLayoutEffect(() => {
+    measure();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  useEffect(() => {
+    const ro = new ResizeObserver(measure);
+    if (containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      ref={containerRef}
+      className="glass-strong relative inline-flex items-center gap-1 rounded-full p-1"
+    >
+      <span
+        aria-hidden
+        className="liquid-pill pointer-events-none absolute top-1 bottom-1 rounded-full"
+        style={{
+          width: ind.w,
+          transform: `translateX(${ind.x - 4}px)`,
+          opacity: ind.ready ? 1 : 0,
+          transition:
+            "transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease",
+        }}
+      />
+      {options.map((n, i) => (
+        <button
+          key={n}
+          ref={(el) => {
+            itemRefs.current[i] = el;
+          }}
+          onClick={() => onChange(n)}
+          className={`no-anim relative z-10 rounded-full px-3 py-1 text-[11px] font-semibold transition-colors duration-300 ${
+            value === n ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          {n} мес
+        </button>
       ))}
     </div>
   );
