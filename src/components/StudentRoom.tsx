@@ -612,3 +612,40 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+
+function StatusSwitcher({ studentId, current }: { studentId: string; current: StudentStatus }) {
+  const upd = useMut(async (next: StudentStatus) => {
+    const { error } = await (await sb()).from("students").update({ status: next }).eq("id", studentId);
+    if (error) throw error;
+  }, ["students"]);
+  const items: StudentStatus[] = ["active", "paused", "completed", "archived"];
+  return (
+    <div className="mt-3 flex gap-1.5 overflow-x-auto -mx-1 px-1">
+      {items.map((s) => {
+        const meta = STUDENT_STATUS_META[s];
+        const active = current === s;
+        return (
+          <button
+            key={s}
+            type="button"
+            disabled={upd.isPending}
+            onClick={() => {
+              if (active) return;
+              upd.mutate(s, {
+                onSuccess: () => toast.success(`Статус: ${meta.label}`),
+                onError: (e: any) => toast.error(e?.message ?? "Ошибка"),
+              });
+            }}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
+              active
+                ? "bg-accent text-accent-foreground shadow-sm"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            }`}
+          >
+            {meta.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
