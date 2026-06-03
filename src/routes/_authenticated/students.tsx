@@ -692,3 +692,38 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     </Sheet>
   );
 }
+
+function StatusStat({
+  label,
+  count,
+  tone,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  tone?: "success" | "gold" | "neutral" | "danger";
+  active: boolean;
+  onClick: () => void;
+}) {
+  const toneRing: Record<string, string> = {
+    success: "ring-[color:var(--success,theme(colors.emerald.500))]/40",
+    gold: "ring-accent/40",
+    neutral: "ring-border",
+    danger: "ring-destructive/40",
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-2xl border px-3 py-2 text-left transition-all ${
+        active
+          ? "border-accent bg-accent/15 shadow-sm"
+          : `border-border bg-card ring-1 ring-transparent ${tone ? toneRing[tone] : ""}`
+      }`}
+    >
+      <div className="num text-base text-foreground leading-none">{count}</div>
+      <div className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+    </button>
+  );
+}
