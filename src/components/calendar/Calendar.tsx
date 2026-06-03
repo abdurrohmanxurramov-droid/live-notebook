@@ -206,7 +206,75 @@ export function Calendar() {
   );
 }
 
+/* -------------------- VIEW SWITCH -------------------- */
+
+const VIEW_OPTS: { key: View; label: string }[] = [
+  { key: "day", label: "День" },
+  { key: "week", label: "Нед." },
+  { key: "month", label: "Мес." },
+];
+
+function ViewSwitch({ view, setView }: { view: View; setView: (v: View) => void }) {
+  const itemRefs = useRef<Map<View, HTMLButtonElement>>(new Map());
+  const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = itemRefs.current.get(view);
+    if (!el) return;
+    setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
+    const t = setTimeout(() => setReady(true), 30);
+    return () => clearTimeout(t);
+  }, [view]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const el = itemRefs.current.get(view);
+      if (!el) return;
+      setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [view]);
+
+  return (
+    <div className="glass-strong relative inline-flex rounded-full p-1 text-xs">
+      {indicator && (
+        <span
+          aria-hidden
+          className="liquid-pill pointer-events-none absolute top-1 bottom-1 rounded-full"
+          style={{
+            transform: `translateX(${indicator.x - 4}px)`,
+            width: indicator.w,
+            transition: ready
+              ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+              : "none",
+          }}
+        />
+      )}
+      {VIEW_OPTS.map((v) => {
+        const active = view === v.key;
+        return (
+          <button
+            key={v.key}
+            ref={(node) => {
+              if (node) itemRefs.current.set(v.key, node);
+              else itemRefs.current.delete(v.key);
+            }}
+            onClick={() => setView(v.key)}
+            className={`relative z-10 rounded-full px-3.5 py-1.5 font-semibold transition-colors duration-300 ${active ? "text-foreground" : "text-muted-foreground"}`}
+          >
+            {v.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* -------------------- DAY -------------------- */
+
+
 
 function DayView({ date, lessons, studentName, onDrop, onSlot, onLesson }: {
   date: string;
