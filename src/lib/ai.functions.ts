@@ -68,7 +68,3 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
     const reply: string = json.choices?.[0]?.message?.content ?? "";
     return { reply };
   });
-
-// Suppress unused
-void context_unused;
-const context_unused = 0;
