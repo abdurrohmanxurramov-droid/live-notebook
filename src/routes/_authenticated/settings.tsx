@@ -2,11 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, Button, SectionTitle } from "@/components/ui-bits";
 import { RatesCard } from "./finance";
-import { Moon, Sun, Info, Heart, Bell, BellOff, LogOut } from "lucide-react";
+import { Moon, Sun, Info, Heart, Bell, BellOff, LogOut, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { pushSupported, isSubscribed, subscribePush, unsubscribePush, getRegistration } from "@/lib/push";
 import { sendTestPush } from "@/lib/push.functions";
+import { regenerateLessons } from "@/lib/lessons.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
@@ -19,6 +21,8 @@ function SettingsPage() {
   const [busy, setBusy] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const testFn = useServerFn(sendTestPush);
+  const regenFn = useServerFn(regenerateLessons);
+  const qc = useQueryClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
@@ -71,6 +75,19 @@ function SettingsPage() {
       if (!sub) throw new Error("Сначала включите уведомления");
       await testFn({ data: { endpoint: sub.endpoint } });
       toast.success("Отправлено");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function regenerate() {
+    setBusy(true);
+    try {
+      const res = await regenFn({});
+      toast.success(`Сгенерировано уроков: ${res.inserted}`);
+      qc.invalidateQueries({ queryKey: ["lessons"] });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
