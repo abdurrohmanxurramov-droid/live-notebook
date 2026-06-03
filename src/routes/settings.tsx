@@ -140,11 +140,6 @@ function SettingsPage() {
           </Button>
         )}
       </Card>
-          <Button onClick={testPush} disabled={busy} variant="outline" className="mt-3 w-full">
-            Отправить тестовое уведомление
-          </Button>
-        )}
-      </Card>
 
       <SectionTitle>Курсы валют</SectionTitle>
       <RatesCard />
