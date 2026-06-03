@@ -5,7 +5,10 @@ import { Card, Button, Input, Select, Empty, SectionTitle, Badge, Avatar } from 
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Clock, Check, X, ArrowRight } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { listLessons, setLessonStatus, moveLesson, type LessonStatus } from "@/lib/lessons.functions";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
@@ -66,6 +69,9 @@ function SchedulePage() {
           <Plus className="h-4 w-4" /> Слот
         </Button>
       </header>
+
+      <UpcomingLessons studentsById={studentsById} />
+
 
       {slots.length === 0 ? (
         <div className="mt-6">
@@ -249,3 +255,161 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     </label>
   );
 }
+
+function statusTone(s: LessonStatus): "neutral" | "success" | "danger" | "gold" {
+  if (s === "completed") return "success";
+  if (s === "cancelled") return "danger";
+  if (s === "moved") return "neutral";
+  return "gold";
+}
+function statusLabel(s: LessonStatus) {
+  return s === "planned" ? "Запланирован" : s === "completed" ? "Проведён" : s === "cancelled" ? "Отменён" : "Перенесён";
+}
+
+function isoDate(d: Date) { return d.toISOString().slice(0, 10); }
+
+function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: string; subject: string | null }> }) {
+  const listFn = useServerFn(listLessons);
+  const setFn = useServerFn(setLessonStatus);
+  const moveFn = useServerFn(moveLesson);
+  const qc = useQueryClient();
+  const [moveTarget, setMoveTarget] = useState<{ id: string; date: string; time: string } | null>(null);
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const weekAhead = new Date(today); weekAhead.setDate(weekAhead.getDate() + 7);
+  const from = isoDate(today);
+  const to = isoDate(weekAhead);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["lessons", from, to],
+    queryFn: () => listFn({ data: { from, to } }),
+  });
+
+  const lessons = (data?.lessons ?? []).filter((l) => l.status !== "moved");
+
+  async function changeStatus(id: string, status: LessonStatus) {
+    try {
+      await setFn({ data: { id, status } });
+      toast.success(statusLabel(status));
+      qc.invalidateQueries({ queryKey: ["lessons"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка");
+    }
+  }
+
+  async function submitMove(newDate: string, newTime: string) {
+    if (!moveTarget) return;
+    try {
+      await moveFn({ data: { id: moveTarget.id, new_date: newDate, new_time: newTime } });
+      toast.success("Перенесён");
+      setMoveTarget(null);
+      qc.invalidateQueries({ queryKey: ["lessons"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Ошибка");
+    }
+  }
+
+  return (
+    <>
+      <SectionTitle>Ближайшие уроки (7 дней)</SectionTitle>
+      {isLoading ? (
+        <Card className="p-4"><p className="text-xs text-muted-foreground">Загрузка…</p></Card>
+      ) : lessons.length === 0 ? (
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">
+            Нет уроков. Сгенерируйте историю в Настройках или добавьте слот в расписании.
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-2">
+          {lessons.map((l) => {
+            const st = studentsById.get(l.student_id);
+            const time = String(l.scheduled_time).slice(0, 5);
+            const isPast = l.scheduled_date < from;
+            return (
+              <Card key={l.id} className="p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex w-20 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-2">
+                    <span className="num text-xs leading-tight text-accent">{l.scheduled_date.slice(5)}</span>
+                    <span className="num text-base leading-tight text-foreground">{time}</span>
+                  </div>
+                  <Avatar initials={initials(st?.name ?? "?")} />
+                  <div className="min-w-0 flex-1">
+                    <div className="name-italic truncate text-[14px] font-semibold text-foreground">
+                      {st?.name ?? "Удалён"}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-muted-foreground">
+                      {st?.subject ?? ""}
+                    </div>
+                  </div>
+                  <Badge tone={statusTone(l.status as LessonStatus)}>{statusLabel(l.status as LessonStatus)}</Badge>
+                </div>
+                {l.status === "planned" && (
+                  <div className="mt-3 flex gap-2">
+                    <Button variant="outline" className="flex-1" onClick={() => changeStatus(l.id, "completed")}>
+                      <Check className="h-4 w-4" /> Провёл
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={() => changeStatus(l.id, "cancelled")}>
+                      <X className="h-4 w-4" /> Отменил
+                    </Button>
+                    <Button variant="outline" className="flex-1" onClick={() => setMoveTarget({ id: l.id, date: l.scheduled_date, time })} disabled={isPast}>
+                      <ArrowRight className="h-4 w-4" /> Перенёс
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <MoveLessonSheet
+        target={moveTarget}
+        onClose={() => setMoveTarget(null)}
+        onSubmit={submitMove}
+      />
+    </>
+  );
+}
+
+function MoveLessonSheet({
+  target,
+  onClose,
+  onSubmit,
+}: {
+  target: { id: string; date: string; time: string } | null;
+  onClose: () => void;
+  onSubmit: (date: string, time: string) => void;
+}) {
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  // Reset when target changes
+  useMemo(() => {
+    if (target) { setDate(target.date); setTime(target.time); }
+  }, [target?.id]);
+
+  return (
+    <Sheet open={!!target} onClose={onClose} title="Перенести урок">
+      <div className="space-y-3">
+        <Field label="Новая дата">
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </Field>
+        <Field label="Новое время">
+          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </Field>
+      </div>
+      <div className="mt-5 flex gap-2">
+        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button
+          variant="gold"
+          className="flex-1"
+          disabled={!date || !time}
+          onClick={() => onSubmit(date, time)}
+        >
+          Перенести
+        </Button>
+      </div>
+    </Sheet>
+  );
+}
+
