@@ -157,7 +157,8 @@ export function BottomNav() {
             <li ref={setRef("__more__")} className="relative z-10 flex-1">
               <button
                 type="button"
-                onClick={() => setOpen(true)}
+                onPointerDown={moveTo("__more__")}
+                onClick={() => { setTargetKey("__more__"); setOpen(true); }}
                 className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
               >
                 <MoreHorizontal
