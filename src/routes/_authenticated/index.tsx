@@ -117,19 +117,26 @@ function Home() {
           {todayLessons.map((slot) => {
             const st = studentsById.get(slot.student_id);
             return (
-              <Card key={slot.id} className="flex items-center gap-3 p-3">
-                <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
-                  <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
-                  <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
-                </div>
-                <Avatar initials={initials(st?.name ?? "?")} />
-                <div className="min-w-0 flex-1">
-                  <div className="name-italic truncate text-[14px] font-semibold text-foreground">{st?.name ?? "—"}</div>
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <Clock className="h-3 w-3" /> {st?.subject || "Урок"}
+              <button
+                key={slot.id}
+                type="button"
+                onClick={() => st && setOpenId(st.id)}
+                className="block w-full text-left"
+              >
+                <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary">
+                  <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
+                    <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
+                    <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
                   </div>
-                </div>
-              </Card>
+                  <Avatar initials={initials(st?.name ?? "?")} />
+                  <div className="min-w-0 flex-1">
+                    <div className="name-italic truncate text-[14px] font-semibold text-foreground">{st?.name ?? "—"}</div>
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Clock className="h-3 w-3" /> {st?.subject || "Урок"}
+                    </div>
+                  </div>
+                </Card>
+              </button>
             );
           })}
         </div>
