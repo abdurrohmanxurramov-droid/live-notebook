@@ -26,7 +26,7 @@ async function handle() {
   // Pull today's slots; filter in JS (time math with timezone is awkward in SQL)
   const { data: slots, error } = await supabaseAdmin
     .from("schedule_slots")
-    .select("id, student_id, day_of_week, start_time, duration_min");
+    .select("id, student_id, owner_id, day_of_week, start_time, duration_min");
   if (error) throw new Error(error.message);
 
   const matches = (slots ?? []).filter((s) => {
@@ -40,7 +40,6 @@ async function handle() {
     return { ok: true, checked: slots?.length ?? 0, matched: 0, sent: 0 };
   }
 
-  // Lookup student names
   const ids = Array.from(new Set(matches.map((m) => m.student_id)));
   const { data: students } = await supabaseAdmin
     .from("students")
@@ -48,10 +47,16 @@ async function handle() {
     .in("id", ids);
   const byId = new Map((students ?? []).map((s) => [s.id, s]));
 
-  // Get all push subscriptions once
+  // Get all subscriptions, group by owner_id
   const { data: subs } = await supabaseAdmin
     .from("push_subscriptions")
-    .select("endpoint, p256dh, auth");
+    .select("endpoint, p256dh, auth, owner_id");
+  const subsByOwner = new Map<string, typeof subs>();
+  (subs ?? []).forEach((s) => {
+    const arr = subsByOwner.get(s.owner_id) ?? [];
+    arr.push(s);
+    subsByOwner.set(s.owner_id, arr as any);
+  });
 
   let sent = 0;
   for (const m of matches) {
@@ -63,7 +68,8 @@ async function handle() {
       url: "/schedule",
       tag: `lesson-${m.id}-${dow}-${startHH}`,
     };
-    const results = await Promise.all((subs ?? []).map((s) => sendPushTo(s, payload)));
+    const ownerSubs = subsByOwner.get(m.owner_id) ?? [];
+    const results = await Promise.all(ownerSubs.map((s) => sendPushTo(s, payload)));
     sent += results.filter((r) => r.ok).length;
   }
 

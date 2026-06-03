@@ -1,21 +1,33 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, Button, SectionTitle } from "@/components/ui-bits";
 import { RatesCard } from "./finance";
-import { Moon, Sun, Info, Heart, Bell, BellOff } from "lucide-react";
+import { Moon, Sun, Info, Heart, Bell, BellOff, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { pushSupported, isSubscribed, subscribePush, unsubscribePush, getRegistration } from "@/lib/push";
 import { sendTestPush } from "@/lib/push.functions";
 import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/settings")({ component: SettingsPage });
+export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
 function SettingsPage() {
+  const navigate = useNavigate();
   const [dark, setDark] = useState(false);
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [email, setEmail] = useState<string | null>(null);
   const testFn = useServerFn(sendTestPush);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+  }, []);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
@@ -143,6 +155,16 @@ function SettingsPage() {
 
       <SectionTitle>Курсы валют</SectionTitle>
       <RatesCard />
+
+      <SectionTitle>Аккаунт</SectionTitle>
+      <Card className="p-4">
+        <div className="mb-3 text-sm text-muted-foreground">
+          {email ? <>Вы вошли как <span className="font-medium text-foreground">{email}</span></> : "—"}
+        </div>
+        <Button variant="outline" className="w-full" onClick={handleLogout}>
+          <LogOut className="h-4 w-4" /> Выйти
+        </Button>
+      </Card>
 
       <SectionTitle>О приложении</SectionTitle>
       <Card className="p-5">

@@ -7,7 +7,7 @@ import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@
 import { sb } from "@/lib/sb";
 import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
 
-export const Route = createFileRoute("/schedule")({ component: SchedulePage });
+export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
 const DAYS_FULL = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"] as const;

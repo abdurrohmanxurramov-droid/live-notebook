@@ -5,7 +5,7 @@ import { StudentRoom } from "@/components/StudentRoom";
 import { useStudents, useFinance, useRates, useSchedule, initials, convertToRUB } from "@/lib/db";
 import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen, X } from "lucide-react";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/_authenticated/")({ component: Home });
 
 function greetingForNow() {
   const h = new Date().getHours();

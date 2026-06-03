@@ -8,7 +8,7 @@ import { sb } from "@/lib/sb";
 import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil } from "lucide-react";
 
 
-export const Route = createFileRoute("/students")({ component: StudentsPage });
+export const Route = createFileRoute("/_authenticated/students")({ component: StudentsPage });
 
 function StudentsPage() {
   const { data: students = [] } = useStudents();

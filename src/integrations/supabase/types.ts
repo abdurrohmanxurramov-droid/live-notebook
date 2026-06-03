@@ -20,6 +20,7 @@ export type Database = {
           date: string
           id: string
           note: string | null
+          owner_id: string
           status: string
           student_id: string
         }
@@ -28,6 +29,7 @@ export type Database = {
           date: string
           id?: string
           note?: string | null
+          owner_id: string
           status: string
           student_id: string
         }
@@ -36,10 +38,18 @@ export type Database = {
           date?: string
           id?: string
           note?: string | null
+          owner_id?: string
           status?: string
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "attendance_student_fk"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "attendance_student_id_fkey"
             columns: ["student_id"]
@@ -56,6 +66,7 @@ export type Database = {
           currency: string
           id: string
           is_paid: boolean
+          owner_id: string
           pay_date: string | null
           student_id: string
         }
@@ -65,6 +76,7 @@ export type Database = {
           currency?: string
           id?: string
           is_paid?: boolean
+          owner_id: string
           pay_date?: string | null
           student_id: string
         }
@@ -74,10 +86,18 @@ export type Database = {
           currency?: string
           id?: string
           is_paid?: boolean
+          owner_id?: string
           pay_date?: string | null
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "finance_student_fk"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "finance_student_id_fkey"
             columns: ["student_id"]
@@ -94,6 +114,7 @@ export type Database = {
           due_date: string | null
           id: string
           note: string | null
+          owner_id: string
           status: string
           student_id: string
           task: string
@@ -104,6 +125,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           note?: string | null
+          owner_id: string
           status?: string
           student_id: string
           task: string
@@ -114,32 +136,51 @@ export type Database = {
           due_date?: string | null
           id?: string
           note?: string | null
+          owner_id?: string
           status?: string
           student_id?: string
           task?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homework_student_fk"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lessons_conducted: {
         Row: {
           created_at: string
           id: string
           lessons_done: number
+          owner_id: string
           student_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           lessons_done?: number
+          owner_id: string
           student_id: string
         }
         Update: {
           created_at?: string
           id?: string
           lessons_done?: number
+          owner_id?: string
           student_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lessons_conducted_student_fk"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lessons_conducted_student_id_fkey"
             columns: ["student_id"]
@@ -155,6 +196,7 @@ export type Database = {
           created_at: string
           endpoint: string
           id: string
+          owner_id: string
           p256dh: string
           user_agent: string | null
         }
@@ -163,6 +205,7 @@ export type Database = {
           created_at?: string
           endpoint: string
           id?: string
+          owner_id: string
           p256dh: string
           user_agent?: string | null
         }
@@ -171,6 +214,7 @@ export type Database = {
           created_at?: string
           endpoint?: string
           id?: string
+          owner_id?: string
           p256dh?: string
           user_agent?: string | null
         }
@@ -179,6 +223,7 @@ export type Database = {
       rates: {
         Row: {
           id: string
+          owner_id: string
           updated_at: string
           usd_to_egp: number
           usd_to_rub: number
@@ -186,6 +231,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          owner_id: string
           updated_at?: string
           usd_to_egp?: number
           usd_to_rub?: number
@@ -193,6 +239,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          owner_id?: string
           updated_at?: string
           usd_to_egp?: number
           usd_to_rub?: number
@@ -206,6 +253,7 @@ export type Database = {
           day_of_week: number
           duration_min: number
           id: string
+          owner_id: string
           start_time: string
           student_id: string
         }
@@ -214,6 +262,7 @@ export type Database = {
           day_of_week: number
           duration_min?: number
           id?: string
+          owner_id: string
           start_time: string
           student_id: string
         }
@@ -222,10 +271,19 @@ export type Database = {
           day_of_week?: number
           duration_min?: number
           id?: string
+          owner_id?: string
           start_time?: string
           student_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "schedule_slots_student_fk"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       students: {
         Row: {
@@ -233,6 +291,7 @@ export type Database = {
           days_per_week: number
           id: string
           name: string
+          owner_id: string
           phone: string | null
           subject: string | null
         }
@@ -241,6 +300,7 @@ export type Database = {
           days_per_week?: number
           id?: string
           name: string
+          owner_id: string
           phone?: string | null
           subject?: string | null
         }
@@ -249,6 +309,7 @@ export type Database = {
           days_per_week?: number
           id?: string
           name?: string
+          owner_id?: string
           phone?: string | null
           subject?: string | null
         }

@@ -6,7 +6,7 @@ import { useStudents, useAttendance, useMut, initials } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { CalendarCheck, Check, X, FileText, Trash2 } from "lucide-react";
 
-export const Route = createFileRoute("/attendance")({ component: AttendancePage });
+export const Route = createFileRoute("/_authenticated/attendance")({ component: AttendancePage });
 
 const STATUS = {
   present: { label: "Присутствовал", emoji: "✅", tone: "success" as const },
