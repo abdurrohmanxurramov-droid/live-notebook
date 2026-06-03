@@ -173,6 +173,17 @@ function SettingsPage() {
       <SectionTitle>Курсы валют</SectionTitle>
       <RatesCard />
 
+      <SectionTitle>История уроков</SectionTitle>
+      <Card className="p-4">
+        <div className="mb-3 text-sm text-muted-foreground">
+          Сгенерировать уроки из расписания за последние 3 месяца и на месяц вперёд. Уже существующие уроки не затрагиваются.
+        </div>
+        <Button variant="outline" className="w-full" disabled={busy} onClick={regenerate}>
+          <RefreshCw className="h-4 w-4" /> Пересоздать историю
+        </Button>
+      </Card>
+
+
       <SectionTitle>Аккаунт</SectionTitle>
       <Card className="p-4">
         <div className="mb-3 text-sm text-muted-foreground">
