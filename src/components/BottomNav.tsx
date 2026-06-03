@@ -78,7 +78,7 @@ export function BottomNav() {
     <>
       <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-3 safe-bottom pointer-events-none">
         <nav className="glass-strong pointer-events-auto mx-auto max-w-2xl rounded-[28px]">
-          <ul ref={listRef} className="relative flex items-stretch justify-between px-1.5 py-1">
+          <ul ref={listRef} className="relative flex items-stretch px-1.5 py-1">
             {indicator && (
               <span
                 aria-hidden
@@ -100,7 +100,7 @@ export function BottomNav() {
                 <li key={t.to} ref={setRef(t.to as Key)} className="relative z-10 flex-1">
                   <Link
                     to={t.to}
-                    className="relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-2xl"
+                    className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
                   >
                     <Icon
                       className={`h-[18px] w-[18px] transition-all duration-500 ${
