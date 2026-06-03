@@ -1,48 +1,25 @@
-# Fix bottom navigation pill glitching through intermediate tabs
+План исправления без изменения архитектуры, базы, auth/security и дизайн-языка:
 
-## Problem
+1. Починить корневую причину мигания старых страниц
+- В `src/routes/_authenticated/route.tsx` убрать `key={pathname}` с обёртки `PageShell`.
+- Сейчас при каждом переходе весь authenticated-layout размонтируется и монтируется заново, из-за чего страница на долю секунды повторно проигрывает входную анимацию и может казаться, что приложение “заходит” в старые экраны.
+- Оставить `Outlet`, `QuickActionsFab` и текущую структуру без изменений.
 
-When tapping a non-adjacent tab (e.g. Home → Finance), the user sees:
-1. The pill visibly "passes through" intermediate tabs
-2. Intermediate route pages briefly flash on screen
-3. Occasional lag before the final page settles
+2. Убрать лишнюю анимацию страницы при переходах между вкладками
+- В `src/styles.css` сделать `.animate-page-in` нейтральной для обычных переходов внутри приложения: без 420ms fade-in на каждый route-change.
+- Это устранит ощущение зацикливания/подвисания на предыдущей странице.
+- Не трогать остальные анимации: sheet, tap feedback, карточки, haptic-style feedback.
 
-## Root cause
+3. Устранить двойное срабатывание навигации в нижнем меню
+- В `src/components/BottomNav.tsx` убрать дублирующий `onClick={moveTo(...)}` у основных `Link`, оставив быстрый optimistic-сдвиг пилюли на `onPointerDown`.
+- Для клавиатуры/десктопа добавить безопасный fallback через `onClick`, который двигает пилюлю только если `pointerdown` не сработал.
+- Для кнопки “Ещё” оставить одно управляемое открытие sheet без двойного setState.
 
-In `src/components/BottomNav.tsx` the pill's target position is derived from `useLocation().pathname` inside a `useLayoutEffect`. That means the pill only starts moving **after** TanStack Router commits the new route. Combined with:
+4. Стабилизировать пилюлю во время перехода
+- Не синхронизировать `targetKey` обратно на старый `activeKey`, пока переход ещё не завершился.
+- Добавить небольшой guard, чтобы быстрые клики не возвращали пилюлю назад на предыдущую вкладку на один кадр.
+- Сохранить текущую визуальную форму и скорость, максимум чуть уменьшить длительность, если это нужно для ощущения native UI.
 
-- Route loaders that suspend (TanStack Query `ensureQueryData`) → the destination route's Suspense fallback or previous route stays mounted while the pill is still pointing at the old tab.
-- A long 520ms spring (`cubic-bezier(0.34, 1.3, 0.4, 1)`) with overshoot → the lag becomes very visible.
-- `<Link>` clicks during a slow nav can interleave with React's concurrent rendering, so intermediate route states paint for a frame.
-
-The pill is reactive to route state rather than to the user's intent, which is why it feels like it "walks through" pages.
-
-## Fix
-
-Make the pill move **immediately on tap**, independent of when the route actually commits. Keep `pathname` only as a fallback / sync source.
-
-### Changes (frontend-only, `src/components/BottomNav.tsx`)
-
-1. Add `targetKey` state, initialized from `activeKey`.
-2. On each tab `<Link>` / "Ещё" button, add `onPointerDown` (and `onClick`) that sets `targetKey` to that tab's key synchronously — pill animates from current to target right away.
-3. Drive the indicator `useLayoutEffect` from `targetKey` instead of `activeKey`.
-4. Add a second `useEffect` that syncs `targetKey ← activeKey` whenever `pathname` changes (covers back/forward nav and external navigation).
-5. Shorten the spring slightly and reduce overshoot to feel snappier:
-   - `transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)`
-6. Keep the existing resize listener, but key it off `targetKey`.
-
-### Why this fixes the symptoms
-
-- Pill movement is decoupled from route commit → no more "waiting for pathname, then jumping".
-- Because pill goes straight to the tapped tab in one tween, there's no visual illusion of stopping at intermediate tabs.
-- Any brief intermediate render of route content (from Suspense ordering) is still possible, but the *pill* no longer reinforces the perception, and the shorter, non-overshoot easing removes the lag feel.
-
-## Out of scope
-
-- No changes to routing, route loaders, design tokens, or any business logic.
-- No changes to the "Ещё" sheet behavior or overdue badge.
-- No backend / DB / auth changes.
-
-## Files touched
-
-- `src/components/BottomNav.tsx` (only)
+5. Проверка
+- Проверить переходы: `Главная → Финансы`, `Финансы → Распис.`, `Распис. → Ученики`, а также открытие “Ещё”.
+- Убедиться, что не мелькают промежуточные/прошлые страницы и активная вкладка совпадает с открытой страницей.

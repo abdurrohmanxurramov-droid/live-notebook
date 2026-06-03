@@ -124,7 +124,6 @@ export function BottomNav() {
                   <Link
                     to={t.to}
                     onPointerDown={moveTo(t.to as Key)}
-                    onClick={moveTo(t.to as Key)}
                     className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
                   >
                     <span className="relative">
@@ -158,7 +157,7 @@ export function BottomNav() {
               <button
                 type="button"
                 onPointerDown={moveTo("__more__")}
-                onClick={() => { setTargetKey("__more__"); setOpen(true); }}
+                onClick={() => setOpen(true)}
                 className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
               >
                 <MoreHorizontal

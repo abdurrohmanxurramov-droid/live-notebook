@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, redirect, Link, useRouter, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { QuickActionsFab } from "@/components/QuickActionsFab";
 
@@ -62,11 +62,10 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function PageShell() {
-  const { pathname } = useLocation();
   return (
-    <div key={pathname} className="animate-page-in">
+    <>
       <Outlet />
       <QuickActionsFab />
-    </div>
+    </>
   );
 }
