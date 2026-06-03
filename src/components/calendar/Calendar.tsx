@@ -216,7 +216,7 @@ const VIEW_OPTS: { key: View; label: string }[] = [
   { key: "month", label: "Мес." },
 ];
 
-function ViewSwitch({ view, setView }: { view: View; setView: (v: View) => void }) {
+function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) => void }) {
   const itemRefs = useRef<Map<View, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
   const [ready, setReady] = useState(false);
