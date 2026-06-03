@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listLessons, setLessonStatus, moveLesson, type LessonStatus } from "@/lib/lessons.functions";
 import { Calendar } from "@/components/calendar/Calendar";
+import { SwipeableLessonCard } from "@/components/SwipeableLessonCard";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
