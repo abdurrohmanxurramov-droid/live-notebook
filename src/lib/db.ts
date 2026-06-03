@@ -20,12 +20,14 @@ export type Finance = {
   created_at: string;
 };
 
+export type AttendanceStatus = "present" | "absent" | "excused" | "rescheduled_by_teacher";
 export type Attendance = {
   id: string;
   student_id: string;
   date: string;
-  status: "present" | "absent" | "excused";
+  status: AttendanceStatus;
   note: string | null;
+  compensated: boolean;
   created_at: string;
 };
 
