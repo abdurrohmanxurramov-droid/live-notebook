@@ -110,7 +110,7 @@ export function BottomNav() {
                   transform: `translateX(${indicator.x - 6}px)`,
                   width: indicator.w,
                   transition: ready
-                    ? "transform 520ms cubic-bezier(0.34, 1.3, 0.4, 1), width 520ms cubic-bezier(0.34, 1.3, 0.4, 1)"
+                    ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)"
                     : "none",
                 }}
               />
