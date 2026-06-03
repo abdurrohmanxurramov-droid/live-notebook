@@ -18,7 +18,7 @@ import {
 } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target, RotateCcw } from "lucide-react";
+import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target, RotateCcw, History as HistoryIcon, StickyNote } from "lucide-react";
 
 const LESSONS_PER_CYCLE = 12;
 const EXCUSED_LIMIT = 3;
