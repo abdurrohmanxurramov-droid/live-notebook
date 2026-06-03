@@ -18,7 +18,7 @@ import {
 } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target, RotateCcw } from "lucide-react";
+import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target, RotateCcw, History as HistoryIcon, StickyNote } from "lucide-react";
 
 const LESSONS_PER_CYCLE = 12;
 const EXCUSED_LIMIT = 3;
@@ -63,7 +63,7 @@ export function StudentRoom({ id }: { id: string }) {
   // Долг учителя — переносы, не возмещённые
   const teacherDebt = att.filter((a) => a.status === "rescheduled_by_teacher" && !a.compensated).length;
 
-  const [tab, setTab] = useState<"att" | "hw" | "fin">("att");
+  const [tab, setTab] = useState<"att" | "hw" | "fin" | "timeline">("att");
 
   if (!student) {
     return <Empty icon={<Target className="h-8 w-8" />} title="Ученик не найден" />;
@@ -147,10 +147,11 @@ export function StudentRoom({ id }: { id: string }) {
         </div>
       </Card>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-4 gap-2">
         <TabBtn active={tab === "att"} onClick={() => setTab("att")} icon={<CalendarCheck className="h-4 w-4" />} label="Посещения" />
         <TabBtn active={tab === "hw"} onClick={() => setTab("hw")} icon={<BookOpen className="h-4 w-4" />} label="ДЗ" />
         <TabBtn active={tab === "fin"} onClick={() => setTab("fin")} icon={<Wallet className="h-4 w-4" />} label="Оплаты" />
+        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<HistoryIcon className="h-4 w-4" />} label="История" />
       </div>
 
       {tab === "att" && (
@@ -163,6 +164,7 @@ export function StudentRoom({ id }: { id: string }) {
       )}
       {tab === "hw" && <HomeworkTab studentId={id} hw={hw} />}
       {tab === "fin" && <FinanceTab studentId={id} fin={fin} />}
+      {tab === "timeline" && <TimelineTab att={att} hw={hw} fin={fin} />}
     </div>
   );
 }
@@ -646,6 +648,111 @@ function StatusSwitcher({ studentId, current }: { studentId: string; current: St
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function TimelineTab({ att, hw, fin }: { att: any[]; hw: any[]; fin: any[] }) {
+  type Item = {
+    id: string;
+    date: string;
+    kind: "lesson" | "payment" | "homework" | "note";
+    title: string;
+    sub?: string;
+    tone: "success" | "danger" | "gold" | "neutral";
+    icon: React.ReactNode;
+  };
+
+  const items: Item[] = useMemo(() => {
+    const out: Item[] = [];
+    for (const a of att) {
+      const meta = ATT_STATUS[a.status as AttendanceStatus];
+      out.push({
+        id: `a-${a.id}`,
+        date: a.date,
+        kind: "lesson",
+        title: `Урок · ${meta.label}`,
+        sub: a.note || undefined,
+        tone: meta.tone,
+        icon: <CalendarCheck className="h-3.5 w-3.5" />,
+      });
+      if (a.note) {
+        out.push({
+          id: `n-${a.id}`,
+          date: a.date,
+          kind: "note",
+          title: "Заметка",
+          sub: a.note,
+          tone: "neutral",
+          icon: <StickyNote className="h-3.5 w-3.5" />,
+        });
+      }
+    }
+    for (const h of hw) {
+      const meta = HW_STATUS[h.status as HomeworkStatus];
+      out.push({
+        id: `h-${h.id}`,
+        date: h.assigned_date,
+        kind: "homework",
+        title: `ДЗ · ${meta.label}`,
+        sub: h.task,
+        tone: meta.tone,
+        icon: <BookOpen className="h-3.5 w-3.5" />,
+      });
+    }
+    for (const f of fin) {
+      const d = f.pay_date || (f.created_at ? String(f.created_at).slice(0, 10) : "");
+      out.push({
+        id: `f-${f.id}`,
+        date: d,
+        kind: "payment",
+        title: f.is_paid ? "Оплата получена" : "Начислен платёж",
+        sub: `${Number(f.amount).toLocaleString("ru-RU")} ${f.currency}`,
+        tone: f.is_paid ? "success" : "danger",
+        icon: <Wallet className="h-3.5 w-3.5" />,
+      });
+    }
+    return out
+      .filter((i) => i.date)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [att, hw, fin]);
+
+  if (items.length === 0) {
+    return <Empty icon={<HistoryIcon className="h-8 w-8" />} title="История пуста" hint="Добавьте уроки, ДЗ или оплаты" />;
+  }
+
+  const toneClasses: Record<Item["tone"], string> = {
+    success: "bg-[color:var(--success)]/15 text-[color:var(--success)] border-[color:var(--success)]/30",
+    danger: "bg-destructive/15 text-destructive border-destructive/30",
+    gold: "bg-accent/15 text-accent border-accent/30",
+    neutral: "bg-secondary text-muted-foreground border-border",
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="relative pl-6">
+        <div className="absolute left-[11px] top-1 bottom-1 w-px bg-border" />
+        <div className="space-y-3">
+          {items.map((it) => (
+            <div key={it.id} className="relative">
+              <div className={`absolute -left-6 top-1 flex h-6 w-6 items-center justify-center rounded-full border ${toneClasses[it.tone]}`}>
+                {it.icon}
+              </div>
+              <Card className="p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[13px] font-semibold text-foreground">{it.title}</div>
+                    {it.sub && <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{it.sub}</div>}
+                  </div>
+                  <div className="num text-[11px] text-muted-foreground shrink-0">
+                    {new Date(it.date).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
