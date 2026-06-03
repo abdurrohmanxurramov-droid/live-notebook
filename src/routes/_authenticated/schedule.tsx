@@ -5,7 +5,10 @@ import { Card, Button, Input, Select, Empty, SectionTitle, Badge, Avatar } from 
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Clock, Check, X, ArrowRight } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { listLessons, setLessonStatus, moveLesson, type LessonStatus } from "@/lib/lessons.functions";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
