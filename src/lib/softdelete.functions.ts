@@ -49,15 +49,10 @@ export const softDeleteStudent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const now = new Date().toISOString();
-    // mark student + related rows as deleted
-    const tables = ["students", "schedule_slots", "lessons", "attendance", "finance", "homework"] as const;
-    for (const t of tables) {
-      const filter = t === "students" ? { id: data.id } : { student_id: data.id };
-      const q = supabase.from(t).update({ deleted_at: now });
-      const { error } = await Object.entries(filter).reduce(
-        (acc, [k, v]) => acc.eq(k, v),
-        q as ReturnType<typeof q.eq>,
-      );
+    const { error: e1 } = await supabase.from("students").update({ deleted_at: now }).eq("id", data.id);
+    if (e1) throw new Error(`students: ${e1.message}`);
+    for (const t of ["schedule_slots", "lessons", "attendance", "finance", "homework"] as const) {
+      const { error } = await supabase.from(t).update({ deleted_at: now }).eq("student_id", data.id);
       if (error) throw new Error(`${t}: ${error.message}`);
     }
     return { ok: true };
@@ -68,14 +63,10 @@ export const restoreStudent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const tables = ["students", "schedule_slots", "lessons", "attendance", "finance", "homework"] as const;
-    for (const t of tables) {
-      const filter = t === "students" ? { id: data.id } : { student_id: data.id };
-      const q = supabase.from(t).update({ deleted_at: null });
-      const { error } = await Object.entries(filter).reduce(
-        (acc, [k, v]) => acc.eq(k, v),
-        q as ReturnType<typeof q.eq>,
-      );
+    const { error: e1 } = await supabase.from("students").update({ deleted_at: null }).eq("id", data.id);
+    if (e1) throw new Error(`students: ${e1.message}`);
+    for (const t of ["schedule_slots", "lessons", "attendance", "finance", "homework"] as const) {
+      const { error } = await supabase.from(t).update({ deleted_at: null }).eq("student_id", data.id);
       if (error) throw new Error(`${t}: ${error.message}`);
     }
     return { ok: true };
