@@ -86,7 +86,60 @@ export function UserSettingsSection() {
           <option value="0">Воскресенье</option>
         </Select>
       </Row>
+
+      <div className="pt-2">
+        <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Напоминания
+        </div>
+        <div className="space-y-2">
+          <ToggleRow
+            label="Об уроках"
+            hint="Push за указанное время до начала"
+            checked={data.remind_lessons ?? true}
+            disabled={busy}
+            onChange={(v) => save({ remind_lessons: v })}
+          />
+          <ToggleRow
+            label="Об оплатах"
+            hint="Напомнить о неоплаченных счетах"
+            checked={data.remind_payments ?? true}
+            disabled={busy}
+            onChange={(v) => save({ remind_payments: v })}
+          />
+          <ToggleRow
+            label="О домашках"
+            hint="Напомнить о сроке сдачи"
+            checked={data.remind_homework ?? true}
+            disabled={busy}
+            onChange={(v) => save({ remind_homework: v })}
+          />
+        </div>
+      </div>
     </Card>
+  );
+}
+
+function ToggleRow({
+  label,
+  hint,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-white/60 bg-white/40 dark:bg-white/5 dark:border-white/10 px-3 py-2 backdrop-blur-md">
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-medium text-foreground">{label}</div>
+        {hint && <div className="text-[11px] text-muted-foreground">{hint}</div>}
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </div>
   );
 }
 
