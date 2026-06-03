@@ -29,6 +29,7 @@ export const listLessons = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabase
       .from("lessons")
       .select("id, student_id, scheduled_date, scheduled_time, duration_min, status, notes, moved_from_id")
+      .is("deleted_at", null)
       .gte("scheduled_date", data.from)
       .lte("scheduled_date", data.to)
       .order("scheduled_date", { ascending: true })
