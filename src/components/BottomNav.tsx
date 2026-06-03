@@ -46,24 +46,18 @@ export function BottomNav() {
   const [ready, setReady] = useState(false);
 
   useLayoutEffect(() => {
-    const list = listRef.current;
     const el = itemRefs.current.get(activeKey);
-    if (!list || !el) return;
-    const listRect = list.getBoundingClientRect();
-    const rect = el.getBoundingClientRect();
-    setIndicator({ x: rect.left - listRect.left, w: rect.width });
+    if (!el) return;
+    setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
     const t = setTimeout(() => setReady(true), 30);
     return () => clearTimeout(t);
   }, [activeKey]);
 
   useEffect(() => {
     const onResize = () => {
-      const list = listRef.current;
       const el = itemRefs.current.get(activeKey);
-      if (!list || !el) return;
-      const listRect = list.getBoundingClientRect();
-      const rect = el.getBoundingClientRect();
-      setIndicator({ x: rect.left - listRect.left, w: rect.width });
+      if (!el) return;
+      setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
