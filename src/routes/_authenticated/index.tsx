@@ -152,8 +152,38 @@ function Home() {
           hint="Добавьте первого ученика во вкладке «Ученики»"
         />
       ) : (
+        <>
+          <div className="relative mb-2">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Поиск по имени, предмету, телефону"
+              className="w-full rounded-2xl border border-border/60 bg-card py-2.5 pl-9 pr-9 text-sm text-foreground outline-none transition-colors focus:border-accent"
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                aria-label="Очистить"
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground active:bg-secondary"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         <div className="space-y-2 pb-4">
-          {students.map((s) => {
+          {students
+            .filter((s) => {
+              if (!q.trim()) return true;
+              const needle = q.trim().toLowerCase();
+              return (
+                s.name.toLowerCase().includes(needle) ||
+                (s.subject ?? "").toLowerCase().includes(needle) ||
+                (s.phone ?? "").toLowerCase().includes(needle)
+              );
+            })
+            .map((s) => {
             const fin = finance.filter((f) => f.student_id === s.id);
             const hasUnpaid = fin.some((f) => !f.is_paid);
             return (
