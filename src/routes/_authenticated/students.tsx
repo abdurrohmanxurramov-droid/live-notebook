@@ -226,18 +226,32 @@ function StudentsPage() {
           <Chip active={upcomingOnly} onClick={() => setUpcomingOnly((v) => !v)}>
             Урок в ближайшие 7 дней
           </Chip>
-          <Chip active={statusFilter === "active"} onClick={() => setStatusFilter("active")}>Активные</Chip>
-          <Chip active={statusFilter === "archived"} onClick={() => setStatusFilter("archived")}>Архив</Chip>
         </div>
       </Card>
+
+      {/* Status stats + filter */}
+      <div className="mt-3 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        <StatusStat label="Все" count={activeStudents.length} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+        {(["active", "paused", "completed", "archived"] as StudentStatus[]).map((st) => (
+          <StatusStat
+            key={st}
+            label={STUDENT_STATUS_META[st].label}
+            count={statusCounts[st]}
+            tone={STUDENT_STATUS_META[st].tone}
+            active={statusFilter === st}
+            onClick={() => setStatusFilter(st)}
+          />
+        ))}
+        <StatusStat label="Корзина" count={trashStudents.length} active={statusFilter === "trash"} onClick={() => setStatusFilter("trash")} />
+      </div>
 
       <SectionTitle>{filtered.length} {filtered.length === 1 ? "ученик" : "учеников"}</SectionTitle>
 
       {filtered.length === 0 ? (
         <Empty
           icon={<GraduationCap className="h-8 w-8" />}
-          title={students.length === 0 ? "Список пуст" : "Никого не найдено"}
-          hint={students.length === 0 ? "Нажмите «Добавить», чтобы начать" : "Попробуйте изменить фильтры"}
+          title={baseList.length === 0 ? "Список пуст" : "Никого не найдено"}
+          hint={baseList.length === 0 ? "Нажмите «Добавить», чтобы начать" : "Попробуйте изменить фильтры"}
         />
       ) : (
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
