@@ -90,11 +90,13 @@ const trashColumns: Record<(typeof SOFT_DELETE_TABLES)[number], string> = {
   schedule_slots: "id, student_id, day_of_week, start_time, deleted_at",
 };
 
+export type TrashRow = Record<string, string | number | boolean | null>;
+
 export const listTrash = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const out: Record<string, unknown[]> = {};
+    const out: Record<string, TrashRow[]> = {};
     for (const t of SOFT_DELETE_TABLES) {
       const { data, error } = await supabase
         .from(t)
@@ -103,7 +105,7 @@ export const listTrash = createServerFn({ method: "GET" })
         .order("deleted_at", { ascending: false })
         .limit(200);
       if (error) throw new Error(`${t}: ${error.message}`);
-      out[t] = data ?? [];
+      out[t] = (data ?? []) as unknown as TrashRow[];
     }
     return out;
   });

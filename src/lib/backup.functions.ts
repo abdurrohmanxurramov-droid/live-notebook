@@ -14,15 +14,18 @@ const TABLES = [
   "user_settings",
 ] as const;
 
+export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+export type BackupRow = Record<string, JsonValue>;
+
 export const exportBackup = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const tables: Record<string, unknown[]> = {};
+    const tables: Record<string, BackupRow[]> = {};
     for (const t of TABLES) {
       const { data, error } = await supabase.from(t).select("*");
       if (error) throw new Error(`${t}: ${error.message}`);
-      tables[t] = data ?? [];
+      tables[t] = (data ?? []) as unknown as BackupRow[];
     }
     return {
       version: BACKUP_VERSION,
@@ -61,7 +64,8 @@ export const importBackup = createServerFn({ method: "POST" })
         return row;
       });
       const conflictCol = t === "user_settings" ? "user_id" : "id";
-      const { error } = await supabase.from(t).upsert(fixed, { onConflict: conflictCol });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await supabase.from(t).upsert(fixed as any, { onConflict: conflictCol });
       if (error) throw new Error(`${t}: ${error.message}`);
       counts[t] = fixed.length;
     }
