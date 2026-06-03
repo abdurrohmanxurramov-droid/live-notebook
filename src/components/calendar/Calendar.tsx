@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -139,18 +139,9 @@ export function Calendar() {
           <button onClick={() => setCursor(new Date(new Date().setHours(0,0,0,0)))} className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Сегодня</button>
           <button onClick={() => step(1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Вперёд"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <div className="flex rounded-full bg-secondary p-0.5 text-xs">
-          {(["day","week","month"] as View[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`rounded-full px-3 py-1.5 font-semibold transition-colors ${view===v?"bg-accent text-accent-foreground":"text-muted-foreground"}`}
-            >
-              {v==="day"?"День":v==="week"?"Нед.":"Мес."}
-            </button>
-          ))}
-        </div>
+        <ViewSwitch view={view} setView={setView} />
       </div>
+
       <div className="mt-2 px-1 text-xs capitalize text-muted-foreground">{label}</div>
 
       <div className="mt-3">
@@ -215,7 +206,75 @@ export function Calendar() {
   );
 }
 
+/* -------------------- VIEW SWITCH -------------------- */
+
+const VIEW_OPTS: { key: View; label: string }[] = [
+  { key: "day", label: "День" },
+  { key: "week", label: "Нед." },
+  { key: "month", label: "Мес." },
+];
+
+function ViewSwitch({ view, setView }: { view: View; setView: (v: View) => void }) {
+  const itemRefs = useRef<Map<View, HTMLButtonElement>>(new Map());
+  const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useLayoutEffect(() => {
+    const el = itemRefs.current.get(view);
+    if (!el) return;
+    setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
+    const t = setTimeout(() => setReady(true), 30);
+    return () => clearTimeout(t);
+  }, [view]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const el = itemRefs.current.get(view);
+      if (!el) return;
+      setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [view]);
+
+  return (
+    <div className="glass-strong relative inline-flex rounded-full p-1 text-xs">
+      {indicator && (
+        <span
+          aria-hidden
+          className="liquid-pill pointer-events-none absolute top-1 bottom-1 rounded-full"
+          style={{
+            transform: `translateX(${indicator.x - 4}px)`,
+            width: indicator.w,
+            transition: ready
+              ? "transform 320ms cubic-bezier(0.22, 1, 0.36, 1), width 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+              : "none",
+          }}
+        />
+      )}
+      {VIEW_OPTS.map((v) => {
+        const active = view === v.key;
+        return (
+          <button
+            key={v.key}
+            ref={(node) => {
+              if (node) itemRefs.current.set(v.key, node);
+              else itemRefs.current.delete(v.key);
+            }}
+            onClick={() => setView(v.key)}
+            className={`relative z-10 rounded-full px-3.5 py-1.5 font-semibold transition-colors duration-300 ${active ? "text-foreground" : "text-muted-foreground"}`}
+          >
+            {v.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* -------------------- DAY -------------------- */
+
+
 
 function DayView({ date, lessons, studentName, onDrop, onSlot, onLesson }: {
   date: string;
@@ -377,7 +436,7 @@ function MonthView({ start, cursor, lessons, studentName, onDrop, onSlot, onMore
               const t = dragged ? dragged.scheduled_time.slice(0,5) : "10:00";
               onDrop(id, ds, t);
             }}}
-            className={`min-h-[68px] cursor-pointer rounded-lg border p-1 text-left transition-colors ${inMonth?"border-border bg-card/40":"border-transparent bg-secondary/30 opacity-60"} ${isToday?"ring-1 ring-accent":""}`}
+            className={`group relative min-h-[68px] cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(20,33,61,0.25)] active:scale-[0.98] ${inMonth?"border-border bg-card/40 hover:bg-card/70":"border-transparent bg-secondary/30 opacity-60"} ${isToday?"ring-1 ring-accent":""}`}
           >
             <div className={`text-[11px] font-semibold ${isToday?"text-accent":"text-foreground"}`}>{d.getDate()}</div>
             <div className="mt-0.5 space-y-0.5">
