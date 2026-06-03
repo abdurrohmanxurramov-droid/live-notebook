@@ -65,29 +65,37 @@ export function BottomNav() {
   const itemRefs = useRef<Map<Key, HTMLLIElement>>(new Map());
   const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
   const [ready, setReady] = useState(false);
+  const [targetKey, setTargetKey] = useState<Key>(activeKey);
+
+  // Sync optimistic target back to actual route (back/forward, external nav)
+  useEffect(() => {
+    setTargetKey(activeKey);
+  }, [activeKey]);
 
   useLayoutEffect(() => {
-    const el = itemRefs.current.get(activeKey);
+    const el = itemRefs.current.get(targetKey);
     if (!el) return;
     setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
     const t = setTimeout(() => setReady(true), 30);
     return () => clearTimeout(t);
-  }, [activeKey]);
+  }, [targetKey]);
 
   useEffect(() => {
     const onResize = () => {
-      const el = itemRefs.current.get(activeKey);
+      const el = itemRefs.current.get(targetKey);
       if (!el) return;
       setIndicator({ x: el.offsetLeft, w: el.offsetWidth });
     };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [activeKey]);
+  }, [targetKey]);
 
   const setRef = (key: Key) => (node: HTMLLIElement | null) => {
     if (node) itemRefs.current.set(key, node);
     else itemRefs.current.delete(key);
   };
+
+  const moveTo = (key: Key) => () => setTargetKey(key);
 
   return (
     <>
