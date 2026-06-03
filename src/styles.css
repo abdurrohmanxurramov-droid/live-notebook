@@ -309,6 +309,99 @@
 }
 .tap-pulse:active { animation: tap-pulse 220ms ease-out; }
 
+/* ============= Global interactive liveliness =============
+   Springy press + subtle hover lift on every interactive element.
+   Opt-out by adding the `no-anim` class. */
+@layer base {
+  button,
+  a,
+  label,
+  summary,
+  [role="button"],
+  [role="tab"],
+  [role="switch"],
+  [role="menuitem"],
+  [role="option"],
+  input[type="checkbox"],
+  input[type="radio"],
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    transition:
+      transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 220ms ease,
+      color 220ms ease,
+      border-color 220ms ease,
+      opacity 220ms ease,
+      filter 220ms ease;
+    will-change: transform;
+  }
+
+  /* Press feedback for clickable things (not inputs/selects). */
+  button:not(:disabled):not(.no-anim):active,
+  a:not(.no-anim):active,
+  label:not(.no-anim):active,
+  summary:not(.no-anim):active,
+  [role="button"]:not([aria-disabled="true"]):not(.no-anim):active,
+  [role="tab"]:not(.no-anim):active,
+  [role="menuitem"]:not(.no-anim):active,
+  [role="option"]:not(.no-anim):active,
+  input[type="checkbox"]:not(.no-anim):active,
+  input[type="radio"]:not(.no-anim):active {
+    transform: scale(0.94);
+    filter: brightness(0.97);
+  }
+
+  /* Hover lift on pointer-capable devices. */
+  @media (hover: hover) {
+    button:not(:disabled):not(.no-anim):hover,
+    a:not(.no-anim):hover,
+    [role="button"]:not([aria-disabled="true"]):not(.no-anim):hover,
+    [role="tab"]:not(.no-anim):hover,
+    [role="menuitem"]:not(.no-anim):hover,
+    [role="option"]:not(.no-anim):hover,
+    summary:not(.no-anim):hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  /* Inputs/selects/textareas: gentle focus lift instead of press squish. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.no-anim):focus-visible,
+  select:not(.no-anim):focus-visible,
+  textarea:not(.no-anim):focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px -10px color-mix(in oklab, var(--accent) 55%, transparent);
+  }
+
+  /* SVG icons inside interactive elements: micro spring on hover/active. */
+  @media (hover: hover) {
+    button:not(:disabled):not(.no-anim):hover > svg,
+    a:not(.no-anim):hover > svg,
+    [role="button"]:not(.no-anim):hover > svg {
+      transform: scale(1.08);
+    }
+  }
+  button > svg,
+  a > svg,
+  [role="button"] > svg {
+    transition: transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  button:not(:disabled):not(.no-anim):active > svg,
+  a:not(.no-anim):active > svg,
+  [role="button"]:not(.no-anim):active > svg {
+    transform: scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button, a, label, summary, [role="button"], [role="tab"], [role="switch"],
+  [role="menuitem"], [role="option"], input, select, textarea {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 /* Print-friendly reports */
 @media print {
   @page { margin: 14mm; }
