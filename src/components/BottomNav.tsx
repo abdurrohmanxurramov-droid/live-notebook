@@ -115,12 +115,22 @@ export function BottomNav() {
                     to={t.to}
                     className="relative flex h-14 w-full flex-col items-center justify-center gap-0.5 rounded-2xl"
                   >
-                    <Icon
-                      className={`h-[18px] w-[18px] transition-all duration-500 ${
-                        active ? "text-accent scale-110" : "text-muted-foreground scale-100"
-                      }`}
-                      strokeWidth={active ? 2.4 : 1.8}
-                    />
+                    <span className="relative">
+                      <Icon
+                        className={`h-[18px] w-[18px] transition-all duration-500 ${
+                          active ? "text-accent scale-110" : "text-muted-foreground scale-100"
+                        }`}
+                        strokeWidth={active ? 2.4 : 1.8}
+                      />
+                      {t.to === "/finance" && overdueCount > 0 && (
+                        <span
+                          aria-label={`Просрочено платежей: ${overdueCount}`}
+                          className="absolute -right-1.5 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold leading-none text-destructive-foreground ring-2 ring-background"
+                        >
+                          {overdueCount > 9 ? "9+" : overdueCount}
+                        </span>
+                      )}
+                    </span>
                     <span
                       className={`text-[10px] font-medium tracking-wide transition-colors duration-500 ${
                         active ? "text-foreground" : "text-muted-foreground"
