@@ -48,7 +48,7 @@ export const setLessonStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => setStatusSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const patch: Record<string, unknown> = { status: data.status };
+    const patch: { status: LessonStatus; notes?: string } = { status: data.status };
     if (data.notes !== undefined) patch.notes = data.notes;
     const { error } = await supabase.from("lessons").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -145,7 +145,16 @@ export const regenerateLessons = createServerFn({ method: "POST" })
     (attendance ?? []).forEach((a) => attMap.set(`${a.student_id}|${a.date}`, a.status));
 
     const todayIso = isoDate(today);
-    const toInsert: Array<Record<string, unknown>> = [];
+    type Insert = {
+      owner_id: string;
+      student_id: string;
+      scheduled_date: string;
+      scheduled_time: string;
+      duration_min: number;
+      status: LessonStatus;
+      source_slot_id: string;
+    };
+    const toInsert: Insert[] = [];
 
     for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
       const dow = jsDayToMon(d.getDay());
