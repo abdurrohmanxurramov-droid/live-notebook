@@ -139,18 +139,9 @@ export function Calendar() {
           <button onClick={() => setCursor(new Date(new Date().setHours(0,0,0,0)))} className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Сегодня</button>
           <button onClick={() => step(1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Вперёд"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <div className="flex rounded-full bg-secondary p-0.5 text-xs">
-          {(["day","week","month"] as View[]).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`rounded-full px-3 py-1.5 font-semibold transition-colors ${view===v?"bg-accent text-accent-foreground":"text-muted-foreground"}`}
-            >
-              {v==="day"?"День":v==="week"?"Нед.":"Мес."}
-            </button>
-          ))}
-        </div>
+        <ViewSwitch view={view} setView={setView} />
       </div>
+
       <div className="mt-2 px-1 text-xs capitalize text-muted-foreground">{label}</div>
 
       <div className="mt-3">
