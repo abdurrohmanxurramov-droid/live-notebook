@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect } from "react";
 import { Card, SectionTitle, Avatar, Badge, Empty } from "@/components/ui-bits";
 import { StudentRoom } from "@/components/StudentRoom";
 import { useStudents, useFinance, useRates, useSchedule, initials, convertToRUB } from "@/lib/db";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen, X } from "lucide-react";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, BookOpen, X, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
 
@@ -21,6 +21,7 @@ function Home() {
   const { data: rates } = useRates();
   const { data: schedule = [] } = useSchedule();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     document.body.style.overflow = openId ? "hidden" : "";
@@ -116,19 +117,26 @@ function Home() {
           {todayLessons.map((slot) => {
             const st = studentsById.get(slot.student_id);
             return (
-              <Card key={slot.id} className="flex items-center gap-3 p-3">
-                <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
-                  <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
-                  <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
-                </div>
-                <Avatar initials={initials(st?.name ?? "?")} />
-                <div className="min-w-0 flex-1">
-                  <div className="name-italic truncate text-[14px] font-semibold text-foreground">{st?.name ?? "—"}</div>
-                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <Clock className="h-3 w-3" /> {st?.subject || "Урок"}
+              <button
+                key={slot.id}
+                type="button"
+                onClick={() => st && setOpenId(st.id)}
+                className="block w-full text-left"
+              >
+                <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary">
+                  <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
+                    <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
+                    <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
                   </div>
-                </div>
-              </Card>
+                  <Avatar initials={initials(st?.name ?? "?")} />
+                  <div className="min-w-0 flex-1">
+                    <div className="name-italic truncate text-[14px] font-semibold text-foreground">{st?.name ?? "—"}</div>
+                    <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <Clock className="h-3 w-3" /> {st?.subject || "Урок"}
+                    </div>
+                  </div>
+                </Card>
+              </button>
             );
           })}
         </div>
@@ -144,8 +152,38 @@ function Home() {
           hint="Добавьте первого ученика во вкладке «Ученики»"
         />
       ) : (
+        <>
+          <div className="relative mb-2">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Поиск по имени, предмету, телефону"
+              className="w-full rounded-2xl border border-border/60 bg-card py-2.5 pl-9 pr-9 text-sm text-foreground outline-none transition-colors focus:border-accent"
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                aria-label="Очистить"
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground active:bg-secondary"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         <div className="space-y-2 pb-4">
-          {students.map((s) => {
+          {students
+            .filter((s) => {
+              if (!q.trim()) return true;
+              const needle = q.trim().toLowerCase();
+              return (
+                s.name.toLowerCase().includes(needle) ||
+                (s.subject ?? "").toLowerCase().includes(needle) ||
+                (s.phone ?? "").toLowerCase().includes(needle)
+              );
+            })
+            .map((s) => {
             const fin = finance.filter((f) => f.student_id === s.id);
             const hasUnpaid = fin.some((f) => !f.is_paid);
             return (
@@ -175,6 +213,7 @@ function Home() {
             );
           })}
         </div>
+        </>
       )}
 
       {openId && (
