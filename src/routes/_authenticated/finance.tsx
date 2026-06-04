@@ -75,7 +75,7 @@ function FinancePage() {
 
 function SumCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card className="p-4">
+    <Card className="p-4 sticker-flower">
       <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className="num mt-1 text-xl text-foreground">{value}</div>
     </Card>

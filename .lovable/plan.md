@@ -1,89 +1,68 @@
 ## Что делаем
 
-Добавим в приложение две темы оформления:
+В Bloom-теме (`data-theme="bloom"`) добавляем по углам карточек разнообразные декоративные стикеры — сердечки, цветочки, бантики, звёздочки, бабочки. Каждый тип карточки получает свой стикер, чтобы не было однообразия.
 
-- **Classic** — текущий дизайн (тёмно-синий, золотые акценты, liquid glass). Дефолт для мужчин и для всех, кто ещё не выбрал.
-- **Bloom** — «девичья» тема: пастельно-розовая палитра, цветочные SVG-декорации на карточках, плавающие лепестки на фоне, рукописный/serif-заголовок, более скруглённые формы и мягкие тени. Дефолт для женщин.
+В Classic-теме ничего не меняется.
 
-После первой регистрации через Google спрашиваем пол → автоматически применяется соответствующая тема. Тема и пол сохраняются и доступны для смены в настройках профиля.
+## Стикеры (SVG inline в CSS)
 
-## База данных
+Готовим набор из 6 стикеров, все ~26-30px, мягкие тени, лёгкая анимация:
 
-Расширяем существующую таблицу `user_settings`:
+- `sticker-heart` — розовое сердечко, пульсация (heart-beat)
+- `sticker-flower` — пятилепестковый цветок, медленное вращение
+- `sticker-bow` — розовый бантик, лёгкое покачивание
+- `sticker-star` — золотая звёздочка, твинкл
+- `sticker-butterfly` — бабочка, машет крыльями (scale Y)
+- `sticker-cherry` — две вишенки, лёгкий свинг
 
-- `gender` — `text`, nullable, допустимые значения: `'male' | 'female'` (валидация триггером).
-- `theme` — `text`, NOT NULL, default `'classic'`, допустимые: `'classic' | 'bloom'`.
-- `onboarding_completed` — `boolean`, NOT NULL, default `false`.
+Каждый — отдельная CSS-утилита: `.sticker-heart::after { content: ""; ... background-image: url("data:image/svg+xml,...") }`, активная только при `:root[data-theme="bloom"]`. Позиция — `top: 8px; right: 10px;` поверх карточки, `pointer-events: none`, `z-index: 3`.
 
-Запись в `user_settings` уже создаётся для каждого пользователя; если у текущего пользователя её нет — создаём при первом входе.
+## Где какие стикеры
 
-## Поток онбординга
+Разносим стикеры по экранам, чтобы соседние карточки не повторялись:
 
-1. Пользователь логинится через Google (поток `lovable.auth.signInWithOAuth` уже есть).
-2. После редиректа в `_authenticated/route.tsx` (или в `index.tsx`) подгружаем `user_settings` через server fn.
-3. Если `onboarding_completed = false` → редирект на новый роут `/_authenticated/onboarding`.
-4. Экран онбординга: две большие карточки «Мужской / Женский» с превью соответствующей темы (мини-мокап).
-5. По выбору: server fn записывает `gender`, `theme` (`male→classic`, `female→bloom`), `onboarding_completed = true` → редирект на `/`.
+**Главная (`/`):**
+- Overview карточка → `sticker-flower`
+- Continue карточка (продолжить ученика) → `sticker-heart`
+- Метрики (4 карточки в ряд): `sticker-star`, `sticker-bow`, `sticker-butterfly`, `sticker-cherry`
+- Следующий урок (если есть) → `sticker-heart`
 
-Существующие пользователи: при первом входе после релиза `onboarding_completed` будет `false` → пройдут онбординг один раз.
+**Ученики (`/students`):**
+- Карточка студента → чередуем по индексу: heart → flower → bow → star → butterfly → cherry → (повтор)
 
-## Применение темы
+**Расписание / Календарь:**
+- Карточка дня → `sticker-flower`
+- Карточка урока → `sticker-heart`
 
-Создаём `ThemeProvider` в `src/components/ThemeProvider.tsx`:
+**Финансы / Посещаемость / Домашка / Аналитика:**
+- Заголовочная карточка раздела → `sticker-flower`
+- Карточка-итог → `sticker-star`
+- Карточка-предупреждение (долги, пропуски) → оставляем без стикера (визуальный приоритет)
 
-- Читает `theme` из `user_settings` (через TanStack Query, тот же ключ что и настройки).
-- Ставит атрибут `data-theme="classic" | "bloom"` на `<html>`.
-- Пока тема грузится — используем `classic` чтобы не было FOUC.
+**Настройки:**
+- ThemePicker (где выбор Classic/Bloom) → `sticker-bow`
+- Уведомления, Курсы и т.д. → без стикеров (служебные блоки)
 
-В `src/styles.css`:
+## Что не декорируем
 
-- Текущие токены `:root` остаются как `classic` (или дублируются в `:root[data-theme="classic"]`).
-- Добавляется блок `:root[data-theme="bloom"]` с переопределением semantic-токенов: `--background`, `--foreground`, `--primary`, `--accent`, `--card`, `--ring`, `--glass-bg`, `--radius` (увеличенный), плюс новые `--bloom-petal`, `--bloom-rose`, градиенты и тени.
-- Палитра Bloom: пыльно-розовый фон (`oklch(~0.97 0.02 10)`), розово-лиловый primary (`~0.65 0.18 350`), мягкий персиковый accent, кремово-белые карточки. Все цвета в `oklch`.
-
-## Декоративные элементы Bloom
-
-Только когда `data-theme="bloom"`:
-
-- Компонент `<BloomBackdrop />` в `__root.tsx` — fixed-слой с медленно плавающими SVG-лепестками (CSS keyframes, `prefers-reduced-motion` отключает анимацию).
-- В `src/styles.css` добавить utility `.bloom-decor` — псевдоэлемент с цветочным SVG в углу карточек (через `@utility`, активный только под `[data-theme="bloom"]`).
-- Заголовок-шрифт: подгрузить `Caveat` или `Cormorant Garamond` через `<link>` в `__root.tsx` head; токен `--font-display` переопределяется в bloom-теме.
-
-Classic-тема остаётся визуально без изменений.
-
-## Настройки
-
-В `src/routes/_authenticated/settings.tsx` добавляем секцию «Оформление»:
-
-- Сегментированный переключатель «Classic / Bloom» с мини-превью.
-- Опционально — поле «Пол» (male/female/не указывать) для будущей сегментации.
-- Сохранение через тот же server fn `updateUserSettings`.
-
-## Серверные функции
-
-В `src/lib/user-settings.functions.ts` (создать или дополнить существующий):
-
-- `getUserSettings()` — `requireSupabaseAuth`, читает строку текущего пользователя, создаёт дефолтную если нет.
-- `updateUserSettings({ gender?, theme?, onboarding_completed? })` — с zod-валидацией enum-значений.
-
-Существующие чтения настроек переводим на эти fn (если ещё не).
+- Кнопки, переключатели, инпуты
+- Модалки и шиты (там и так много контента)
+- Пустые состояния и алерты-ошибки
+- Карточки с предупреждениями (долги, пропуски)
+- В тёмном варианте Bloom стикеры остаются, но яркость слегка приглушается (`opacity: 0.75`)
 
 ## Файлы
 
-Новые:
-- `src/routes/_authenticated/onboarding.tsx`
-- `src/components/ThemeProvider.tsx`
-- `src/components/BloomBackdrop.tsx`
-- `src/lib/user-settings.functions.ts` (если ещё нет)
-
 Изменения:
-- `supabase/migrations/*` — миграция на 3 поля в `user_settings` + check-триггер.
-- `src/styles.css` — блок `[data-theme="bloom"]`, утилиты декора, шрифт.
-- `src/routes/__root.tsx` — подключение `ThemeProvider` и `BloomBackdrop`, link на шрифт.
-- `src/routes/_authenticated/route.tsx` — редирект на `/onboarding` если не пройден.
-- `src/routes/_authenticated/settings.tsx` — секция выбора темы.
+- `src/styles.css` — 6 новых utility-классов `.sticker-*` с SVG-фонами и keyframes анимаций, активные только под `:root[data-theme="bloom"]`. Существующий `.bloom-corner` остаётся для обратной совместимости.
+- `src/routes/_authenticated/index.tsx` — добавить классы стикеров к Overview, Continue, метрикам.
+- `src/routes/_authenticated/students.tsx` — циклически назначать класс стикера карточкам учеников.
+- `src/routes/_authenticated/schedule.tsx` + `src/components/calendar/Calendar.tsx` — стикеры на карточках уроков и днях.
+- `src/routes/_authenticated/finance.tsx`, `attendance.tsx`, `homework.tsx`, `analytics.tsx` — стикер на главной карточке раздела.
+- `src/components/settings/ThemePicker.tsx` — `sticker-bow` на блоке.
 
-## Что НЕ меняем
+## Performance / доступность
 
-- Логику auth, бизнес-логику страниц, структуру таблиц данных (students, lessons и т.д.).
-- Текущий Classic-вид — он остаётся пиксель-в-пиксель.
+- Все SVG — inline data-URI, ноль сетевых запросов.
+- Анимации отключаются под `prefers-reduced-motion: reduce`.
+- `aria-hidden` (псевдоэлементы по умолчанию недоступны скринридерам — ок).
