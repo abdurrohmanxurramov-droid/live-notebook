@@ -142,7 +142,7 @@ export function QuickActionsFab() {
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         aria-label="Быстрые действия (можно перетаскивать)"
-        className={`md:hidden fixed z-40 group flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground overflow-hidden ring-1 ring-white/40 shadow-[0_12px_30px_-8px_color-mix(in_oklab,var(--accent)_55%,transparent),inset_0_1px_0_0_rgba(255,255,255,0.45)] touch-none select-none ${
+        className={`fixed z-40 group flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground overflow-hidden ring-1 ring-white/40 shadow-[0_12px_30px_-8px_color-mix(in_oklab,var(--accent)_55%,transparent),inset_0_1px_0_0_rgba(255,255,255,0.45)] touch-none select-none ${
           dragging
             ? "scale-110 transition-none cursor-grabbing"
             : "transition-all duration-300 ease-out hover:-translate-y-0.5 hover:scale-105 active:scale-95 cursor-grab"
