@@ -126,6 +126,39 @@
     radial-gradient(70% 50% at 50% 100%, rgba(255, 210, 220, 0.55), transparent 60%) !important;
 }
 
+/* Bloom — dark variant (deep wine + neon rose accents) */
+:root[data-theme="bloom"].dark {
+  --background: #1A0A14;
+  --foreground: #FFE4EE;
+  --card: #2A0F1F;
+  --card-foreground: #FFE4EE;
+  --primary: #FF7AB0;
+  --primary-foreground: #1A0A14;
+  --secondary: #3A1428;
+  --secondary-foreground: #FFE4EE;
+  --muted: #341022;
+  --muted-foreground: #D7A3BC;
+  --accent: #FF9ABF;
+  --accent-foreground: #1A0A14;
+  --destructive: #FF5A7E;
+  --success: #6FCFA8;
+  --border: rgba(255, 154, 191, 0.18);
+
+  --glass-bg: rgba(60, 20, 40, 0.55);
+  --glass-bg-strong: rgba(70, 24, 48, 0.78);
+  --glass-border: rgba(255, 154, 191, 0.22);
+  --glass-shadow:
+    0 12px 36px -12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 0 rgba(255, 154, 191, 0.18);
+}
+:root[data-theme="bloom"].dark body {
+  background-image:
+    radial-gradient(60% 45% at 10% 0%, rgba(255, 122, 176, 0.30), transparent 60%),
+    radial-gradient(55% 40% at 100% 15%, rgba(255, 154, 191, 0.25), transparent 60%),
+    radial-gradient(70% 50% at 50% 100%, rgba(180, 60, 110, 0.32), transparent 60%) !important;
+}
+
+
 :root[data-theme="bloom"] {
   --font-display: "Caveat", "Cormorant Garamond", serif;
 }
