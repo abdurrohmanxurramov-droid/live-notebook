@@ -65,6 +65,7 @@ export const Route = createFileRoute("/_authenticated")({
 function PageShell() {
   return (
     <>
+      <TopClock />
       <Outlet />
       <QuickActionsFab />
     </>
