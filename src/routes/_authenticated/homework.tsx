@@ -269,7 +269,7 @@ function AddHomeworkSheet({
   }, ["homework"]);
 
   return (
-    <Sheet open={open} onClose={onClose} title="Новое задание">
+    <Sheet open={open} onClose={onClose} title="Добавить ДЗ">
       <div className="space-y-3">
         <div className="stagger-item" style={{ animationDelay: "40ms" }}>
         <Field label="Ученик">
