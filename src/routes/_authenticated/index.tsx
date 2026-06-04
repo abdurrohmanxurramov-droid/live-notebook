@@ -107,9 +107,8 @@ function Home() {
         </h1>
       </header>
 
-      <TodayOverview />
+      <Overview />
       <ContinueCard onOpen={(sid) => setOpenId(sid)} />
-      <WeekSummary />
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {metrics.map((m) => {
@@ -129,11 +128,12 @@ function Home() {
 
       <SectionTitle>Быстрые действия</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
-        <QuickAction to="/attendance" icon={<CalendarPlus className="h-5 w-5" />} label="Урок" />
         <QuickAction to="/assistant" icon={<Sparkles className="h-5 w-5" />} label="ИИ" />
-        <QuickAction to="/finance" icon={<Plus className="h-5 w-5" />} label="Оплата" />
-        <QuickAction to="/students" icon={<UserPlus className="h-5 w-5" />} label="Ученик" />
+        <QuickAction to="/analytics" icon={<BarChart3 className="h-5 w-5" />} label="Аналитика" />
+        <QuickAction to="/reports" icon={<FileText className="h-5 w-5" />} label="Отчёты" />
+        <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="ДЗ" />
       </div>
+
 
       <SectionTitle action={<Link to="/schedule" className="text-xs font-medium text-accent">Открыть →</Link>}>
 
