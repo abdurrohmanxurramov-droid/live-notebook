@@ -672,3 +672,7 @@ html, body, * {
 
 
 
+
+/* Theme-conditional visibility helpers */
+:root[data-theme="bloom"] .bloom-hide { display: none !important; }
+:root[data-theme="bloom"] .bloom-show { display: inline-block !important; }
