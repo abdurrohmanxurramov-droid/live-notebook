@@ -53,7 +53,16 @@ export function GlassChips<K extends string>({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       {leading}
-      <div className="glass relative flex items-center gap-1 rounded-full p-1 overflow-x-auto no-scrollbar">
+      <div
+        className="relative flex items-center gap-1 rounded-full p-1 overflow-x-auto ring-1 ring-white/40 dark:ring-white/10 shadow-[0_8px_24px_-12px_rgba(20,33,61,0.18),inset_0_1px_0_0_rgba(255,255,255,0.55)]"
+        style={{
+          background: "var(--glass-bg)",
+          backdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+          WebkitBackdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+          scrollbarWidth: "none",
+        }}
+      >
+
         {indicator && (
           <span
             aria-hidden
