@@ -241,7 +241,7 @@ function AttendanceTab({
           pay_date: date,
         });
         if (e2) throw e2;
-        toast.success("Цикл 12 уроков завершён — создан новый долг 💰");
+        toast.success("Цикл 12 уроков завершён — создан новый долг");
       }
     }
   }, ["attendance", "finance"]);
