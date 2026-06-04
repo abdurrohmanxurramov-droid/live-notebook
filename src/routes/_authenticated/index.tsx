@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Card, SectionTitle, Avatar, Badge, Empty, Button } from "@/components/ui-bits";
 import { CountUp } from "@/components/CountUp";
 import { StudentRoom } from "@/components/StudentRoom";
+import { GlassChips } from "@/components/GlassChips";
 import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
