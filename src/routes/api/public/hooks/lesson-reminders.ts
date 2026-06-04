@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { broadcast, sendPushTo, type PushPayload } from "@/lib/push.server";
+import { checkHookSecret } from "@/lib/hook-auth";
 
 // Runs every minute (pg_cron). Finds lessons starting in ~10 minutes
 // in Europe/Moscow time and sends Web Push to all subscribed devices of each owner.
@@ -88,11 +89,15 @@ async function handle() {
 export const Route = createFileRoute("/api/public/hooks/lesson-reminders")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ request }) => {
+        const denied = checkHookSecret(request);
+        if (denied) return denied;
         const res = await handle();
         return Response.json(res);
       },
-      POST: async () => {
+      POST: async ({ request }) => {
+        const denied = checkHookSecret(request);
+        if (denied) return denied;
         const res = await handle();
         return Response.json(res);
       },
