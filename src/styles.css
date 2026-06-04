@@ -339,8 +339,13 @@
     z-index: 2;
   }
   .glass:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 40px -12px rgba(20,33,61,0.28), inset 0 1px 0 0 rgba(255,255,255,0.75);
+    transform: translateY(-3px) scale(1.005);
+    box-shadow:
+      0 1px 0 0 rgba(255,255,255,0.95) inset,
+      0 -1px 0 0 rgba(20,33,61,0.05) inset,
+      0 4px 10px -2px rgba(20,33,61,0.14),
+      0 18px 36px -10px rgba(20,33,61,0.32),
+      0 32px 64px -20px rgba(20,33,61,0.28);
   }
   .glass:hover::after { left: 130%; }
   .glass:active { transform: translateY(0) scale(0.99); }
