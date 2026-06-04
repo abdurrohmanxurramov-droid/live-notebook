@@ -259,10 +259,10 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
                     key={i}
                     type="button"
                     onClick={() => setDay(i)}
-                    className={`min-h-[44px] rounded-xl text-sm font-semibold transition-colors ${
+                    className={`liquid-action min-h-[44px] rounded-xl text-sm font-semibold transition-colors ${
                       active
                         ? "bg-accent text-accent-foreground"
-                        : "border border-white/60 dark:border-white/10 bg-white/40 dark:bg-white/5 text-foreground hover:bg-secondary"
+                        : "text-foreground"
                     }`}
                   >
                     {d}
@@ -287,10 +287,10 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
         </div>
       )}
       <div className="mt-5 flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>Отмена</Button>
         <Button
           variant="gold"
-          className="flex-1"
+          className="liquid-action flex-1"
           disabled={!studentId || add.isPending}
           onClick={async () => {
             try {
