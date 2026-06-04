@@ -135,18 +135,6 @@ function MiniStat({ n, label, tone }: { n: number; label: string; tone: "neutral
   );
 }
 
-function FilterChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-        active ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
 
 function HomeworkCard({ h, studentName }: { h: Homework; studentName: string }) {
   const [noteOpen, setNoteOpen] = useState(false);
