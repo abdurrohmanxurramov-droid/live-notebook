@@ -175,7 +175,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Stat({ n, label, tone }: { n: number; label: string; tone: "success" | "danger" | "gold" }) {
+function Stat({ n, icon, tone }: { n: number; icon: React.ReactNode; tone: "success" | "danger" | "gold" }) {
   const toneCls: Record<string, string> = {
     success: "text-[color:var(--success)]",
     danger: "text-destructive",
@@ -184,7 +184,7 @@ function Stat({ n, label, tone }: { n: number; label: string; tone: "success" | 
   return (
     <div className="rounded-xl bg-secondary py-2">
       <div className={`num text-lg ${toneCls[tone]}`}>{n}</div>
-      <div className="text-[11px]">{label}</div>
+      <div className={`mt-0.5 flex items-center justify-center ${toneCls[tone]}`}>{icon}</div>
     </div>
   );
 }
