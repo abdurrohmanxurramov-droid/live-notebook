@@ -125,6 +125,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeBoot />
+      <ThemeProvider />
       <SplashScreen />
       <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
         <Outlet />
