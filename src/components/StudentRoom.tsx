@@ -435,8 +435,8 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
             return (
               <Card key={h.id} className="p-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-lg">
-                    {cfg.emoji}
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary ${cfg.tone === "success" ? "text-[color:var(--success)]" : cfg.tone === "danger" ? "text-destructive" : cfg.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}>
+                    <cfg.Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[14px] font-semibold text-foreground">{h.task}</div>
