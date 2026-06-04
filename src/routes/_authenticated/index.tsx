@@ -85,10 +85,10 @@ function Home() {
   const dateLabel = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
 
   const metrics = [
-    { icon: Wallet, label: "Доход за месяц", value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽", tone: "gold", sticker: "sticker-star" },
-    { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy", sticker: "sticker-bow" },
-    { icon: CheckCircle2, label: "Оплатили", value: String(stats.paid), tone: "success", sticker: "sticker-butterfly" },
-    { icon: AlertTriangle, label: "Должники", value: String(stats.unpaid), tone: "danger", sticker: "sticker-cherry" },
+    { icon: Wallet, label: "Доход за месяц", value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽", tone: "gold" },
+    { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy" },
+    { icon: CheckCircle2, label: "Оплатили", value: String(stats.paid), tone: "success" },
+    { icon: AlertTriangle, label: "Должники", value: String(stats.unpaid), tone: "danger" },
   ] as const;
 
   const toneClasses: Record<string, string> = {
@@ -116,7 +116,7 @@ function Home() {
         {metrics.map((m) => {
           const Icon = m.icon;
           return (
-            <Card key={m.label} className={`p-4 ${m.sticker}`}>
+            <Card key={m.label} className="p-4">
               <Icon className={`h-5 w-5 ${toneClasses[m.tone]}`} strokeWidth={2.2} />
               <div className="mt-3 num text-2xl text-foreground">{m.value}</div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">{m.label}</div>
@@ -158,7 +158,7 @@ function Home() {
                 onClick={() => st && setOpenId(st.id)}
                 className="block w-full text-left"
               >
-                <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary sticker-flower">
+                <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary">
                   <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
                     <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
                     <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
@@ -602,7 +602,7 @@ function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
       onClick={() => onOpen(st.id)}
       className="mt-3 block w-full text-left"
     >
-      <Card className="flex items-center gap-3 p-4 transition-colors active:bg-secondary sticker-heart">
+      <Card className="flex items-center gap-3 p-4 transition-colors active:bg-secondary">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
           <PlayCircle className="h-6 w-6" />
         </div>

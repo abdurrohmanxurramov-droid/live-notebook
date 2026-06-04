@@ -57,7 +57,7 @@ function AttendancePage() {
       <h1 className="text-2xl font-bold tracking-tight text-foreground">Посещаемость</h1>
       <p className="mt-1 text-sm text-muted-foreground">Журнал уроков и причин</p>
 
-      <Card className="mt-4 p-4 sticker-flower">
+      <Card className="mt-4 p-4">
         <div className="space-y-3">
           <Field label="Ученик">
             <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>

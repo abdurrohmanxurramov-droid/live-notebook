@@ -62,7 +62,7 @@ function HomeworkPage() {
         <MiniStat n={stats.not_done} label="Не сдали" tone="danger" />
       </div>
 
-      <Card className="mt-3 p-3 sticker-flower">
+      <Card className="mt-3 p-3">
         <div className="flex items-center justify-between">
           <div>
             <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Успеваемость</div>

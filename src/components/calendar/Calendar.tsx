@@ -133,7 +133,7 @@ export function Calendar() {
 
   return (
     <>
-    <Card className="mt-4 p-3 sticker-flower">
+    <Card className="mt-4 p-3">
       <div className="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">{label}</div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
