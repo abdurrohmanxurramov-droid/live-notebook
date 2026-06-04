@@ -317,8 +317,8 @@ function AttendanceTab({
             return (
               <Card key={r.id} className="p-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-lg">
-                    {cfg?.emoji ?? "·"}
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : cfg?.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}>
+                    {cfg?.Icon ? <cfg.Icon className="h-5 w-5" /> : <span>·</span>}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[14px] font-semibold text-foreground">
