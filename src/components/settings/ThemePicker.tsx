@@ -55,7 +55,7 @@ export function ThemePicker() {
       <div className="mt-6 mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Оформление
       </div>
-      <Card className="p-4 sticker-bow">
+      <Card className="p-4">
         <div className="mb-3 text-sm text-muted-foreground">
           Выберите визуальную тему. Влияет только на внешний вид.
         </div>

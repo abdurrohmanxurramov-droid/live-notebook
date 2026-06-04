@@ -116,7 +116,7 @@ function SchedulePage() {
                       const st = studentsById.get(slot.student_id);
                       const end = addMinutes(slot.start_time, slot.duration_min);
                       return (
-                        <Card key={slot.id} className="flex items-center gap-3 p-3 sticker-heart">
+                        <Card key={slot.id} className="flex items-center gap-3 p-3">
                           <div className="flex w-16 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-2">
                             <span className="num text-base leading-tight text-accent">{fmtTime(slot.start_time)}</span>
                             <span className="text-[10px] font-medium text-muted-foreground">{end}</span>
