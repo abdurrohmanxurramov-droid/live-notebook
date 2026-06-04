@@ -205,10 +205,10 @@ export function Calendar() {
         </div>
       </Sheet>
     </Card>
-    <CalendarViewPill view={view} setView={setView} />
     </>
   );
 }
+
 
 /* -------------------- VIEW SWITCH -------------------- */
 
