@@ -24,7 +24,7 @@ export function Sheet({
     } else {
       setVisible(false);
       document.body.style.overflow = "";
-      const t = setTimeout(() => setMounted(false), 320);
+      const t = setTimeout(() => setMounted(false), 260);
       return () => clearTimeout(t);
     }
     return () => {
