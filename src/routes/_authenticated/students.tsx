@@ -217,8 +217,9 @@ function StudentsPage() {
             </Select>
           </label>
         </div>
-        <GlassChips<"all" | "debt" | "paid" | "none">
-          active={debtFilter as "all" | "debt" | "paid" | "none"}
+        <GlassChips<DebtFilter>
+          active={debtFilter}
+
           onChange={(k) => setDebtFilter(k)}
           items={[
             { key: "all", label: "Все оплаты" },
