@@ -132,6 +132,7 @@ export function Calendar() {
   };
 
   return (
+    <>
     <Card className="mt-4 p-3">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
@@ -139,12 +140,10 @@ export function Calendar() {
           <button onClick={() => setCursor(new Date(new Date().setHours(0,0,0,0)))} className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Сегодня</button>
           <button onClick={() => step(1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Вперёд"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <ViewSwitch view={view} setView={setView} />
+        <div className="text-xs capitalize text-muted-foreground">{label}</div>
       </div>
 
-      <div className="mt-2 px-1 text-xs capitalize text-muted-foreground">{label}</div>
-
-      <div className="mt-3">
+      <div className="mt-3 pb-2">
         {isLoading ? (
           <div className="h-40 animate-pulse rounded-xl bg-secondary/60" />
         ) : view === "day" ? (
@@ -155,6 +154,7 @@ export function Calendar() {
           <MonthView start={startOfMonthGrid(cursor)} cursor={cursor} lessons={lessons} studentName={studentName} onDrop={handleDrop} onSlot={(d) => setCreateSlot({ date: d, time: "10:00" })} onMore={setMoreDay} onLesson={setActive} />
         )}
       </div>
+
 
       <QuickCreateLessonSheet
         open={!!createSlot}
@@ -203,6 +203,8 @@ export function Calendar() {
         </div>
       </Sheet>
     </Card>
+    <CalendarViewPill view={view} setView={setView} />
+    </>
   );
 }
 
@@ -214,7 +216,7 @@ const VIEW_OPTS: { key: View; label: string }[] = [
   { key: "month", label: "Мес." },
 ];
 
-function ViewSwitch({ view, setView }: { view: View; setView: (v: View) => void }) {
+function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) => void }) {
   const itemRefs = useRef<Map<View, HTMLButtonElement>>(new Map());
   const [indicator, setIndicator] = useState<{ x: number; w: number } | null>(null);
   const [ready, setReady] = useState(false);
@@ -238,7 +240,11 @@ function ViewSwitch({ view, setView }: { view: View; setView: (v: View) => void 
   }, [view]);
 
   return (
-    <div className="glass-strong relative inline-flex rounded-full p-1 text-xs">
+    <div
+      className="glass-strong fixed left-1/2 z-40 inline-flex -translate-x-1/2 rounded-full p-1 text-xs"
+      style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}
+    >
+
       {indicator && (
         <span
           aria-hidden
@@ -319,82 +325,53 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
   const today = iso(new Date());
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const dragState = useRef<{ active: boolean; startX: number; startLeft: number; moved: boolean }>({ active: false, startX: 0, startLeft: 0, moved: false });
-
-  const onMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = scrollRef.current;
-    if (!el) return;
-    // ignore clicks starting on interactive controls
-    const target = e.target as HTMLElement;
-    if (target.closest("button, a, [draggable='true']")) return;
-    dragState.current = { active: true, startX: e.clientX, startLeft: el.scrollLeft, moved: false };
-  };
-  const onMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const s = dragState.current;
-    if (!s.active || !scrollRef.current) return;
-    const dx = e.clientX - s.startX;
-    if (Math.abs(dx) > 4) s.moved = true;
-    scrollRef.current.scrollLeft = s.startLeft - dx;
-  };
-  const endDrag = () => { dragState.current.active = false; };
 
   return (
-    <div
-      ref={scrollRef}
-      onMouseDown={onMouseDown}
-      onMouseMove={onMouseMove}
-      onMouseUp={endDrag}
-      onMouseLeave={endDrag}
-      className="overflow-x-auto overflow-y-hidden scrollbar-hide drag-scroll overscroll-x-contain select-none"
-    >
-      <div className="min-w-[560px] w-full">
-        <div className="grid" style={{ gridTemplateColumns: "40px repeat(7, minmax(0,1fr))" }}>
-
-          <div />
-          {days.map((d) => {
-            const ds = iso(d);
-            return (
-              <div key={ds} className={`px-1 pb-1 text-center text-[11px] font-semibold ${ds===today?"text-accent":"text-muted-foreground"}`}>
-                {d.toLocaleDateString("ru-RU",{weekday:"short"})}<br/>
-                <span className="text-foreground">{d.getDate()}</span>
-              </div>
-            );
-          })}
+    <div className="w-full select-none">
+      <div className="grid" style={{ gridTemplateColumns: "32px repeat(7, minmax(0,1fr))" }}>
+        <div />
+        {days.map((d) => {
+          const ds = iso(d);
+          return (
+            <div key={ds} className={`px-0.5 pb-1 text-center text-[10px] font-semibold leading-tight ${ds===today?"text-accent":"text-muted-foreground"}`}>
+              {d.toLocaleDateString("ru-RU",{weekday:"short"})}<br/>
+              <span className="text-[12px] text-foreground">{d.getDate()}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="relative grid rounded-xl border border-border bg-card/40" style={{ gridTemplateColumns: "32px repeat(7, minmax(0,1fr))" }}>
+        <div>
+          {SLOTS.map((s) => (
+            <div key={slotTime(s)} className="flex items-start justify-end pr-0.5 text-[9px] text-muted-foreground" style={{ height: SLOT_PX }}>
+              {s.m === 0 ? `${s.h}` : ""}
+            </div>
+          ))}
         </div>
-        <div className="relative grid rounded-xl border border-border bg-card/40" style={{ gridTemplateColumns: "40px repeat(7, minmax(0,1fr))" }}>
-          <div>
-            {SLOTS.map((s) => (
-              <div key={slotTime(s)} className="flex items-start justify-end pr-1 text-[10px] text-muted-foreground" style={{ height: SLOT_PX }}>
-                {s.m === 0 ? `${s.h}:00` : ""}
+        {days.map((d) => {
+          const ds = iso(d);
+          const dayLessons = lessons.filter((l) => l.scheduled_date === ds);
+          return (
+            <div key={ds} className="relative border-l border-border">
+              {SLOTS.map((s) => {
+                const t = slotTime(s);
+                return (
+                  <SlotCell
+                    key={t}
+                    slot={s}
+                    onClick={() => onSlot({ date: ds, time: t })}
+                    onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, ds, t); }}
+                  />
+                );
+              })}
+              <div className="pointer-events-none absolute inset-0">
+                {dayLessons.map((l) => (
+                  <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} compact />
+                ))}
               </div>
-            ))}
-          </div>
-          {days.map((d) => {
-            const ds = iso(d);
-            const dayLessons = lessons.filter((l) => l.scheduled_date === ds);
-            return (
-              <div key={ds} className="relative border-l border-border">
-                {SLOTS.map((s) => {
-                  const t = slotTime(s);
-                  return (
-                    <SlotCell
-                      key={t}
-                      slot={s}
-                      onClick={() => onSlot({ date: ds, time: t })}
-                      onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, ds, t); }}
-                    />
-                  );
-                })}
-                <div className="pointer-events-none absolute inset-0">
-                  {dayLessons.map((l) => (
-                    <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} compact />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
