@@ -284,8 +284,8 @@ function AttendanceTab({
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="..." />
         </Field>
         {willBlock && (
-          <div className="mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            ⚠️ Лимит уваж. причин (3) исчерпан — выберите другой статус
+          <div className="mt-2 flex items-center gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Лимит уваж. причин (3) исчерпан — выберите другой статус
           </div>
         )}
         <Button
