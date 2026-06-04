@@ -766,10 +766,10 @@ function StatusStat({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 min-w-[88px] rounded-2xl border px-3 py-2 text-center transition-all ${
+      className={`liquid-action shrink-0 min-w-[88px] rounded-2xl px-3 py-2 text-center ${
         active
-          ? "border-accent bg-accent/15 shadow-sm"
-          : `border-border bg-card ring-1 ring-transparent ${tone ? toneRing[tone] : ""}`
+          ? "ring-2 ring-accent/60 bg-accent/15"
+          : `ring-1 ring-transparent ${tone ? toneRing[tone] : ""}`
       }`}
     >
       <div className="num text-base text-foreground leading-none">{count}</div>
