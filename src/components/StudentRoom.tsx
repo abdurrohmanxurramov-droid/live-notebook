@@ -142,7 +142,7 @@ export function StudentRoom({ id }: { id: string }) {
 
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
           <Mini n={att.length} label="Записей" />
-          <Mini n={hw.filter((h) => h.status === "done").length} label="ДЗ ✓" />
+          <Mini n={hw.filter((h) => h.status === "done").length} label="ДЗ сделано" />
           <Mini n={unpaidCount} label="Долгов" />
         </div>
       </Card>
