@@ -34,6 +34,9 @@ export const userSettingsSchema = z.object({
   remind_lessons: z.boolean(),
   remind_payments: z.boolean(),
   remind_homework: z.boolean(),
+  gender: z.enum(["male", "female"]).nullable().optional(),
+  theme: z.enum(["classic", "bloom"]).optional(),
+  onboarding_completed: z.boolean().optional(),
 });
 
 export type UserSettings = z.infer<typeof userSettingsSchema> & {

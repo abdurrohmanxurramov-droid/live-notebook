@@ -50,10 +50,26 @@ function AuthNotFound() {
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
       throw redirect({ to: "/auth" });
+    }
+    // Onboarding gate (only for routes inside _authenticated, except /onboarding itself)
+    if (!location.pathname.startsWith("/onboarding")) {
+      try {
+        const { data: settings } = await supabase
+          .from("user_settings")
+          .select("onboarding_completed")
+          .eq("user_id", data.user.id)
+          .maybeSingle();
+        if (!settings || settings.onboarding_completed === false) {
+          throw redirect({ to: "/onboarding" });
+        }
+      } catch (e) {
+        // Re-throw redirects; swallow other errors so the app still loads.
+        if (e && typeof e === "object" && "to" in (e as Record<string, unknown>)) throw e;
+      }
     }
     return { user: data.user };
   },
