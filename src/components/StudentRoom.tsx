@@ -18,23 +18,23 @@ import {
 } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target, RotateCcw, History as HistoryIcon, StickyNote } from "lucide-react";
+import { CalendarCheck, BookOpen, Wallet, Check, X, Trash2, Phone, Target, RotateCcw, History as HistoryIcon, StickyNote, Paperclip, FileText, MinusCircle, AlertTriangle, type LucideIcon } from "lucide-react";
 
 const LESSONS_PER_CYCLE = 12;
 const EXCUSED_LIMIT = 3;
 
-const ATT_STATUS: Record<AttendanceStatus, { label: string; emoji: string; tone: "success" | "danger" | "gold" | "neutral" }> = {
-  present: { label: "Был", emoji: "✅", tone: "success" },
-  absent: { label: "Не был", emoji: "❌", tone: "danger" },
-  excused: { label: "Уваж.", emoji: "📎", tone: "gold" },
-  rescheduled_by_teacher: { label: "Перенос мной", emoji: "🔄", tone: "neutral" },
+const ATT_STATUS: Record<AttendanceStatus, { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }> = {
+  present: { label: "Был", Icon: Check, tone: "success" },
+  absent: { label: "Не был", Icon: X, tone: "danger" },
+  excused: { label: "Уваж.", Icon: Paperclip, tone: "gold" },
+  rescheduled_by_teacher: { label: "Перенос мной", Icon: RotateCcw, tone: "neutral" },
 };
 
-const HW_STATUS: Record<HomeworkStatus, { label: string; emoji: string; tone: "success" | "danger" | "gold" | "neutral" }> = {
-  assigned: { label: "Задано", emoji: "📝", tone: "neutral" },
-  done: { label: "Сделано", emoji: "✅", tone: "success" },
-  partial: { label: "Частично", emoji: "🟡", tone: "gold" },
-  not_done: { label: "Не сделал", emoji: "❌", tone: "danger" },
+const HW_STATUS: Record<HomeworkStatus, { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }> = {
+  assigned: { label: "Задано", Icon: FileText, tone: "neutral" },
+  done: { label: "Сделано", Icon: Check, tone: "success" },
+  partial: { label: "Частично", Icon: MinusCircle, tone: "gold" },
+  not_done: { label: "Не сделал", Icon: X, tone: "danger" },
 };
 
 export function StudentRoom({ id }: { id: string }) {
