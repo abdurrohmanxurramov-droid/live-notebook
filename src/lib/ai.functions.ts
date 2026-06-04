@@ -1,5 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+
+const chatInputSchema = z.object({
+  userText: z.string().trim().min(1, "Сообщение не может быть пустым").max(4000, "Слишком длинное сообщение"),
+});
 
 type Msg = {
   role: "user" | "assistant" | "system" | "tool";
@@ -398,7 +403,7 @@ async function execTool(name: string, args: any, supabase: any, userId: string) 
 
 export const chatWithAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { userText: string }) => input)
+  .inputValidator((input: unknown) => chatInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY не настроен");

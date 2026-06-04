@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendPushTo, type PushPayload } from "@/lib/push.server";
+import { checkHookSecret } from "@/lib/hook-auth";
 
 // Daily payment reminders. Notifies owners about unpaid finance records
 // whose pay_date is today or in the past (overdue) and skips owners
@@ -97,8 +98,16 @@ async function handle() {
 export const Route = createFileRoute("/api/public/hooks/payment-reminders")({
   server: {
     handlers: {
-      GET: async () => Response.json(await handle()),
-      POST: async () => Response.json(await handle()),
+      GET: async ({ request }) => {
+        const denied = checkHookSecret(request);
+        if (denied) return denied;
+        return Response.json(await handle());
+      },
+      POST: async ({ request }) => {
+        const denied = checkHookSecret(request);
+        if (denied) return denied;
+        return Response.json(await handle());
+      },
     },
   },
 });

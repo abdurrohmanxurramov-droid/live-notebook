@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendPushTo, type PushPayload } from "@/lib/push.server";
+import { checkHookSecret } from "@/lib/hook-auth";
 
 // Daily homework reminders. Notifies owners about homework due today or tomorrow
 // that is still in 'assigned' status. Skips owners with remind_homework disabled.
@@ -98,8 +99,16 @@ async function handle() {
 export const Route = createFileRoute("/api/public/hooks/homework-reminders")({
   server: {
     handlers: {
-      GET: async () => Response.json(await handle()),
-      POST: async () => Response.json(await handle()),
+      GET: async ({ request }) => {
+        const denied = checkHookSecret(request);
+        if (denied) return denied;
+        return Response.json(await handle());
+      },
+      POST: async ({ request }) => {
+        const denied = checkHookSecret(request);
+        if (denied) return denied;
+        return Response.json(await handle());
+      },
     },
   },
 });
