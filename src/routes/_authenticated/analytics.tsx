@@ -168,7 +168,7 @@ function AnalyticsPage() {
       {hasAny && (
         <>
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <Card className="p-4">
+            <Card className="p-4 sticker-flower">
               <TrendingUp className="h-5 w-5 text-accent" />
               <div className="num mt-3 text-2xl text-foreground">
                 {totalIncome.toLocaleString("ru-RU")} ₽
@@ -177,19 +177,19 @@ function AnalyticsPage() {
                 За {range} мес
               </div>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 sticker-star">
               <BarChart3 className="h-5 w-5 text-[color:var(--success)]" />
               <div className="num mt-3 text-2xl text-foreground">
                 {avgIncome.toLocaleString("ru-RU")} ₽
               </div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Средний месяц</div>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 sticker-butterfly">
               <Users className="h-5 w-5 text-foreground" />
               <div className="num mt-3 text-2xl text-foreground">{attRate}%</div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Посещаемость</div>
             </Card>
-            <Card className="p-4">
+            <Card className="p-4 sticker-cherry">
               <AlertTriangle className="h-5 w-5 text-destructive" />
               <div className="num mt-3 text-2xl text-foreground">{debtors.length}</div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Должников</div>
