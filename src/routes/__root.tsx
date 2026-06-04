@@ -16,6 +16,7 @@ import { BottomNav } from "../components/BottomNav";
 import { SplashScreen } from "../components/SplashScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { installGlobalHaptics } from "@/lib/haptics";
+import { ThemeProvider } from "../components/ThemeProvider";
 
 function NotFoundComponent() {
   return (
