@@ -134,14 +134,16 @@ export function Calendar() {
   return (
     <>
     <Card className="mt-4 p-3">
+      <div className="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">{label}</div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <button onClick={() => step(-1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Назад"><ChevronLeft className="h-4 w-4" /></button>
           <button onClick={() => setCursor(new Date(new Date().setHours(0,0,0,0)))} className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Сегодня</button>
           <button onClick={() => step(1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Вперёд"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <div className="text-xs capitalize text-muted-foreground">{label}</div>
+        <CalendarViewPill view={view} setView={setView} />
       </div>
+
 
       <div className="mt-3 pb-2">
         {isLoading ? (
