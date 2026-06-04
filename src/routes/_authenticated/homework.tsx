@@ -77,15 +77,18 @@ function HomeworkPage() {
         </div>
       </Card>
 
-      <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1">
-        <Filter className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>Все</FilterChip>
-        {(Object.keys(STATUS) as HomeworkStatus[]).map((k) => (
-          <FilterChip key={k} active={filter === k} onClick={() => setFilter(k)}>
-            {STATUS[k].label}
-          </FilterChip>
-        ))}
+      <div className="mt-4">
+        <GlassChips<"all" | HomeworkStatus>
+          active={filter}
+          onChange={(k) => setFilter(k)}
+          leading={<Filter className="h-4 w-4 shrink-0 text-muted-foreground" />}
+          items={[
+            { key: "all", label: "Все" },
+            ...(Object.keys(STATUS) as HomeworkStatus[]).map((k) => ({ key: k, label: STATUS[k].label })),
+          ]}
+        />
       </div>
+
 
       {students.length > 1 && (
         <Select className="mt-2" value={studentFilter} onChange={(e) => setStudentFilter(e.target.value)}>
