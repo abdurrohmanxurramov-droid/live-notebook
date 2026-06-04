@@ -158,7 +158,7 @@ function Home() {
                 onClick={() => st && setOpenId(st.id)}
                 className="block w-full text-left"
               >
-                <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary">
+                <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary sticker-flower">
                   <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
                     <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
                     <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
