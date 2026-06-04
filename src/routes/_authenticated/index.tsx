@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Card, SectionTitle, Avatar, Badge, Empty, Button } from "@/components/ui-bits";
 import { CountUp } from "@/components/CountUp";
 import { StudentRoom } from "@/components/StudentRoom";
+import { GlassChips } from "@/components/GlassChips";
 import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
@@ -487,30 +488,20 @@ function Overview() {
 
   return (
     <>
-      <div className="mt-1 flex items-center justify-between">
+      <div className="mt-1 flex items-center justify-between gap-3">
         <SectionTitle>Обзор</SectionTitle>
-        <div className="relative -mt-1 inline-flex rounded-full bg-secondary p-1 text-[11px] font-semibold">
-          <span
-            aria-hidden
-            className="absolute top-1 bottom-1 rounded-full bg-background shadow-sm transition-all duration-300 ease-out"
-            style={{ left: period === "today" ? 4 : "50%", right: period === "today" ? "50%" : 4 }}
+        <div className="-mt-1">
+          <GlassChips<"today" | "week">
+            active={period}
+            onChange={setPeriod}
+            items={[
+              { key: "today", label: "Сегодня" },
+              { key: "week", label: "Неделя" },
+            ]}
           />
-          <button
-            type="button"
-            onClick={() => setPeriod("today")}
-            className={`relative z-10 px-3 py-1.5 rounded-full transition-colors ${period === "today" ? "text-foreground" : "text-muted-foreground"}`}
-          >
-            Сегодня
-          </button>
-          <button
-            type="button"
-            onClick={() => setPeriod("week")}
-            className={`relative z-10 px-3 py-1.5 rounded-full transition-colors ${period === "week" ? "text-foreground" : "text-muted-foreground"}`}
-          >
-            Неделя
-          </button>
         </div>
       </div>
+
       {period === "today" ? (
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4">
