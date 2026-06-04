@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
@@ -20,16 +20,22 @@ const STATUS: Record<HomeworkStatus, { label: string; tone: "neutral" | "success
 function HomeworkPage() {
   const { data: students = [] } = useStudents();
   const { data: items = [] } = useHomework();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | HomeworkStatus>("all");
   const [studentFilter, setStudentFilter] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1") {
+    const wantsNew =
+      typeof location.search === "object" && location.search !== null
+        ? (location.search as Record<string, unknown>).new === 1 || (location.search as Record<string, unknown>).new === "1"
+        : typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1";
+    if (wantsNew) {
       setOpen(true);
-      window.history.replaceState({}, "", window.location.pathname);
+      navigate({ to: "/homework", search: {} as any, replace: true });
     }
-  }, []);
+  }, [location.search, navigate]);
 
   const studentMap = useMemo(() => Object.fromEntries(students.map((s) => [s.id, s])), [students]);
 
@@ -263,8 +269,9 @@ function AddHomeworkSheet({
   }, ["homework"]);
 
   return (
-    <Sheet open={open} onClose={onClose} title="Новое задание">
+    <Sheet open={open} onClose={onClose} title="Добавить ДЗ">
       <div className="space-y-3">
+        <div className="stagger-item" style={{ animationDelay: "40ms" }}>
         <Field label="Ученик">
           <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
             <option value="">— выберите —</option>
@@ -273,29 +280,36 @@ function AddHomeworkSheet({
             ))}
           </Select>
         </Field>
+        </div>
+        <div className="stagger-item" style={{ animationDelay: "95ms" }}>
         <Field label="Задание">
           <textarea
             value={task}
             onChange={(e) => setTask(e.target.value)}
             placeholder="Например: §12, упр. 4–7"
             rows={3}
-            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
+            className="liquid-control w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground"
           />
         </Field>
+        </div>
         <div className="grid grid-cols-2 gap-3">
+          <div className="stagger-item" style={{ animationDelay: "150ms" }}>
           <Field label="Задано">
             <Input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} />
           </Field>
+          </div>
+          <div className="stagger-item" style={{ animationDelay: "205ms" }}>
           <Field label="Сдать до">
             <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           </Field>
+          </div>
         </div>
       </div>
       <div className="mt-5 flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>Отмена</Button>
         <Button
           variant="gold"
-          className="flex-1"
+          className="liquid-action flex-1"
           disabled={add.isPending}
           onClick={async () => {
             try {

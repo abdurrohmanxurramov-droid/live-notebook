@@ -29,7 +29,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full min-h-[44px] rounded-xl border border-white/60 bg-white/60 dark:bg-white/5 dark:border-white/10 backdrop-blur-md px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 ${props.className ?? ""}`}
+      className={`liquid-control w-full min-h-[44px] rounded-xl px-4 text-sm text-foreground placeholder:text-muted-foreground ${props.className ?? ""}`}
     />
   );
 }
@@ -38,7 +38,7 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement> & { childr
   return (
     <select
       {...props}
-      className={`w-full min-h-[44px] rounded-xl border border-white/60 bg-white/60 dark:bg-white/5 dark:border-white/10 backdrop-blur-md px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 ${props.className ?? ""}`}
+      className={`liquid-control w-full min-h-[44px] rounded-xl px-3 text-sm text-foreground ${props.className ?? ""}`}
     >
       {props.children}
     </select>

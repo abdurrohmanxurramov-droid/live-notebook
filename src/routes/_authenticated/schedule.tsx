@@ -211,6 +211,7 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
         </p>
       ) : (
         <div className="space-y-3">
+          <div className="stagger-item" style={{ animationDelay: "40ms" }}>
           <Field label="Ученик">
             <Input
               type="text"
@@ -219,7 +220,7 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <div className="mt-2 max-h-44 overflow-y-auto rounded-xl border border-white/60 dark:border-white/10 bg-white/40 dark:bg-white/5 p-1">
+            <div className="liquid-control mt-2 max-h-44 overflow-y-auto rounded-xl p-1">
               {filtered.length === 0 ? (
                 <p className="px-3 py-2 text-xs text-muted-foreground">Никого не нашли</p>
               ) : (
@@ -247,6 +248,8 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
               )}
             </div>
           </Field>
+          </div>
+          <div className="stagger-item" style={{ animationDelay: "95ms" }}>
           <Field label="День недели">
             <div className="grid grid-cols-7 gap-1.5">
               {DAYS.map((d, i) => {
@@ -256,10 +259,10 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
                     key={i}
                     type="button"
                     onClick={() => setDay(i)}
-                    className={`min-h-[44px] rounded-xl text-sm font-semibold transition-colors ${
+                    className={`liquid-action min-h-[44px] rounded-xl text-sm font-semibold transition-colors ${
                       active
                         ? "bg-accent text-accent-foreground"
-                        : "border border-white/60 dark:border-white/10 bg-white/40 dark:bg-white/5 text-foreground hover:bg-secondary"
+                        : "text-foreground"
                     }`}
                   >
                     {d}
@@ -268,21 +271,26 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
               })}
             </div>
           </Field>
+          </div>
           <div className="grid grid-cols-2 gap-3">
+            <div className="stagger-item" style={{ animationDelay: "150ms" }}>
             <Field label="Время">
               <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </Field>
+            </div>
+            <div className="stagger-item" style={{ animationDelay: "205ms" }}>
             <Field label="Длительность, мин">
               <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
             </Field>
+            </div>
           </div>
         </div>
       )}
       <div className="mt-5 flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>Отмена</Button>
         <Button
           variant="gold"
-          className="flex-1"
+          className="liquid-action flex-1"
           disabled={!studentId || add.isPending}
           onClick={async () => {
             try {
