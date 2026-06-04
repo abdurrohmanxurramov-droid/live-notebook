@@ -9,7 +9,7 @@ import { StudentRoom } from "@/components/StudentRoom";
 import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check, BookOpen, TrendingUp, PlayCircle } from "lucide-react";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check, BookOpen, TrendingUp, PlayCircle, BarChart3, FileText } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
@@ -107,9 +107,8 @@ function Home() {
         </h1>
       </header>
 
-      <TodayOverview />
+      <Overview />
       <ContinueCard onOpen={(sid) => setOpenId(sid)} />
-      <WeekSummary />
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {metrics.map((m) => {
@@ -129,11 +128,12 @@ function Home() {
 
       <SectionTitle>Быстрые действия</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
-        <QuickAction to="/attendance" icon={<CalendarPlus className="h-5 w-5" />} label="Урок" />
         <QuickAction to="/assistant" icon={<Sparkles className="h-5 w-5" />} label="ИИ" />
-        <QuickAction to="/finance" icon={<Plus className="h-5 w-5" />} label="Оплата" />
-        <QuickAction to="/students" icon={<UserPlus className="h-5 w-5" />} label="Ученик" />
+        <QuickAction to="/analytics" icon={<BarChart3 className="h-5 w-5" />} label="Аналитика" />
+        <QuickAction to="/reports" icon={<FileText className="h-5 w-5" />} label="Отчёты" />
+        <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="ДЗ" />
       </div>
+
 
       <SectionTitle action={<Link to="/schedule" className="text-xs font-medium text-accent">Открыть →</Link>}>
 
@@ -439,15 +439,25 @@ function useDashData() {
 
 function todayDowMon0() { return (new Date().getDay() + 6) % 7; }
 
-function TodayOverview() {
-  const { students, finance, schedule, homework, settings } = useDashData();
+function Overview() {
+  const { finance, schedule, homework, attendance, settings } = useDashData();
+  const [period, setPeriod] = useState<"today" | "week">(() => {
+    if (typeof window === "undefined") return "today";
+    return (localStorage.getItem("home-overview-period") as "today" | "week") || "today";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("home-overview-period", period); } catch {}
+  }, [period]);
+
   const todayDow = todayDowMon0();
+  const price = Number(settings?.default_lesson_price ?? 0);
+  const currency = settings?.default_currency ?? "RUB";
+
   const todayLessons = useMemo(
     () => schedule.filter((s) => s.day_of_week === todayDow).sort((a, b) => a.start_time.localeCompare(b.start_time)),
     [schedule, todayDow]
   );
-  const price = Number(settings?.default_lesson_price ?? 0);
-  const currency = settings?.default_currency ?? "RUB";
+  const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
   const expectedToday = todayLessons.length * price;
   const studentsUnpaid = useMemo(() => {
     const ids = new Set<string>();
@@ -455,48 +465,104 @@ function TodayOverview() {
     return ids.size;
   }, [finance]);
   const hwWaiting = useMemo(() => homework.filter((h) => h.status === "assigned").length, [homework]);
-  void students;
 
-  const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
+  const weekLessons = schedule.length;
+  const expectedWeek = weekLessons * price;
+  const { mondayIso, sundayIso } = useMemo(() => {
+    const now = new Date();
+    const dow = todayDowMon0();
+    const monday = new Date(now);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(monday.getDate() - dow);
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+    return { mondayIso: monday.toISOString().slice(0, 10), sundayIso: sunday.toISOString().slice(0, 10) };
+  }, []);
+  const rate = useMemo(() => {
+    const weekAtt = attendance.filter((a) => a.date >= mondayIso && a.date <= sundayIso);
+    const counted = weekAtt.filter((a) => a.status === "present" || a.status === "absent");
+    if (counted.length === 0) return 0;
+    return Math.round((counted.filter((a) => a.status === "present").length / counted.length) * 100);
+  }, [attendance, mondayIso, sundayIso]);
 
   return (
     <>
-      <SectionTitle>Сегодня</SectionTitle>
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-4">
-          <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
-          <div className="mt-3 num text-2xl text-foreground">
-            <CountUp value={todayLessons.length} />
-          </div>
-          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков сегодня</div>
-          {timesLine && <div className="mt-1 truncate text-[11px] num text-muted-foreground">{timesLine}</div>}
-        </Card>
-        <Card className="p-4">
-          <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
-          <div className="mt-3 num text-2xl text-foreground">
-            <CountUp value={expectedToday} format={(n) => formatMoney(n, currency)} />
-          </div>
-          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидаемый доход</div>
-        </Card>
-        <Card className="p-4">
-          <AlertTriangle className="h-5 w-5 text-destructive" strokeWidth={2.2} />
-          <div className="mt-3 num text-2xl text-foreground">
-            <CountUp value={studentsUnpaid} />
-          </div>
-          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">С неоплаченным</div>
-        </Card>
-        <Card className="p-4">
-          <BookOpen className="h-5 w-5 text-accent" strokeWidth={2.2} />
-          <div className="mt-3 num text-2xl text-foreground">
-            <CountUp value={hwWaiting} />
-          </div>
-          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">ДЗ на проверку</div>
-        </Card>
+      <div className="mt-1 flex items-center justify-between">
+        <SectionTitle>Обзор</SectionTitle>
+        <div className="relative -mt-1 inline-flex rounded-full bg-secondary p-1 text-[11px] font-semibold">
+          <span
+            aria-hidden
+            className="absolute top-1 bottom-1 rounded-full bg-background shadow-sm transition-all duration-300 ease-out"
+            style={{ left: period === "today" ? 4 : "50%", right: period === "today" ? "50%" : 4 }}
+          />
+          <button
+            type="button"
+            onClick={() => setPeriod("today")}
+            className={`relative z-10 px-3 py-1.5 rounded-full transition-colors ${period === "today" ? "text-foreground" : "text-muted-foreground"}`}
+          >
+            Сегодня
+          </button>
+          <button
+            type="button"
+            onClick={() => setPeriod("week")}
+            className={`relative z-10 px-3 py-1.5 rounded-full transition-colors ${period === "week" ? "text-foreground" : "text-muted-foreground"}`}
+          >
+            Неделя
+          </button>
+        </div>
       </div>
-      
+      {period === "today" ? (
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-4">
+            <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={todayLessons.length} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков сегодня</div>
+            {timesLine && <div className="mt-1 truncate text-[11px] num text-muted-foreground">{timesLine}</div>}
+          </Card>
+          <Card className="p-4">
+            <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={expectedToday} format={(n) => formatMoney(n, currency)} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидаемый доход</div>
+          </Card>
+          <Card className="p-4">
+            <AlertTriangle className="h-5 w-5 text-destructive" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={studentsUnpaid} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">С неоплаченным</div>
+          </Card>
+          <Card className="p-4">
+            <BookOpen className="h-5 w-5 text-accent" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={hwWaiting} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">ДЗ на проверку</div>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="p-4">
+            <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={weekLessons} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков за неделю</div>
+          </Card>
+          <Card className="p-4">
+            <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={expectedWeek} format={(n) => formatMoney(n, currency)} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидается доход</div>
+          </Card>
+          <Card className="p-4">
+            <TrendingUp className="h-5 w-5 text-accent" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={rate} format={(n) => `${n}%`} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Посещаемость</div>
+          </Card>
+          <Card className="p-4">
+            <BookOpen className="h-5 w-5 text-accent" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground"><CountUp value={hwWaiting} /></div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">ДЗ на проверку</div>
+          </Card>
+        </div>
+      )}
     </>
   );
 }
+
 
 function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
   const { students, schedule } = useDashData();
@@ -549,51 +615,3 @@ function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
   );
 }
 
-function WeekSummary() {
-  const { schedule, finance, attendance, settings } = useDashData();
-  const now = new Date();
-  const dow = todayDowMon0();
-  const monday = new Date(now);
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(monday.getDate() - dow);
-  const sunday = new Date(monday);
-  sunday.setDate(sunday.getDate() + 6);
-  const mondayIso = monday.toISOString().slice(0, 10);
-  const sundayIso = sunday.toISOString().slice(0, 10);
-
-  const weekLessons = schedule.length;
-  const price = Number(settings?.default_lesson_price ?? 0);
-  const currency = settings?.default_currency ?? "RUB";
-  const expectedWeek = weekLessons * price;
-
-  const rate = useMemo(() => {
-    const weekAtt = attendance.filter((a) => a.date >= mondayIso && a.date <= sundayIso);
-    const counted = weekAtt.filter((a) => a.status === "present" || a.status === "absent");
-    if (counted.length === 0) return 0;
-    return Math.round((counted.filter((a) => a.status === "present").length / counted.length) * 100);
-  }, [attendance, mondayIso, sundayIso]);
-  void finance;
-
-  return (
-    <>
-      <SectionTitle>Эта неделя</SectionTitle>
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-4">
-          <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
-          <div className="mt-3 num text-2xl text-foreground"><CountUp value={weekLessons} /></div>
-          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков</div>
-        </Card>
-        <Card className="p-4">
-          <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
-          <div className="mt-3 num text-2xl text-foreground"><CountUp value={expectedWeek} format={(n) => formatMoney(n, currency)} /></div>
-          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидается</div>
-        </Card>
-        <Card className="p-4">
-          <TrendingUp className="h-5 w-5 text-accent" strokeWidth={2.2} />
-          <div className="mt-3 num text-2xl text-foreground"><CountUp value={rate} format={(n) => `${n}%`} /></div>
-          <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Посещаемость</div>
-        </Card>
-      </div>
-    </>
-  );
-}
