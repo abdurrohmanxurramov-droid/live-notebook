@@ -18,23 +18,23 @@ import {
 } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, BookOpen, Wallet, Check, Trash2, Phone, Target, RotateCcw, History as HistoryIcon, StickyNote } from "lucide-react";
+import { CalendarCheck, BookOpen, Wallet, Check, X, Trash2, Phone, Target, RotateCcw, History as HistoryIcon, StickyNote, Paperclip, FileText, MinusCircle, AlertTriangle, type LucideIcon } from "lucide-react";
 
 const LESSONS_PER_CYCLE = 12;
 const EXCUSED_LIMIT = 3;
 
-const ATT_STATUS: Record<AttendanceStatus, { label: string; emoji: string; tone: "success" | "danger" | "gold" | "neutral" }> = {
-  present: { label: "Был", emoji: "✅", tone: "success" },
-  absent: { label: "Не был", emoji: "❌", tone: "danger" },
-  excused: { label: "Уваж.", emoji: "📎", tone: "gold" },
-  rescheduled_by_teacher: { label: "Перенос мной", emoji: "🔄", tone: "neutral" },
+const ATT_STATUS: Record<AttendanceStatus, { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }> = {
+  present: { label: "Был", Icon: Check, tone: "success" },
+  absent: { label: "Не был", Icon: X, tone: "danger" },
+  excused: { label: "Уваж.", Icon: Paperclip, tone: "gold" },
+  rescheduled_by_teacher: { label: "Перенос мной", Icon: RotateCcw, tone: "neutral" },
 };
 
-const HW_STATUS: Record<HomeworkStatus, { label: string; emoji: string; tone: "success" | "danger" | "gold" | "neutral" }> = {
-  assigned: { label: "Задано", emoji: "📝", tone: "neutral" },
-  done: { label: "Сделано", emoji: "✅", tone: "success" },
-  partial: { label: "Частично", emoji: "🟡", tone: "gold" },
-  not_done: { label: "Не сделал", emoji: "❌", tone: "danger" },
+const HW_STATUS: Record<HomeworkStatus, { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }> = {
+  assigned: { label: "Задано", Icon: FileText, tone: "neutral" },
+  done: { label: "Сделано", Icon: Check, tone: "success" },
+  partial: { label: "Частично", Icon: MinusCircle, tone: "gold" },
+  not_done: { label: "Не сделал", Icon: X, tone: "danger" },
 };
 
 export function StudentRoom({ id }: { id: string }) {
@@ -142,7 +142,7 @@ export function StudentRoom({ id }: { id: string }) {
 
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
           <Mini n={att.length} label="Записей" />
-          <Mini n={hw.filter((h) => h.status === "done").length} label="ДЗ ✓" />
+          <Mini n={hw.filter((h) => h.status === "done").length} label="ДЗ сделано" />
           <Mini n={unpaidCount} label="Долгов" />
         </div>
       </Card>
@@ -241,7 +241,7 @@ function AttendanceTab({
           pay_date: date,
         });
         if (e2) throw e2;
-        toast.success("Цикл 12 уроков завершён — создан новый долг 💰");
+        toast.success("Цикл 12 уроков завершён — создан новый долг");
       }
     }
   }, ["attendance", "finance"]);
@@ -273,7 +273,7 @@ function AttendanceTab({
             <Select value={status} onChange={(e) => setStatus(e.target.value as AttendanceStatus)}>
               {(Object.entries(ATT_STATUS) as [AttendanceStatus, typeof ATT_STATUS[AttendanceStatus]][]).map(([k, v]) => (
                 <option key={k} value={k} disabled={k === "excused" && excusedReached}>
-                  {v.emoji} {v.label}
+                  {v.label}
                   {k === "excused" ? ` (${excusedCount}/${EXCUSED_LIMIT})` : ""}
                 </option>
               ))}
@@ -284,8 +284,8 @@ function AttendanceTab({
           <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="..." />
         </Field>
         {willBlock && (
-          <div className="mt-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            ⚠️ Лимит уваж. причин (3) исчерпан — выберите другой статус
+          <div className="mt-2 flex items-center gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Лимит уваж. причин (3) исчерпан — выберите другой статус
           </div>
         )}
         <Button
@@ -317,8 +317,8 @@ function AttendanceTab({
             return (
               <Card key={r.id} className="p-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-lg">
-                    {cfg?.emoji ?? "·"}
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : cfg?.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}>
+                    {cfg?.Icon ? <cfg.Icon className="h-5 w-5" /> : <span>·</span>}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[14px] font-semibold text-foreground">
@@ -435,8 +435,8 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
             return (
               <Card key={h.id} className="p-3">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-lg">
-                    {cfg.emoji}
+                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary ${cfg.tone === "success" ? "text-[color:var(--success)]" : cfg.tone === "danger" ? "text-destructive" : cfg.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}>
+                    <cfg.Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-[14px] font-semibold text-foreground">{h.task}</div>
@@ -473,7 +473,7 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
                             : "bg-secondary text-muted-foreground"
                         }`}
                       >
-                        {c.emoji} {c.label}
+                        <span className="inline-flex items-center justify-center gap-1"><c.Icon className="h-3.5 w-3.5" /> {c.label}</span>
                       </button>
                     );
                   })}

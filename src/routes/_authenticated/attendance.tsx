@@ -4,14 +4,14 @@ import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { useStudents, useAttendance, useMut, initials } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, Check, X, FileText, Trash2 } from "lucide-react";
+import { CalendarCheck, Check, X, FileText, Trash2, Paperclip, type LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/attendance")({ component: AttendancePage });
 
-const STATUS = {
-  present: { label: "Присутствовал", emoji: "✅", tone: "success" as const },
-  absent: { label: "Отсутствовал", emoji: "❌", tone: "danger" as const },
-  excused: { label: "Уваж. причина", emoji: "📎", tone: "gold" as const },
+const STATUS: Record<"present" | "absent" | "excused", { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" }> = {
+  present: { label: "Присутствовал", Icon: Check, tone: "success" },
+  absent: { label: "Отсутствовал", Icon: X, tone: "danger" },
+  excused: { label: "Уваж. причина", Icon: Paperclip, tone: "gold" },
 };
 
 function AttendancePage() {
@@ -74,7 +74,7 @@ function AttendancePage() {
             <Field label="Статус">
               <Select value={status} onChange={(e) => setStatus(e.target.value as keyof typeof STATUS)}>
                 {Object.entries(STATUS).map(([k, v]) => (
-                  <option key={k} value={k}>{v.emoji} {v.label}</option>
+                  <option key={k} value={k}>{v.label}</option>
                 ))}
               </Select>
             </Field>
@@ -119,9 +119,9 @@ function AttendancePage() {
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                  <Stat n={st.present} label="✅" tone="success" />
-                  <Stat n={st.absent} label="❌" tone="danger" />
-                  <Stat n={st.excused} label="📎" tone="gold" />
+                  <Stat n={st.present} icon={<Check className="h-4 w-4" />} tone="success" />
+                  <Stat n={st.absent} icon={<X className="h-4 w-4" />} tone="danger" />
+                  <Stat n={st.excused} icon={<Paperclip className="h-4 w-4" />} tone="gold" />
                 </div>
               </Card>
             );
@@ -137,10 +137,11 @@ function AttendancePage() {
           {records.map((r) => {
             const s = studentMap[r.student_id];
             const cfg = STATUS[r.status as keyof typeof STATUS];
+            const StatusIcon = cfg?.Icon;
             return (
               <Card key={r.id} className="flex items-center gap-3 p-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-lg">
-                  {cfg?.emoji ?? "·"}
+                <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : "text-accent"}`}>
+                  {StatusIcon ? <StatusIcon className="h-5 w-5" /> : <span>·</span>}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="name-italic truncate text-[14px] font-semibold">{s?.name ?? "—"}</div>
@@ -174,7 +175,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Stat({ n, label, tone }: { n: number; label: string; tone: "success" | "danger" | "gold" }) {
+function Stat({ n, icon, tone }: { n: number; icon: React.ReactNode; tone: "success" | "danger" | "gold" }) {
   const toneCls: Record<string, string> = {
     success: "text-[color:var(--success)]",
     danger: "text-destructive",
@@ -183,7 +184,7 @@ function Stat({ n, label, tone }: { n: number; label: string; tone: "success" | 
   return (
     <div className="rounded-xl bg-secondary py-2">
       <div className={`num text-lg ${toneCls[tone]}`}>{n}</div>
-      <div className="text-[11px]">{label}</div>
+      <div className={`mt-0.5 flex items-center justify-center ${toneCls[tone]}`}>{icon}</div>
     </div>
   );
 }

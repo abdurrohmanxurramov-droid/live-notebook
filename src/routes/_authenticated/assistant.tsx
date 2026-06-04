@@ -71,7 +71,7 @@ function AssistantPage() {
       if (res.actions?.length) qc.invalidateQueries();
     },
     onError: (e: Error) =>
-      setMessages((m) => [...m, { role: "assistant", content: `⚠️ ${e.message}` }]),
+      setMessages((m) => [...m, { role: "assistant", content: `Ошибка: ${e.message}` }]),
   });
 
   const clearMut = useMutation({
