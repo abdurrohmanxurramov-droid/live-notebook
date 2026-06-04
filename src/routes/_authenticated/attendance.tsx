@@ -119,9 +119,9 @@ function AttendancePage() {
                   </div>
                 </div>
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                  <Stat n={st.present} label="✅" tone="success" />
-                  <Stat n={st.absent} label="❌" tone="danger" />
-                  <Stat n={st.excused} label="📎" tone="gold" />
+                  <Stat n={st.present} icon={<Check className="h-4 w-4" />} tone="success" />
+                  <Stat n={st.absent} icon={<X className="h-4 w-4" />} tone="danger" />
+                  <Stat n={st.excused} icon={<Paperclip className="h-4 w-4" />} tone="gold" />
                 </div>
               </Card>
             );
@@ -137,10 +137,11 @@ function AttendancePage() {
           {records.map((r) => {
             const s = studentMap[r.student_id];
             const cfg = STATUS[r.status as keyof typeof STATUS];
+            const StatusIcon = cfg?.Icon;
             return (
               <Card key={r.id} className="flex items-center gap-3 p-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-secondary text-lg">
-                  {cfg?.emoji ?? "·"}
+                <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : "text-accent"}`}>
+                  {StatusIcon ? <StatusIcon className="h-5 w-5" /> : <span>·</span>}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="name-italic truncate text-[14px] font-semibold">{s?.name ?? "—"}</div>
