@@ -260,9 +260,9 @@ function AnalyticsPage() {
                     allowDecimals={false}
                   />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="present" stackId="a" fill="var(--success)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="excused" stackId="a" fill="var(--accent)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="absent" stackId="a" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="present" stackId="a" fill="var(--success)" shape={<StackBar dataKey="present" order={["absent", "excused", "present"]} />} />
+                  <Bar dataKey="excused" stackId="a" fill="var(--accent)" shape={<StackBar dataKey="excused" order={["absent", "excused", "present"]} />} />
+                  <Bar dataKey="absent" stackId="a" fill="var(--destructive)" shape={<StackBar dataKey="absent" order={["absent", "excused", "present"]} />} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
