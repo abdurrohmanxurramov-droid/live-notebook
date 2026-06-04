@@ -29,6 +29,24 @@ function Home() {
   const { data: schedule = [] } = useSchedule();
   const [openId, setOpenId] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [teacherName, setTeacherName] = useState<string>("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const client = await sb();
+        const { data } = await client.auth.getUser();
+        const u = data.user;
+        if (!u) return;
+        const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+        const raw = (meta.full_name as string) || (meta.name as string) || (meta.display_name as string) || "";
+        const fromName = raw.trim().split(/\s+/)[0];
+        const fromEmail = u.email ? u.email.split("@")[0].split(/[._-]/)[0] : "";
+        const pick = fromName || fromEmail || "";
+        setTeacherName(pick ? pick.charAt(0).toUpperCase() + pick.slice(1) : "");
+      } catch {}
+    })();
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = openId ? "hidden" : "";
@@ -84,8 +102,8 @@ function Home() {
       <header className="mb-5">
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{dateLabel}</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground">
-          {greetingForNow()}
-          <Sparkles className="ml-2 inline h-5 w-5 text-accent" />
+          {greetingForNow()}{teacherName ? `, ${teacherName}` : ""}
+          <GraduationCap className="ml-2 inline h-6 w-6 text-accent" strokeWidth={2.2} />
         </h1>
       </header>
 

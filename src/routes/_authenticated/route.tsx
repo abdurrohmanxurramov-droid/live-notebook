@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { QuickActionsFab } from "@/components/QuickActionsFab";
+import { TopClock } from "@/components/TopClock";
 
 function AuthErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
@@ -64,6 +65,7 @@ export const Route = createFileRoute("/_authenticated")({
 function PageShell() {
   return (
     <>
+      <TopClock />
       <Outlet />
       <QuickActionsFab />
     </>
