@@ -134,14 +134,16 @@ export function Calendar() {
   return (
     <>
     <Card className="mt-4 p-3">
+      <div className="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">{label}</div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">
           <button onClick={() => step(-1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Назад"><ChevronLeft className="h-4 w-4" /></button>
           <button onClick={() => setCursor(new Date(new Date().setHours(0,0,0,0)))} className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Сегодня</button>
           <button onClick={() => step(1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Вперёд"><ChevronRight className="h-4 w-4" /></button>
         </div>
-        <div className="text-xs capitalize text-muted-foreground">{label}</div>
+        <CalendarViewPill view={view} setView={setView} />
       </div>
+
 
       <div className="mt-3 pb-2">
         {isLoading ? (
@@ -203,10 +205,10 @@ export function Calendar() {
         </div>
       </Sheet>
     </Card>
-    <CalendarViewPill view={view} setView={setView} />
     </>
   );
 }
+
 
 /* -------------------- VIEW SWITCH -------------------- */
 
@@ -241,9 +243,14 @@ function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) =>
 
   return (
     <div
-      className="glass-strong fixed left-1/2 z-40 inline-flex -translate-x-1/2 rounded-full p-1 text-xs"
-      style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}
+      className="relative inline-flex shrink-0 rounded-full p-1 text-xs ring-1 ring-white/40 dark:ring-white/10 shadow-[0_8px_24px_-12px_rgba(20,33,61,0.18),inset_0_1px_0_0_rgba(255,255,255,0.55)]"
+      style={{
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+        WebkitBackdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+      }}
     >
+
 
       {indicator && (
         <span
