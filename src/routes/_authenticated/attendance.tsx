@@ -74,7 +74,7 @@ function AttendancePage() {
             <Field label="Статус">
               <Select value={status} onChange={(e) => setStatus(e.target.value as keyof typeof STATUS)}>
                 {Object.entries(STATUS).map(([k, v]) => (
-                  <option key={k} value={k}>{v.emoji} {v.label}</option>
+                  <option key={k} value={k}>{v.label}</option>
                 ))}
               </Select>
             </Field>
