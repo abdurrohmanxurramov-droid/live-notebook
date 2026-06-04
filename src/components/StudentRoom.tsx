@@ -473,7 +473,7 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
                             : "bg-secondary text-muted-foreground"
                         }`}
                       >
-                        {c.emoji} {c.label}
+                        <span className="inline-flex items-center justify-center gap-1"><c.Icon className="h-3.5 w-3.5" /> {c.label}</span>
                       </button>
                     );
                   })}
