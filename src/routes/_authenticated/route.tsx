@@ -63,7 +63,7 @@ export const Route = createFileRoute("/_authenticated")({
           .select("onboarding_completed")
           .eq("user_id", data.user.id)
           .maybeSingle();
-        if (settings && settings.onboarding_completed === false) {
+        if (!settings || settings.onboarding_completed === false) {
           throw redirect({ to: "/onboarding" });
         }
       } catch (e) {
