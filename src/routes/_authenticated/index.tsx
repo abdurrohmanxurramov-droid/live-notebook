@@ -602,7 +602,7 @@ function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
       onClick={() => onOpen(st.id)}
       className="mt-3 block w-full text-left"
     >
-      <Card className="flex items-center gap-3 p-4 transition-colors active:bg-secondary">
+      <Card className="flex items-center gap-3 p-4 transition-colors active:bg-secondary sticker-heart">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
           <PlayCircle className="h-6 w-6" />
         </div>
