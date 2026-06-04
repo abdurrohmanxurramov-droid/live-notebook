@@ -457,7 +457,7 @@
   .glass-strong {
     position: relative;
     background: var(--glass-bg-strong);
-    backdrop-filter: blur(28px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(160%);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
     overflow: hidden;
