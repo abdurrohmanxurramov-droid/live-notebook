@@ -116,7 +116,7 @@ function Home() {
         {metrics.map((m) => {
           const Icon = m.icon;
           return (
-            <Card key={m.label} className="p-4">
+            <Card key={m.label} className={`p-4 ${m.sticker}`}>
               <Icon className={`h-5 w-5 ${toneClasses[m.tone]}`} strokeWidth={2.2} />
               <div className="mt-3 num text-2xl text-foreground">{m.value}</div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">{m.label}</div>
