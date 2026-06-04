@@ -273,7 +273,7 @@ function AttendanceTab({
             <Select value={status} onChange={(e) => setStatus(e.target.value as AttendanceStatus)}>
               {(Object.entries(ATT_STATUS) as [AttendanceStatus, typeof ATT_STATUS[AttendanceStatus]][]).map(([k, v]) => (
                 <option key={k} value={k} disabled={k === "excused" && excusedReached}>
-                  {v.emoji} {v.label}
+                  {v.label}
                   {k === "excused" ? ` (${excusedCount}/${EXCUSED_LIMIT})` : ""}
                 </option>
               ))}
