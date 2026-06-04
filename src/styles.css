@@ -677,76 +677,48 @@ html, body, * {
 :root[data-theme="bloom"] .bloom-hide { display: none !important; }
 :root[data-theme="bloom"] .bloom-show { display: inline-block !important; }
 
-/* ============= Bloom stickers =============
-   Decorative SVG stickers in the top-right corner of selected cards.
-   Active only when <html data-theme="bloom">. */
+/* ============= Bloom doodles =============
+   Hand-drawn ink doodles in the top-right corner of selected cards.
+   Static (no animation). Active only when <html data-theme="bloom">. */
 :root[data-theme="bloom"] [class*="sticker-"] {
   position: relative;
 }
 :root[data-theme="bloom"] [class*="sticker-"]::after {
   content: "";
   position: absolute;
-  top: 6px;
-  right: 8px;
-  width: 26px;
-  height: 26px;
+  top: 8px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
   background-repeat: no-repeat;
   background-size: contain;
   pointer-events: none;
   z-index: 3;
-  filter: drop-shadow(0 2px 4px rgba(230, 76, 134, 0.35));
-  transform-origin: 50% 50%;
+  opacity: 0.85;
+  transform: rotate(-6deg);
 }
-:root[data-theme="bloom"].dark [class*="sticker-"]::after { opacity: 0.78; }
+:root[data-theme="bloom"].dark [class*="sticker-"]::after { opacity: 0.7; }
 
 :root[data-theme="bloom"] .sticker-heart::after {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 27s-10-6.2-10-13.4C6 9.5 9 7 12.2 7c2 0 3.7 1 3.8 2.8C16.1 8 17.8 7 19.8 7 23 7 26 9.5 26 13.6 26 20.8 16 27 16 27z' fill='%23FF6FA3'/></svg>");
-  animation: sticker-heartbeat 1.6s ease-in-out infinite;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23C2548A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M16 26c-1-1-9-6-9-12.5 0-3.4 2.6-5.8 5.4-5.7 1.9.1 3.1 1.2 3.6 2.4.5-1.3 1.8-2.4 3.7-2.4C22.5 7.7 25 10.2 25 13.5 25 20 17 25 16 26z'/><path d='M11 12c-.4.6-.6 1.4-.4 2.2' opacity='.6'/></svg>");
 }
 :root[data-theme="bloom"] .sticker-flower::after {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><g><ellipse cx='16' cy='8' rx='3.5' ry='6' fill='%23FFB6CE'/><ellipse cx='16' cy='24' rx='3.5' ry='6' fill='%23FFB6CE'/><ellipse cx='8' cy='16' rx='6' ry='3.5' fill='%23FFB6CE'/><ellipse cx='24' cy='16' rx='6' ry='3.5' fill='%23FFB6CE'/><circle cx='16' cy='16' r='3.4' fill='%23FFD27A'/></g></svg>");
-  animation: sticker-spin 14s linear infinite;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23C2548A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M16 6c-2 1-3 3-2.5 5 .5 1.5 2 2.4 2.5 2.4s2-.9 2.5-2.4C19 9 18 7 16 6z'/><path d='M26 16c-1-2-3-3-5-2.5-1.5.5-2.4 2-2.4 2.5s.9 2 2.4 2.5C23 19 25 18 26 16z'/><path d='M16 26c2-1 3-3 2.5-5-.5-1.5-2-2.4-2.5-2.4s-2 .9-2.5 2.4C13 23 14 25 16 26z'/><path d='M6 16c1 2 3 3 5 2.5 1.5-.5 2.4-2 2.4-2.5s-.9-2-2.4-2.5C9 13 7 14 6 16z'/><circle cx='16' cy='16' r='1.8' stroke='%23E8A23A'/></svg>");
+  transform: rotate(4deg);
 }
 :root[data-theme="bloom"] .sticker-bow::after {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 16 L4 8 Q2 14 4 24 L16 16 Z' fill='%23FF6FA3'/><path d='M16 16 L28 8 Q30 14 28 24 L16 16 Z' fill='%23FF6FA3'/><circle cx='16' cy='16' r='3.2' fill='%23E64C86'/><path d='M14 18 L10 28 M18 18 L22 28' stroke='%23FF6FA3' stroke-width='2.4' stroke-linecap='round' fill='none'/></svg>");
-  animation: sticker-wobble 3.4s ease-in-out infinite;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23C2548A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M16 16c-3-3-7-5-10-3-1.5 1 0 8 2 9 3 1 6-3 8-6z'/><path d='M16 16c3-3 7-5 10-3 1.5 1 0 8-2 9-3 1-6-3-8-6z'/><circle cx='16' cy='16' r='2.2'/><path d='M14.6 18 12 26M17.4 18 20 26'/></svg>");
+  transform: rotate(-3deg);
 }
 :root[data-theme="bloom"] .sticker-star::after {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path d='M16 2 L19.6 12.4 L30 13.2 L21.8 19.8 L24.6 30 L16 24.2 L7.4 30 L10.2 19.8 L2 13.2 L12.4 12.4 Z' fill='%23FFD27A' stroke='%23E8B84A' stroke-width='1'/></svg>");
-  animation: sticker-twinkle 2.4s ease-in-out infinite;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23E8A23A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M16 5l3 7 8 .8-6 5 2 8-7-4-7 4 2-8-6-5 8-.8z'/><path d='M24 7l1 2M6 22l-1 1' opacity='.7'/></svg>");
+  transform: rotate(8deg);
 }
 :root[data-theme="bloom"] .sticker-butterfly::after {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><g><ellipse cx='10' cy='12' rx='7' ry='6' fill='%23FF9CC0'/><ellipse cx='22' cy='12' rx='7' ry='6' fill='%23FF9CC0'/><ellipse cx='10' cy='22' rx='5' ry='4' fill='%23E64C86'/><ellipse cx='22' cy='22' rx='5' ry='4' fill='%23E64C86'/><rect x='15' y='8' width='2' height='18' rx='1' fill='%234A1F33'/><circle cx='16' cy='7' r='1.6' fill='%234A1F33'/></g></svg>");
-  animation: sticker-flap 1.2s ease-in-out infinite;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23C2548A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M16 10c-2-3-6-4-9-2-2 1.5-1 7 1 9 2 1.5 6 .5 8-2'/><path d='M16 10c2-3 6-4 9-2 2 1.5 1 7-1 9-2 1.5-6 .5-8-2'/><path d='M16 18c-2 2-5 3-7 2-1-.5-1 4 1 5 2 .5 5-2 6-4'/><path d='M16 18c2 2 5 3 7 2 1-.5 1 4-1 5-2 .5-5-2-6-4'/><path d='M16 8v18'/><path d='M14.5 6.5c.5-1 2-1 2.5 0'/></svg>");
+  transform: rotate(-8deg);
 }
 :root[data-theme="bloom"] .sticker-cherry::after {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><g><path d='M12 6 Q16 12 22 8' stroke='%23B7D8B9' stroke-width='2' fill='none' stroke-linecap='round'/><path d='M22 8 Q24 14 24 18' stroke='%23B7D8B9' stroke-width='2' fill='none' stroke-linecap='round'/><circle cx='10' cy='22' r='6' fill='%23E64C86'/><circle cx='22' cy='24' r='5' fill='%23FF6FA3'/><ellipse cx='8.4' cy='20' rx='1.6' ry='1' fill='%23FFC2D6' transform='rotate(-25 8.4 20)'/></g></svg>");
-  animation: sticker-swing 3s ease-in-out infinite;
-}
-
-@keyframes sticker-heartbeat {
-  0%, 100% { transform: scale(1); }
-  20%      { transform: scale(1.18); }
-  40%      { transform: scale(0.96); }
-  60%      { transform: scale(1.1); }
-}
-@keyframes sticker-spin { to { transform: rotate(360deg); } }
-@keyframes sticker-wobble {
-  0%, 100% { transform: rotate(-6deg); }
-  50%      { transform: rotate(6deg); }
-}
-@keyframes sticker-twinkle {
-  0%, 100% { transform: scale(0.85) rotate(0deg); opacity: 0.7; }
-  50%      { transform: scale(1.15) rotate(20deg); opacity: 1; }
-}
-@keyframes sticker-flap {
-  0%, 100% { transform: scaleX(1); }
-  50%      { transform: scaleX(0.55); }
-}
-@keyframes sticker-swing {
-  0%, 100% { transform: rotate(-8deg); }
-  50%      { transform: rotate(8deg); }
-}
-@media (prefers-reduced-motion: reduce) {
-  :root[data-theme="bloom"] [class*="sticker-"]::after { animation: none !important; }
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23C2548A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'><path d='M11 22c-2 0-4-1.5-4-3.5S9 15 11 15s4 1.5 4 3.5S13 22 11 22z'/><path d='M22 24c-2 0-4-1.5-4-3.5S20 17 22 17s4 1.5 4 3.5S24 24 22 24z'/><path d='M11 15c1-4 4-8 8-9M22 17c0-3 1-6 3-8' stroke='%2378a878'/><path d='M19 6c1-1 3-1 5 0' stroke='%2378a878'/></svg>");
+  transform: rotate(5deg);
 }
