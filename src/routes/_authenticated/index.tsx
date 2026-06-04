@@ -104,7 +104,8 @@ function Home() {
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{dateLabel}</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground">
           {greetingForNow()}{teacherName ? `, ${teacherName}` : ""}
-          <GraduationCap className="ml-2 inline h-6 w-6 text-accent" strokeWidth={2.2} />
+          <GraduationCap className="ml-2 inline h-6 w-6 text-accent bloom-hide" strokeWidth={2.2} />
+          <span className="ml-2 hidden bloom-show align-middle text-2xl" aria-hidden>🌸</span>
         </h1>
       </header>
 
