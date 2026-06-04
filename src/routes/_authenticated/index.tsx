@@ -132,7 +132,7 @@ function Home() {
         <QuickAction to="/assistant" icon={<Sparkles className="h-5 w-5" />} label="ИИ" />
         <QuickAction to="/analytics" icon={<BarChart3 className="h-5 w-5" />} label="Аналитика" />
         <QuickAction to="/reports" icon={<FileText className="h-5 w-5" />} label="Отчёты" />
-        <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="ДЗ" />
+        <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="Журнал" />
       </div>
 
 
@@ -286,10 +286,21 @@ function QuickAction({ to, icon, label }: { to: string; icon: React.ReactNode; l
   return (
     <Link
       to={to}
-      className="flex flex-col items-center justify-center rounded-2xl border border-border/60 bg-card py-4 text-center transition-colors active:bg-secondary"
+      className="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl px-2 py-4 text-center ring-1 ring-white/40 dark:ring-white/10 shadow-[0_8px_24px_-12px_rgba(20,33,61,0.18),inset_0_1px_0_0_rgba(255,255,255,0.55)] transition-all duration-300 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
+      style={{
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+        WebkitBackdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+      }}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/15 text-accent">{icon}</div>
-      <span className="mt-2 text-xs font-medium text-foreground">{label}</span>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100 dark:via-white/15"
+      />
+      <div className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-accent/25 to-accent/10 text-accent ring-1 ring-white/40 transition-transform duration-300 group-hover:scale-110 group-active:scale-95 dark:ring-white/10">
+        {icon}
+      </div>
+      <span className="relative mt-2 text-xs font-medium text-foreground">{label}</span>
     </Link>
   );
 }
