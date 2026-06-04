@@ -217,17 +217,22 @@ function StudentsPage() {
             </Select>
           </label>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          <Chip active={debtFilter === "all"} onClick={() => setDebtFilter("all")}>Все оплаты</Chip>
-          <Chip active={debtFilter === "debt"} onClick={() => setDebtFilter("debt")}>Должники</Chip>
-          <Chip active={debtFilter === "paid"} onClick={() => setDebtFilter("paid")}>Оплачено</Chip>
-          <Chip active={debtFilter === "none"} onClick={() => setDebtFilter("none")}>Без платежей</Chip>
-        </div>
+        <GlassChips<"all" | "debt" | "paid" | "none">
+          active={debtFilter as "all" | "debt" | "paid" | "none"}
+          onChange={(k) => setDebtFilter(k)}
+          items={[
+            { key: "all", label: "Все оплаты" },
+            { key: "debt", label: "Должники" },
+            { key: "paid", label: "Оплачено" },
+            { key: "none", label: "Без платежей" },
+          ]}
+        />
         <div className="flex flex-wrap gap-1.5">
           <Chip active={upcomingOnly} onClick={() => setUpcomingOnly((v) => !v)}>
             Урок в ближайшие 7 дней
           </Chip>
         </div>
+
       </Card>
 
       {/* Status stats + filter */}
