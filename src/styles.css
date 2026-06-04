@@ -89,31 +89,31 @@
    Applied via <html data-theme="bloom">
    ========================================================= */
 :root[data-theme="bloom"] {
-  --background: #FFF4F7;
-  --foreground: #4A2A3C;
+  --background: #FFE8F0;
+  --foreground: #4A1F38;
   --card: #FFFFFF;
-  --card-foreground: #4A2A3C;
-  --primary: #C2548A;
+  --card-foreground: #4A1F38;
+  --primary: #E64C86;
   --primary-foreground: #FFFFFF;
-  --secondary: #FCE3EC;
+  --secondary: #FFD6E4;
   --secondary-foreground: #6A2A4A;
   --muted: #FCE3EC;
-  --muted-foreground: #8A6B7A;
-  --accent: #E58FB4;
-  --accent-foreground: #4A1F33;
+  --muted-foreground: #8A5A72;
+  --accent: #FF6FA3;
+  --accent-foreground: #FFFFFF;
   --destructive: #C04060;
   --success: #58A88A;
-  --border: rgba(194, 84, 138, 0.14);
+  --border: rgba(230, 76, 134, 0.18);
 
-  --glass-bg: rgba(255, 240, 246, 0.62);
-  --glass-bg-strong: rgba(255, 246, 250, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-bg: rgba(255, 234, 242, 0.62);
+  --glass-bg-strong: rgba(255, 244, 248, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.85);
   --glass-shadow:
-    0 10px 32px -10px rgba(194, 84, 138, 0.28),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
-  --glass-blur: 22px;
+    0 12px 36px -12px rgba(230, 76, 134, 0.38),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+  --glass-blur: 24px;
 
-  --bloom-rose: #E58FB4;
+  --bloom-rose: #FF6FA3;
   --bloom-petal: #FFC2D6;
   --bloom-leaf: #B7D8B9;
   --bloom-cream: #FFF7E8;
@@ -121,9 +121,9 @@
 
 :root[data-theme="bloom"] body {
   background-image:
-    radial-gradient(60% 45% at 10% 0%, rgba(229, 143, 180, 0.38), transparent 60%),
-    radial-gradient(55% 40% at 100% 15%, rgba(255, 194, 214, 0.45), transparent 60%),
-    radial-gradient(70% 50% at 50% 100%, rgba(183, 216, 185, 0.30), transparent 60%);
+    radial-gradient(60% 45% at 10% 0%, rgba(255, 111, 163, 0.45), transparent 60%),
+    radial-gradient(55% 40% at 100% 15%, rgba(255, 194, 214, 0.55), transparent 60%),
+    radial-gradient(70% 50% at 50% 100%, rgba(255, 210, 220, 0.55), transparent 60%) !important;
 }
 
 :root[data-theme="bloom"] {
@@ -137,7 +137,7 @@
   font-weight: 700;
 }
 
-/* Floating petals layer */
+/* Floating petals + hearts + flowers + sparkles */
 .bloom-backdrop {
   position: fixed;
   inset: 0;
@@ -147,33 +147,54 @@
 }
 .bloom-backdrop svg {
   position: absolute;
-  opacity: 0.55;
-  filter: drop-shadow(0 4px 10px rgba(229, 143, 180, 0.35));
-  animation: petal-float 18s linear infinite;
+  filter: drop-shadow(0 4px 10px rgba(230, 76, 134, 0.35));
+  animation: petal-float 22s linear infinite;
+  opacity: 0.85;
 }
-.bloom-backdrop svg:nth-child(1) { top: -20px; left: 6%;  width: 38px; animation-duration: 22s; animation-delay: 0s; }
-.bloom-backdrop svg:nth-child(2) { top: -40px; left: 28%; width: 52px; animation-duration: 28s; animation-delay: -6s; }
-.bloom-backdrop svg:nth-child(3) { top: -30px; left: 52%; width: 32px; animation-duration: 19s; animation-delay: -3s; }
-.bloom-backdrop svg:nth-child(4) { top: -50px; left: 74%; width: 46px; animation-duration: 26s; animation-delay: -10s; }
-.bloom-backdrop svg:nth-child(5) { top: -25px; left: 88%; width: 36px; animation-duration: 24s; animation-delay: -14s; }
-.bloom-backdrop svg:nth-child(6) { top: -60px; left: 40%; width: 28px; animation-duration: 20s; animation-delay: -8s; }
+.bloom-backdrop svg:nth-child(1)  { top: -20px; left: 5%;  width: 38px; animation-duration: 22s; animation-delay: 0s; }
+.bloom-backdrop svg:nth-child(2)  { top: -40px; left: 22%; width: 52px; animation-duration: 28s; animation-delay: -6s; }
+.bloom-backdrop svg:nth-child(3)  { top: -30px; left: 78%; width: 34px; animation-duration: 19s; animation-delay: -3s; }
+.bloom-backdrop svg:nth-child(4)  { top: -50px; left: 92%; width: 44px; animation-duration: 26s; animation-delay: -10s; }
+.bloom-backdrop svg:nth-child(5)  { top: -30px; left: 14%; width: 28px; animation-duration: 24s; animation-delay: -2s; }
+.bloom-backdrop svg:nth-child(6)  { top: -45px; left: 38%; width: 36px; animation-duration: 30s; animation-delay: -12s; }
+.bloom-backdrop svg:nth-child(7)  { top: -25px; left: 60%; width: 42px; animation-duration: 27s; animation-delay: -7s; }
+.bloom-backdrop svg:nth-child(8)  { top: -55px; left: 84%; width: 26px; animation-duration: 21s; animation-delay: -15s; }
+.bloom-backdrop svg:nth-child(9)  { top: -35px; left: 30%; width: 40px; animation: petal-float 32s linear infinite, bloom-spin 14s linear infinite; animation-delay: -4s, 0s; }
+.bloom-backdrop svg:nth-child(10) { top: -28px; left: 50%; width: 32px; animation: petal-float 26s linear infinite, bloom-spin 11s linear infinite; animation-delay: -9s, -3s; }
+.bloom-backdrop svg:nth-child(11) { top: -42px; left: 70%; width: 46px; animation: petal-float 34s linear infinite, bloom-spin 18s linear infinite; animation-delay: -16s, -5s; }
+.bloom-backdrop svg:nth-child(12) { top: 12%; left: 18%; width: 14px; animation: sparkle-twinkle 3.2s ease-in-out infinite; }
+.bloom-backdrop svg:nth-child(13) { top: 30%; left: 80%; width: 18px; animation: sparkle-twinkle 2.6s ease-in-out infinite; animation-delay: -1s; }
+.bloom-backdrop svg:nth-child(14) { top: 62%; left: 28%; width: 16px; animation: sparkle-twinkle 3.6s ease-in-out infinite; animation-delay: -2s; }
 
 @keyframes petal-float {
   0%   { transform: translateY(-10vh) translateX(0)    rotate(0deg);   opacity: 0; }
-  10%  { opacity: 0.7; }
-  50%  { transform: translateY(50vh)  translateX(30px) rotate(180deg); opacity: 0.75; }
-  90%  { opacity: 0.6; }
+  10%  { opacity: 0.9; }
+  50%  { transform: translateY(50vh)  translateX(30px) rotate(180deg); opacity: 0.9; }
+  90%  { opacity: 0.7; }
   100% { transform: translateY(115vh) translateX(-20px) rotate(360deg); opacity: 0; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bloom-backdrop svg { animation: none; opacity: 0.35; }
+@keyframes sparkle-twinkle {
+  0%, 100% { transform: scale(0.6) rotate(0deg);   opacity: 0.25; }
+  50%      { transform: scale(1.15) rotate(45deg); opacity: 1; }
 }
 
-/* Floral corner decor on glass cards in bloom theme */
+@media (prefers-reduced-motion: reduce) {
+  .bloom-backdrop svg { animation: none !important; opacity: 0.45; }
+}
+
+/* Pink shimmer on glass cards */
 :root[data-theme="bloom"] .glass::before,
 :root[data-theme="bloom"] .glass-strong::before {
-  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255, 220, 232, 0.25) 45%, rgba(255,255,255,0) 60%, rgba(255, 194, 214, 0.55));
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255, 220, 232, 0.4) 45%, rgba(255,255,255,0) 60%, rgba(255, 130, 175, 0.65));
+}
+
+:root[data-theme="bloom"] .glass,
+:root[data-theme="bloom"] .glass-strong {
+  border-radius: 26px;
+  background-image:
+    radial-gradient(circle at 100% 0%, rgba(255, 130, 175, 0.18) 0%, transparent 28%),
+    radial-gradient(circle at 0% 100%, rgba(255, 200, 220, 0.22) 0%, transparent 32%);
 }
 
 :root[data-theme="bloom"] .bloom-corner {
@@ -186,26 +207,26 @@
   right: 8px;
   width: 28px;
   height: 28px;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><g><circle cx='16' cy='16' r='3' fill='%23FFD27A'/><ellipse cx='16' cy='8'  rx='3.2' ry='5' fill='%23FFB6CE'/><ellipse cx='16' cy='24' rx='3.2' ry='5' fill='%23FFB6CE'/><ellipse cx='8'  cy='16' rx='5'   ry='3.2' fill='%23FFB6CE'/><ellipse cx='24' cy='16' rx='5'   ry='3.2' fill='%23FFB6CE'/></g></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><path d='M16 27s-10-6.2-10-13.4C6 9.5 9 7 12.2 7c2 0 3.7 1 3.8 2.8C16.1 8 17.8 7 19.8 7 23 7 26 9.5 26 13.6 26 20.8 16 27 16 27z' fill='%23FF6FA3'/></svg>");
   background-repeat: no-repeat;
   background-size: contain;
-  opacity: 0.85;
+  opacity: 0.9;
   pointer-events: none;
   z-index: 3;
-  animation: bloom-spin 18s linear infinite;
+  animation: heart-beat 1.6s ease-in-out infinite;
   transform-origin: 50% 50%;
 }
 @keyframes bloom-spin {
   to { transform: rotate(360deg); }
 }
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); }
+  20%      { transform: scale(1.18); }
+  40%      { transform: scale(0.96); }
+  60%      { transform: scale(1.1); }
+}
 @media (prefers-reduced-motion: reduce) {
   :root[data-theme="bloom"] .bloom-corner::after { animation: none; }
-}
-
-/* Auto-decorate every glass card in bloom theme */
-:root[data-theme="bloom"] .glass,
-:root[data-theme="bloom"] .glass-strong {
-  border-radius: 22px;
 }
 
 
