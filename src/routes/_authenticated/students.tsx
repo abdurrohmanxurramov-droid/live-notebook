@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
+import { GlassChips } from "@/components/GlassChips";
 import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, type Student, type StudentStatus } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
