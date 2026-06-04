@@ -243,9 +243,14 @@ function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) =>
 
   return (
     <div
-      className="glass-strong fixed left-1/2 z-40 inline-flex -translate-x-1/2 rounded-full p-1 text-xs"
-      style={{ bottom: "calc(76px + env(safe-area-inset-bottom))" }}
+      className="relative inline-flex shrink-0 rounded-full p-1 text-xs ring-1 ring-white/40 dark:ring-white/10 shadow-[0_8px_24px_-12px_rgba(20,33,61,0.18),inset_0_1px_0_0_rgba(255,255,255,0.55)]"
+      style={{
+        background: "var(--glass-bg)",
+        backdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+        WebkitBackdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+      }}
     >
+
 
       {indicator && (
         <span
