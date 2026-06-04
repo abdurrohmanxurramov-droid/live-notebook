@@ -454,6 +454,19 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
+function StackBar(props: any) {
+  const { x, y, width, height, fill, payload, dataKey, order } = props;
+  if (!width || !height) return null;
+  const topKey = (order as string[]).find((k) => Number(payload?.[k]) > 0);
+  const isTop = dataKey === topKey;
+  const r = Math.min(6, width / 2, height);
+  if (!isTop || r <= 0) {
+    return <rect x={x} y={y} width={width} height={height} fill={fill} />;
+  }
+  const path = `M ${x},${y + r} Q ${x},${y} ${x + r},${y} L ${x + width - r},${y} Q ${x + width},${y} ${x + width},${y + r} L ${x + width},${y + height} L ${x},${y + height} Z`;
+  return <path d={path} fill={fill} />;
+}
+
 function ChartTooltip({ active, payload, label, suffix = "" }: any) {
   if (!active || !payload?.length) return null;
   return (
