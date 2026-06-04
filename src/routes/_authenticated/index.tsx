@@ -29,6 +29,20 @@ function Home() {
   const { data: schedule = [] } = useSchedule();
   const [openId, setOpenId] = useState<string | null>(null);
   const [q, setQ] = useState("");
+  const [teacherName, setTeacherName] = useState<string>("");
+
+  useEffect(() => {
+    sb.auth.getUser().then(({ data }) => {
+      const u = data.user;
+      if (!u) return;
+      const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+      const raw = (meta.full_name as string) || (meta.name as string) || (meta.display_name as string) || "";
+      const fromName = raw.trim().split(/\s+/)[0];
+      const fromEmail = u.email ? u.email.split("@")[0].split(/[._-]/)[0] : "";
+      const pick = fromName || fromEmail || "";
+      setTeacherName(pick ? pick.charAt(0).toUpperCase() + pick.slice(1) : "");
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = openId ? "hidden" : "";
