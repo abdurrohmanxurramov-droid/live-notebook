@@ -75,7 +75,7 @@ export function QuickActionsFab() {
     { icon: GraduationCap, label: "Добавить ученика", hint: "Новая карточка", onClick: () => navigate({ to: "/students", search: { new: 1 } as any }) },
     { icon: Wallet, label: "Добавить платёж", hint: "Финансы", onClick: () => navigate({ to: "/finance" }) },
     { icon: CalendarCheck, label: "Отметить посещаемость", hint: "Журнал", onClick: () => navigate({ to: "/attendance" }) },
-    { icon: BookOpen, label: "Добавить ДЗ", hint: "Домашнее задание", onClick: () => navigate({ to: "/homework", search: { new: 1 } as any }) },
+    { icon: BookOpen, label: "Добавить ДЗ", hint: "Домашнее задание", onClick: () => { setOpen(false); navigate({ to: "/homework", search: { new: 1 } as any }); } },
     { icon: CalendarDays, label: "Запланировать урок", hint: "Быстрое создание", onClick: () => { setOpen(false); setLessonOpen(true); } },
   ];
 
@@ -169,7 +169,7 @@ export function QuickActionsFab() {
                 key={a.label}
                 style={{ animationDelay: `${60 + i * 55}ms` }}
                 onClick={() => { a.onClick(); if (a.label !== "Запланировать урок") setOpen(false); }}
-                className="stagger-item group relative flex items-center gap-3 overflow-hidden rounded-2xl bg-white/60 dark:bg-white/5 backdrop-blur-xl p-3 text-left min-h-[64px] ring-1 ring-white/40 dark:ring-white/10 shadow-[0_8px_24px_-12px_rgba(20,33,61,0.18)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white/85 dark:hover:bg-white/10 hover:shadow-[0_14px_32px_-12px_rgba(20,33,61,0.28)] active:scale-[0.98]"
+                className="liquid-action stagger-item group relative flex min-h-[64px] items-center gap-3 overflow-hidden rounded-2xl p-3 text-left transition-all duration-300 ease-out active:scale-[0.98]"
               >
                 <span
                   aria-hidden
