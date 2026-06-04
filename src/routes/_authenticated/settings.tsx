@@ -125,8 +125,12 @@ function SettingsPage() {
               {dark ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
             </span>
             <span className="flex flex-col">
-              <span className="text-[15px] font-semibold text-foreground">Тёмная тема</span>
-              <span className="text-xs text-muted-foreground">Сменить оформление</span>
+              <span className="text-[15px] font-semibold text-foreground">
+                {dark ? "Тёмная тема" : "Светлая тема"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Нажмите, чтобы переключить на {dark ? "светлую" : "тёмную"}
+              </span>
             </span>
           </span>
           <span
