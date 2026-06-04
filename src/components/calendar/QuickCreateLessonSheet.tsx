@@ -48,7 +48,7 @@ export function QuickCreateLessonSheet({
   }, ["lessons"]);
 
   return (
-    <Sheet open={open} onClose={onClose} title="Новый урок">
+    <Sheet open={open} onClose={onClose} title="Запланировать урок">
       <div className="grid gap-3">
         <div className="stagger-item" style={{ animationDelay: "40ms" }}>
         <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
