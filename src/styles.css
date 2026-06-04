@@ -84,6 +84,131 @@
   --glass-shadow: 0 8px 32px -8px rgba(0,0,0,0.45), inset 0 1px 0 0 rgba(255,255,255,0.08);
 }
 
+/* =========================================================
+   BLOOM theme — soft pink, florals, slow petals
+   Applied via <html data-theme="bloom">
+   ========================================================= */
+:root[data-theme="bloom"] {
+  --background: #FFF4F7;
+  --foreground: #4A2A3C;
+  --card: #FFFFFF;
+  --card-foreground: #4A2A3C;
+  --primary: #C2548A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #FCE3EC;
+  --secondary-foreground: #6A2A4A;
+  --muted: #FCE3EC;
+  --muted-foreground: #8A6B7A;
+  --accent: #E58FB4;
+  --accent-foreground: #4A1F33;
+  --destructive: #C04060;
+  --success: #58A88A;
+  --border: rgba(194, 84, 138, 0.14);
+
+  --glass-bg: rgba(255, 240, 246, 0.62);
+  --glass-bg-strong: rgba(255, 246, 250, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-shadow:
+    0 10px 32px -10px rgba(194, 84, 138, 0.28),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.85);
+  --glass-blur: 22px;
+
+  --bloom-rose: #E58FB4;
+  --bloom-petal: #FFC2D6;
+  --bloom-leaf: #B7D8B9;
+  --bloom-cream: #FFF7E8;
+}
+
+:root[data-theme="bloom"] body {
+  background-image:
+    radial-gradient(60% 45% at 10% 0%, rgba(229, 143, 180, 0.38), transparent 60%),
+    radial-gradient(55% 40% at 100% 15%, rgba(255, 194, 214, 0.45), transparent 60%),
+    radial-gradient(70% 50% at 50% 100%, rgba(183, 216, 185, 0.30), transparent 60%);
+}
+
+:root[data-theme="bloom"] {
+  --font-display: "Caveat", "Cormorant Garamond", serif;
+}
+
+:root[data-theme="bloom"] h1,
+:root[data-theme="bloom"] h2 {
+  font-family: var(--font-display);
+  letter-spacing: 0.005em;
+  font-weight: 700;
+}
+
+/* Floating petals layer */
+.bloom-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.bloom-backdrop svg {
+  position: absolute;
+  opacity: 0.55;
+  filter: drop-shadow(0 4px 10px rgba(229, 143, 180, 0.35));
+  animation: petal-float 18s linear infinite;
+}
+.bloom-backdrop svg:nth-child(1) { top: -20px; left: 6%;  width: 38px; animation-duration: 22s; animation-delay: 0s; }
+.bloom-backdrop svg:nth-child(2) { top: -40px; left: 28%; width: 52px; animation-duration: 28s; animation-delay: -6s; }
+.bloom-backdrop svg:nth-child(3) { top: -30px; left: 52%; width: 32px; animation-duration: 19s; animation-delay: -3s; }
+.bloom-backdrop svg:nth-child(4) { top: -50px; left: 74%; width: 46px; animation-duration: 26s; animation-delay: -10s; }
+.bloom-backdrop svg:nth-child(5) { top: -25px; left: 88%; width: 36px; animation-duration: 24s; animation-delay: -14s; }
+.bloom-backdrop svg:nth-child(6) { top: -60px; left: 40%; width: 28px; animation-duration: 20s; animation-delay: -8s; }
+
+@keyframes petal-float {
+  0%   { transform: translateY(-10vh) translateX(0)    rotate(0deg);   opacity: 0; }
+  10%  { opacity: 0.7; }
+  50%  { transform: translateY(50vh)  translateX(30px) rotate(180deg); opacity: 0.75; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(115vh) translateX(-20px) rotate(360deg); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bloom-backdrop svg { animation: none; opacity: 0.35; }
+}
+
+/* Floral corner decor on glass cards in bloom theme */
+:root[data-theme="bloom"] .glass::before,
+:root[data-theme="bloom"] .glass-strong::before {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255, 220, 232, 0.25) 45%, rgba(255,255,255,0) 60%, rgba(255, 194, 214, 0.55));
+}
+
+:root[data-theme="bloom"] .bloom-corner {
+  position: relative;
+}
+:root[data-theme="bloom"] .bloom-corner::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'><g><circle cx='16' cy='16' r='3' fill='%23FFD27A'/><ellipse cx='16' cy='8'  rx='3.2' ry='5' fill='%23FFB6CE'/><ellipse cx='16' cy='24' rx='3.2' ry='5' fill='%23FFB6CE'/><ellipse cx='8'  cy='16' rx='5'   ry='3.2' fill='%23FFB6CE'/><ellipse cx='24' cy='16' rx='5'   ry='3.2' fill='%23FFB6CE'/></g></svg>");
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.85;
+  pointer-events: none;
+  z-index: 3;
+  animation: bloom-spin 18s linear infinite;
+  transform-origin: 50% 50%;
+}
+@keyframes bloom-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="bloom"] .bloom-corner::after { animation: none; }
+}
+
+/* Auto-decorate every glass card in bloom theme */
+:root[data-theme="bloom"] .glass,
+:root[data-theme="bloom"] .glass-strong {
+  border-radius: 22px;
+}
+
+
 @layer base {
   html, body, #root {
     height: 100%;
