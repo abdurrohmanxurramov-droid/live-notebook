@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
@@ -20,16 +20,22 @@ const STATUS: Record<HomeworkStatus, { label: string; tone: "neutral" | "success
 function HomeworkPage() {
   const { data: students = [] } = useStudents();
   const { data: items = [] } = useHomework();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | HomeworkStatus>("all");
   const [studentFilter, setStudentFilter] = useState<string>("");
 
   useEffect(() => {
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1") {
+    const wantsNew =
+      typeof location.search === "object" && location.search !== null
+        ? (location.search as Record<string, unknown>).new === 1 || (location.search as Record<string, unknown>).new === "1"
+        : typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1";
+    if (wantsNew) {
       setOpen(true);
-      window.history.replaceState({}, "", window.location.pathname);
+      navigate({ to: "/homework", search: {} as any, replace: true });
     }
-  }, []);
+  }, [location.search, navigate]);
 
   const studentMap = useMemo(() => Object.fromEntries(students.map((s) => [s.id, s])), [students]);
 
