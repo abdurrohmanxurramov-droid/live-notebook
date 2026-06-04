@@ -271,6 +271,7 @@ function AddHomeworkSheet({
   return (
     <Sheet open={open} onClose={onClose} title="Новое задание">
       <div className="space-y-3">
+        <div className="stagger-item" style={{ animationDelay: "40ms" }}>
         <Field label="Ученик">
           <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
             <option value="">— выберите —</option>
@@ -279,22 +280,29 @@ function AddHomeworkSheet({
             ))}
           </Select>
         </Field>
+        </div>
+        <div className="stagger-item" style={{ animationDelay: "95ms" }}>
         <Field label="Задание">
           <textarea
             value={task}
             onChange={(e) => setTask(e.target.value)}
             placeholder="Например: §12, упр. 4–7"
             rows={3}
-            className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/40"
+            className="liquid-control w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground"
           />
         </Field>
+        </div>
         <div className="grid grid-cols-2 gap-3">
+          <div className="stagger-item" style={{ animationDelay: "150ms" }}>
           <Field label="Задано">
             <Input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} />
           </Field>
+          </div>
+          <div className="stagger-item" style={{ animationDelay: "205ms" }}>
           <Field label="Сдать до">
             <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
           </Field>
+          </div>
         </div>
       </div>
       <div className="mt-5 flex gap-2">
