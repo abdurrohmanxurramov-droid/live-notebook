@@ -273,8 +273,6 @@ function StudentsPage() {
             const hasUnpaid = fin.some((f) => !f.is_paid);
             const overdue = overdueByStudent.get(s.id);
             const statusMeta = STUDENT_STATUS_META[s.status];
-            const stickers = ["sticker-heart", "sticker-flower", "sticker-bow", "sticker-star", "sticker-butterfly", "sticker-cherry"] as const;
-            const sticker = overdue ? "" : stickers[i % stickers.length];
             return (
               <Card key={s.id} className={`p-4 ${sticker} ${overdue ? "ring-1 ring-destructive/60" : ""}`}>
                 <div className="flex items-start gap-3">
