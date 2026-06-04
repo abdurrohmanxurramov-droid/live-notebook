@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserSettingsSection } from "@/components/settings/UserSettingsSection";
 import { TrashSection } from "@/components/settings/TrashSection";
 import { BackupSection } from "@/components/settings/BackupSection";
+import { ThemePicker } from "@/components/settings/ThemePicker";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
