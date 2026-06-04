@@ -85,10 +85,10 @@ function Home() {
   const dateLabel = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
 
   const metrics = [
-    { icon: Wallet, label: "Доход за месяц", value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽", tone: "gold" },
-    { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy" },
-    { icon: CheckCircle2, label: "Оплатили", value: String(stats.paid), tone: "success" },
-    { icon: AlertTriangle, label: "Должники", value: String(stats.unpaid), tone: "danger" },
+    { icon: Wallet, label: "Доход за месяц", value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽", tone: "gold", sticker: "sticker-star" },
+    { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy", sticker: "sticker-bow" },
+    { icon: CheckCircle2, label: "Оплатили", value: String(stats.paid), tone: "success", sticker: "sticker-butterfly" },
+    { icon: AlertTriangle, label: "Должники", value: String(stats.unpaid), tone: "danger", sticker: "sticker-cherry" },
   ] as const;
 
   const toneClasses: Record<string, string> = {
