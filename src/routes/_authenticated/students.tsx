@@ -165,14 +165,20 @@ function StudentsPage() {
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+      className={`relative overflow-hidden rounded-full px-3.5 py-1.5 text-xs font-semibold ring-1 transition-all duration-300 ease-out ${
         active
-          ? "bg-accent text-accent-foreground shadow-sm"
-          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+          ? "text-foreground ring-white/50 dark:ring-white/15 shadow-[0_8px_24px_-12px_rgba(20,33,61,0.25),inset_0_1px_0_0_rgba(255,255,255,0.55)]"
+          : "text-muted-foreground ring-white/30 dark:ring-white/10 hover:text-foreground"
       }`}
+      style={{
+        background: active ? "color-mix(in oklab, var(--accent) 28%, var(--glass-bg))" : "var(--glass-bg)",
+        backdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+        WebkitBackdropFilter: "blur(var(--glass-blur)) saturate(180%)",
+      }}
     >
       {children}
     </button>
+
   );
 
   return (
