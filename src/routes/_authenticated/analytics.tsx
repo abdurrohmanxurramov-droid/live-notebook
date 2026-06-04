@@ -260,9 +260,9 @@ function AnalyticsPage() {
                     allowDecimals={false}
                   />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="present" stackId="a" fill="var(--success)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="excused" stackId="a" fill="var(--accent)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="absent" stackId="a" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="present" stackId="a" fill="var(--success)" shape={<StackBar dataKey="present" order={["absent", "excused", "present"]} />} />
+                  <Bar dataKey="excused" stackId="a" fill="var(--accent)" shape={<StackBar dataKey="excused" order={["absent", "excused", "present"]} />} />
+                  <Bar dataKey="absent" stackId="a" fill="var(--destructive)" shape={<StackBar dataKey="absent" order={["absent", "excused", "present"]} />} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -452,6 +452,19 @@ function LegendDot({ color, label }: { color: string; label: string }) {
       {label}
     </span>
   );
+}
+
+function StackBar(props: any) {
+  const { x, y, width, height, fill, payload, dataKey, order } = props;
+  if (!width || !height) return null;
+  const topKey = (order as string[]).find((k) => Number(payload?.[k]) > 0);
+  const isTop = dataKey === topKey;
+  const r = Math.min(6, width / 2, height);
+  if (!isTop || r <= 0) {
+    return <rect x={x} y={y} width={width} height={height} fill={fill} />;
+  }
+  const path = `M ${x},${y + r} Q ${x},${y} ${x + r},${y} L ${x + width - r},${y} Q ${x + width},${y} ${x + width},${y + r} L ${x + width},${y + height} L ${x},${y + height} Z`;
+  return <path d={path} fill={fill} />;
 }
 
 function ChartTooltip({ active, payload, label, suffix = "" }: any) {
