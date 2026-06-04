@@ -260,8 +260,8 @@ function AnalyticsPage() {
                     allowDecimals={false}
                   />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="present" stackId="a" fill="var(--success)" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="excused" stackId="a" fill="var(--accent)" />
+                  <Bar dataKey="present" stackId="a" fill="var(--success)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="excused" stackId="a" fill="var(--accent)" radius={[6, 6, 0, 0]} />
                   <Bar dataKey="absent" stackId="a" fill="var(--destructive)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
