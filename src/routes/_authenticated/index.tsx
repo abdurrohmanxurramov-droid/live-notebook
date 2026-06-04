@@ -9,7 +9,7 @@ import { StudentRoom } from "@/components/StudentRoom";
 import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Plus, CalendarPlus, UserPlus, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check, BookOpen, TrendingUp, PlayCircle } from "lucide-react";
+import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check, BookOpen, TrendingUp, PlayCircle, BarChart3, FileText } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
