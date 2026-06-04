@@ -181,36 +181,23 @@
 .bloom-backdrop svg {
   position: absolute;
   filter: drop-shadow(0 4px 10px rgba(230, 76, 134, 0.35));
-  animation: petal-float 22s linear infinite;
   opacity: 0.85;
 }
-.bloom-backdrop svg:nth-child(1)  { top: -20px; left: 5%;  width: 38px; animation-duration: 22s; animation-delay: 0s; }
-.bloom-backdrop svg:nth-child(2)  { top: -40px; left: 22%; width: 52px; animation-duration: 28s; animation-delay: -6s; }
-.bloom-backdrop svg:nth-child(3)  { top: -30px; left: 78%; width: 34px; animation-duration: 19s; animation-delay: -3s; }
-.bloom-backdrop svg:nth-child(4)  { top: -50px; left: 92%; width: 44px; animation-duration: 26s; animation-delay: -10s; }
-.bloom-backdrop svg:nth-child(5)  { top: -30px; left: 14%; width: 28px; animation-duration: 24s; animation-delay: -2s; }
-.bloom-backdrop svg:nth-child(6)  { top: -45px; left: 38%; width: 36px; animation-duration: 30s; animation-delay: -12s; }
-.bloom-backdrop svg:nth-child(7)  { top: -25px; left: 60%; width: 42px; animation-duration: 27s; animation-delay: -7s; }
-.bloom-backdrop svg:nth-child(8)  { top: -55px; left: 84%; width: 26px; animation-duration: 21s; animation-delay: -15s; }
-.bloom-backdrop svg:nth-child(9)  { top: -35px; left: 30%; width: 40px; animation: petal-float 32s linear infinite, bloom-spin 14s linear infinite; animation-delay: -4s, 0s; }
-.bloom-backdrop svg:nth-child(10) { top: -28px; left: 50%; width: 32px; animation: petal-float 26s linear infinite, bloom-spin 11s linear infinite; animation-delay: -9s, -3s; }
-.bloom-backdrop svg:nth-child(11) { top: -42px; left: 70%; width: 46px; animation: petal-float 34s linear infinite, bloom-spin 18s linear infinite; animation-delay: -16s, -5s; }
-.bloom-backdrop svg:nth-child(12) { top: 12%; left: 18%; width: 14px; animation: sparkle-twinkle 3.2s ease-in-out infinite; }
-.bloom-backdrop svg:nth-child(13) { top: 30%; left: 80%; width: 18px; animation: sparkle-twinkle 2.6s ease-in-out infinite; animation-delay: -1s; }
-.bloom-backdrop svg:nth-child(14) { top: 62%; left: 28%; width: 16px; animation: sparkle-twinkle 3.6s ease-in-out infinite; animation-delay: -2s; }
-
-@keyframes petal-float {
-  0%   { transform: translateY(-10vh) translateX(0)    rotate(0deg);   opacity: 0; }
-  10%  { opacity: 0.9; }
-  50%  { transform: translateY(50vh)  translateX(30px) rotate(180deg); opacity: 0.9; }
-  90%  { opacity: 0.7; }
-  100% { transform: translateY(115vh) translateX(-20px) rotate(360deg); opacity: 0; }
-}
-
-@keyframes sparkle-twinkle {
-  0%, 100% { transform: scale(0.6) rotate(0deg);   opacity: 0.25; }
-  50%      { transform: scale(1.15) rotate(45deg); opacity: 1; }
-}
+/* Scatter across viewport, static (no drifting / spinning / twinkling) */
+.bloom-backdrop svg:nth-child(1)  { top: 6%;  left: 5%;  width: 38px; transform: rotate(-12deg); }
+.bloom-backdrop svg:nth-child(2)  { top: 14%; left: 78%; width: 52px; transform: rotate(18deg); }
+.bloom-backdrop svg:nth-child(3)  { top: 22%; left: 22%; width: 34px; transform: rotate(8deg); }
+.bloom-backdrop svg:nth-child(4)  { top: 30%; left: 90%; width: 44px; transform: rotate(-22deg); }
+.bloom-backdrop svg:nth-child(5)  { top: 40%; left: 8%;  width: 28px; transform: rotate(14deg); }
+.bloom-backdrop svg:nth-child(6)  { top: 48%; left: 60%; width: 36px; transform: rotate(-8deg); }
+.bloom-backdrop svg:nth-child(7)  { top: 56%; left: 30%; width: 42px; transform: rotate(22deg); }
+.bloom-backdrop svg:nth-child(8)  { top: 64%; left: 84%; width: 26px; transform: rotate(-18deg); }
+.bloom-backdrop svg:nth-child(9)  { top: 72%; left: 12%; width: 40px; transform: rotate(10deg); }
+.bloom-backdrop svg:nth-child(10) { top: 80%; left: 50%; width: 32px; transform: rotate(-14deg); }
+.bloom-backdrop svg:nth-child(11) { top: 88%; left: 72%; width: 46px; transform: rotate(20deg); }
+.bloom-backdrop svg:nth-child(12) { top: 18%; left: 45%; width: 18px; transform: rotate(0deg); }
+.bloom-backdrop svg:nth-child(13) { top: 50%; left: 92%; width: 20px; transform: rotate(0deg); }
+.bloom-backdrop svg:nth-child(14) { top: 78%; left: 38%; width: 18px; transform: rotate(0deg); }
 
 @media (prefers-reduced-motion: reduce) {
   .bloom-backdrop svg { animation: none !important; opacity: 0.45; }
