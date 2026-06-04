@@ -4,14 +4,14 @@ import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { useStudents, useAttendance, useMut, initials } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, Check, X, FileText, Trash2 } from "lucide-react";
+import { CalendarCheck, Check, X, FileText, Trash2, Paperclip, type LucideIcon } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/attendance")({ component: AttendancePage });
 
-const STATUS = {
-  present: { label: "Присутствовал", emoji: "✅", tone: "success" as const },
-  absent: { label: "Отсутствовал", emoji: "❌", tone: "danger" as const },
-  excused: { label: "Уваж. причина", emoji: "📎", tone: "gold" as const },
+const STATUS: Record<"present" | "absent" | "excused", { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" }> = {
+  present: { label: "Присутствовал", Icon: Check, tone: "success" },
+  absent: { label: "Отсутствовал", Icon: X, tone: "danger" },
+  excused: { label: "Уваж. причина", Icon: Paperclip, tone: "gold" },
 };
 
 function AttendancePage() {
