@@ -306,10 +306,10 @@ function AddHomeworkSheet({
         </div>
       </div>
       <div className="mt-5 flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>Отмена</Button>
         <Button
           variant="gold"
-          className="flex-1"
+          className="liquid-action flex-1"
           disabled={add.isPending}
           onClick={async () => {
             try {
