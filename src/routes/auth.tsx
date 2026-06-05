@@ -37,19 +37,36 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success("Проверьте почту — подтвердите регистрацию");
+        if (data.session) {
+          toast.success("Аккаунт создан");
+        } else {
+          toast.success("Проверьте почту — подтвердите регистрацию");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (err: any) {
-      toast.error(err?.message ?? "Ошибка");
+      console.error("[auth]", err);
+      const msg = String(err?.message ?? "Ошибка");
+      const localized = msg.includes("Invalid login credentials")
+        ? "Неверный email или пароль"
+        : msg.includes("already registered") || msg.includes("already been registered")
+        ? "Этот email уже зарегистрирован"
+        : msg.includes("Password should be")
+        ? "Пароль слишком короткий (минимум 6 символов)"
+        : msg.includes("rate limit") || msg.includes("Email rate limit")
+        ? "Слишком много попыток, попробуйте позже"
+        : msg.includes("Signups not allowed") || msg.includes("signup is disabled")
+        ? "Регистрация временно отключена"
+        : msg;
+      toast.error(localized);
     } finally {
       setLoading(false);
     }
