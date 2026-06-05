@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,14 +19,25 @@ function applyTheme(theme: AppTheme) {
  */
 export function ThemeProvider() {
   const fetchSettings = useServerFn(getSettings);
+  const [hasSession, setHasSession] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setHasSession(!!data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setHasSession(!!session);
+      if (!session) applyTheme("classic");
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const { data } = useQuery({
     queryKey: ["user_settings"],
     queryFn: () => fetchSettings(),
-    enabled: typeof window !== "undefined",
+    enabled: hasSession,
     retry: false,
     staleTime: 60_000,
   });
+
 
   const theme: AppTheme = (data as { theme?: AppTheme } | undefined)?.theme ?? "classic";
 
@@ -34,13 +45,6 @@ export function ThemeProvider() {
     applyTheme(theme);
   }, [theme]);
 
-  // Also clear theme when user signs out (so /auth doesn't keep bloom)
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session) applyTheme("classic");
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
 
   if (theme === "bloom") return <BloomBackdrop />;
   return null;
