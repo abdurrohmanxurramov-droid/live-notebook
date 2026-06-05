@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Card, Button, Input } from "@/components/ui-bits";
-import { LogIn, Mail, Sparkles } from "lucide-react";
+import { LogIn, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -89,12 +89,20 @@ function AuthPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5 py-10">
       <div className="mb-6 text-center">
-        <div className="mb-3 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-accent/10">
-          <Sparkles className="h-7 w-7 text-accent" />
+        <div className="group relative mx-auto mb-4 h-16 w-16">
+          <div className="pointer-events-none absolute inset-0 scale-150 rounded-full bg-accent/20 opacity-60 blur-2xl" />
+          <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br from-white/70 to-white/20 shadow-[0_10px_30px_-10px_rgba(20,33,61,0.25)] backdrop-blur-2xl">
+            <div className="absolute inset-0 -translate-x-full bg-gradient-to-tr from-transparent via-white/40 to-transparent transition-transform duration-1000 ease-in-out group-hover:translate-x-full" />
+            <div className="relative flex items-baseline">
+              <span className="text-2xl font-bold leading-none tracking-[-0.05em] text-foreground">L</span>
+              <span className="-ml-0.5 text-2xl font-medium leading-none tracking-[-0.05em] text-foreground">N</span>
+              <div className="absolute -bottom-0.5 -right-1.5 h-1.5 w-1.5 rounded-full bg-accent shadow-sm" />
+            </div>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Живой Блокнот</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Live Notebook</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "login" ? "Войдите, чтобы продолжить" : "Создайте аккаунт"}
+          {mode === "login" ? "Sign in to continue" : "Create an account"}
         </p>
       </div>
 
