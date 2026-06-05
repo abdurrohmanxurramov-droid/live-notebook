@@ -641,7 +641,8 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         .eq("student_id", student.id);
       if (updSlotErr) throw updSlotErr;
     }
-  }, ["students", "schedule", "finance"]);
+    try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
+  }, ["students", "schedule", "finance", "lessons"]);
 
   const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => {
     const active = pattern === value;
