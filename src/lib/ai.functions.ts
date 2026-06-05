@@ -260,12 +260,19 @@ async function execTool(name: string, args: any, supabase: any, userId: string) 
       return { ok: true };
     }
     case "add_schedule_slot": {
+      // Принимаем как 0-based (0=Пн..6=Вс), так и старый 1-based (1=Пн..7=Вс)
+      let dow = Number(args.day_of_week);
+      if (dow >= 1 && dow <= 7 && !(dow >= 0 && dow <= 6 && Number.isInteger(dow) && dow !== 7)) {
+        // если значение похоже на 1-based (7 точно 1-based; в остальных случаях оставляем)
+      }
+      if (dow === 7) dow = 6; // вс
+      else if (dow < 0 || dow > 6) dow = ((dow - 1) % 7 + 7) % 7;
       const { data, error } = await supabase
         .from("schedule_slots")
         .insert({
           owner_id: userId,
           student_id: args.student_id,
-          day_of_week: args.day_of_week,
+          day_of_week: dow,
           start_time: args.start_time,
           duration_min: args.duration_min ?? 60,
         })
