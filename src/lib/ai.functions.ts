@@ -78,7 +78,7 @@ const tools = [
         type: "object",
         properties: {
           student_id: { type: "string" },
-          day_of_week: { type: "number", description: "1=пн ... 7=вс" },
+          day_of_week: { type: "number", description: "День недели: 0=пн, 1=вт, 2=ср, 3=чт, 4=пт, 5=сб, 6=вс" },
           start_time: { type: "string", description: "Время HH:MM" },
           duration_min: { type: "number" },
         },
@@ -260,12 +260,16 @@ async function execTool(name: string, args: any, supabase: any, userId: string) 
       return { ok: true };
     }
     case "add_schedule_slot": {
+      // 0=Пн..6=Вс. Защитно нормализуем, если модель вернула 7 (Вс в 1-based).
+      let dow = Number(args.day_of_week);
+      if (dow === 7) dow = 6;
+      if (dow < 0 || dow > 6) throw new Error("day_of_week вне диапазона 0..6");
       const { data, error } = await supabase
         .from("schedule_slots")
         .insert({
           owner_id: userId,
           student_id: args.student_id,
-          day_of_week: args.day_of_week,
+          day_of_week: dow,
           start_time: args.start_time,
           duration_min: args.duration_min ?? 60,
         })

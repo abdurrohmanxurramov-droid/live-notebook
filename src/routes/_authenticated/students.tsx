@@ -8,6 +8,7 @@ import { GlassChips } from "@/components/GlassChips";
 import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, type Student, type StudentStatus } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
+import { regenerateLessons } from "@/lib/lessons.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil, AlertCircle } from "lucide-react";
 
@@ -397,6 +398,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
   const [phone, setPhone] = useState("");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
+  const regenFn = useServerFn(regenerateLessons);
 
   const add = useMut(async () => {
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
@@ -428,8 +430,10 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
       }));
       const { error: slotErr } = await sup.from("schedule_slots").insert(rows);
       if (slotErr) throw slotErr;
+      // Автогенерация уроков в календаре
+      try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
     }
-  }, ["students", "schedule"]);
+  }, ["students", "schedule", "lessons"]);
 
   const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => {
     const active = pattern === value;
@@ -562,6 +566,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const regenFn = useServerFn(regenerateLessons);
 
   // Заполнить данные при открытии
   useEffect(() => {
@@ -636,7 +641,8 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         .eq("student_id", student.id);
       if (updSlotErr) throw updSlotErr;
     }
-  }, ["students", "schedule", "finance"]);
+    try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
+  }, ["students", "schedule", "finance", "lessons"]);
 
   const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => {
     const active = pattern === value;
