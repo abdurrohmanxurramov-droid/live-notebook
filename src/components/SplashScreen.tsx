@@ -4,11 +4,13 @@ import { haptic } from "@/lib/haptics";
 const SHOWN_KEY = "splash-shown-session";
 
 export function SplashScreen() {
-  const [visible, setVisible] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem(SHOWN_KEY) !== "1";
-  });
+  const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
+
+  useEffect(() => {
+    if (sessionStorage.getItem(SHOWN_KEY) === "1") return;
+    setVisible(true);
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
