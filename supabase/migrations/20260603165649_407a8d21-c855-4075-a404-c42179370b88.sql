@@ -1,4 +1,3 @@
-
 DO $$ BEGIN
   CREATE TYPE public.lesson_status AS ENUM ('planned','completed','cancelled','moved');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -63,7 +62,7 @@ DO $$ BEGIN
   ALTER TABLE public.schedule_slots ADD CONSTRAINT schedule_slots_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DROP TABLE IF EXISTS public.lessons_conducted;
+-- Keep any existing public.lessons_conducted table intact; the replacement summary is exposed as v_lessons_conducted below.
 
 CREATE OR REPLACE VIEW public.v_lessons_conducted AS
 SELECT
