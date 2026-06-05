@@ -8,7 +8,7 @@ import { sb } from "@/lib/sb";
 import { CalendarDays, Plus, Trash2, Clock, Check, X, ArrowRight } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listLessons, setLessonStatus, moveLesson, type LessonStatus } from "@/lib/lessons.functions";
+import { listLessons, setLessonStatus, moveLesson, regenerateLessons, type LessonStatus } from "@/lib/lessons.functions";
 import { Calendar } from "@/components/calendar/Calendar";
 import { SwipeableLessonCard } from "@/components/SwipeableLessonCard";
 
