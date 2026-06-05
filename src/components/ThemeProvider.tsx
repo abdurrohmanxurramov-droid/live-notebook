@@ -45,13 +45,6 @@ export function ThemeProvider() {
     applyTheme(theme);
   }, [theme]);
 
-  // Also clear theme when user signs out (so /auth doesn't keep bloom)
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session) applyTheme("classic");
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
 
   if (theme === "bloom") return <BloomBackdrop />;
   return null;
