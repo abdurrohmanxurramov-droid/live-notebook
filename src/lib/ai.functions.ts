@@ -78,7 +78,7 @@ const tools = [
         type: "object",
         properties: {
           student_id: { type: "string" },
-          day_of_week: { type: "number", description: "1=пн ... 7=вс" },
+          day_of_week: { type: "number", description: "День недели: 0=пн, 1=вт, 2=ср, 3=чт, 4=пт, 5=сб, 6=вс" },
           start_time: { type: "string", description: "Время HH:MM" },
           duration_min: { type: "number" },
         },
