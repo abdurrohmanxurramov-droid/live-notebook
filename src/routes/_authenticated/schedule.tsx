@@ -185,6 +185,7 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
   const [day, setDay] = useState(0);
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
+  const regenFn = useServerFn(regenerateLessons);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -201,7 +202,8 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
       duration_min: Math.max(15, Math.min(240, Number(duration) || 60)),
     });
     if (error) throw error;
-  }, ["schedule"]);
+    try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
+  }, ["schedule", "lessons"]);
 
   return (
     <Sheet open={open} onClose={onClose} title="Новый урок в расписании">
