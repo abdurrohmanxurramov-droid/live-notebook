@@ -566,6 +566,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const regenFn = useServerFn(regenerateLessons);
 
   // Заполнить данные при открытии
   useEffect(() => {
