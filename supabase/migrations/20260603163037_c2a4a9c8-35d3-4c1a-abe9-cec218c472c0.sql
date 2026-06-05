@@ -1,25 +1,33 @@
+-- 1. Preserve existing data; add ownership metadata safely
+-- Existing rows cannot be attributed safely here, so owner_id stays nullable.
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS owner_id uuid;
+ALTER TABLE public.schedule_slots ADD COLUMN IF NOT EXISTS owner_id uuid;
+ALTER TABLE public.finance ADD COLUMN IF NOT EXISTS owner_id uuid;
+ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS owner_id uuid;
+ALTER TABLE public.homework ADD COLUMN IF NOT EXISTS owner_id uuid;
+ALTER TABLE public.lessons_conducted ADD COLUMN IF NOT EXISTS owner_id uuid;
+ALTER TABLE public.rates ADD COLUMN IF NOT EXISTS owner_id uuid;
+ALTER TABLE public.push_subscriptions ADD COLUMN IF NOT EXISTS owner_id uuid;
 
--- 1. Wipe all existing data
-TRUNCATE TABLE public.attendance, public.finance, public.homework, public.lessons_conducted, public.push_subscriptions, public.rates, public.schedule_slots, public.students RESTART IDENTITY CASCADE;
+-- 2. Foreign keys: cascading delete when student is removed
+-- NOT VALID avoids failing this migration on legacy orphaned rows.
+DO $$ BEGIN
+  ALTER TABLE public.schedule_slots ADD CONSTRAINT schedule_slots_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE public.finance ADD CONSTRAINT finance_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE public.attendance ADD CONSTRAINT attendance_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE public.homework ADD CONSTRAINT homework_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  ALTER TABLE public.lessons_conducted ADD CONSTRAINT lessons_conducted_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 2. Add owner_id to all business tables
-ALTER TABLE public.students ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-ALTER TABLE public.schedule_slots ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-ALTER TABLE public.finance ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-ALTER TABLE public.attendance ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-ALTER TABLE public.homework ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-ALTER TABLE public.lessons_conducted ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-ALTER TABLE public.rates ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-ALTER TABLE public.push_subscriptions ADD COLUMN IF NOT EXISTS owner_id uuid NOT NULL;
-
--- 3. Foreign keys: cascading delete when student is removed
-ALTER TABLE public.schedule_slots ADD CONSTRAINT schedule_slots_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
-ALTER TABLE public.finance ADD CONSTRAINT finance_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
-ALTER TABLE public.attendance ADD CONSTRAINT attendance_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
-ALTER TABLE public.homework ADD CONSTRAINT homework_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
-ALTER TABLE public.lessons_conducted ADD CONSTRAINT lessons_conducted_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
-
--- 4. Indexes
+-- 3. Indexes
 CREATE INDEX IF NOT EXISTS idx_students_owner ON public.students(owner_id);
 CREATE INDEX IF NOT EXISTS idx_schedule_owner ON public.schedule_slots(owner_id);
 CREATE INDEX IF NOT EXISTS idx_schedule_student ON public.schedule_slots(student_id);
@@ -33,7 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_lessons_conducted_owner ON public.lessons_conduct
 CREATE INDEX IF NOT EXISTS idx_rates_owner ON public.rates(owner_id);
 CREATE INDEX IF NOT EXISTS idx_push_owner ON public.push_subscriptions(owner_id);
 
--- 5. Trigger to auto-set owner_id on insert
+-- 4. Trigger to auto-set owner_id on insert
 CREATE OR REPLACE FUNCTION public.set_owner_id()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -58,7 +66,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- 6. Replace public RLS policies with auth.uid() = owner_id
+-- 5. Replace public RLS policies with auth.uid() = owner_id
 DO $$
 DECLARE t text;
 BEGIN
