@@ -398,6 +398,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
   const [phone, setPhone] = useState("");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
+  const regenFn = useServerFn(regenerateLessons);
 
   const add = useMut(async () => {
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
@@ -429,8 +430,10 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
       }));
       const { error: slotErr } = await sup.from("schedule_slots").insert(rows);
       if (slotErr) throw slotErr;
+      // Автогенерация уроков в календаре
+      try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
     }
-  }, ["students", "schedule"]);
+  }, ["students", "schedule", "lessons"]);
 
   const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => {
     const active = pattern === value;
