@@ -8,6 +8,7 @@ import { GlassChips } from "@/components/GlassChips";
 import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, type Student, type StudentStatus } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
+import { regenerateLessons } from "@/lib/lessons.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil, AlertCircle } from "lucide-react";
 
