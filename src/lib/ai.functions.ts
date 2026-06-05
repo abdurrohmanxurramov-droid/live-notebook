@@ -260,13 +260,10 @@ async function execTool(name: string, args: any, supabase: any, userId: string) 
       return { ok: true };
     }
     case "add_schedule_slot": {
-      // Принимаем как 0-based (0=Пн..6=Вс), так и старый 1-based (1=Пн..7=Вс)
+      // 0=Пн..6=Вс. Защитно нормализуем, если модель вернула 7 (Вс в 1-based).
       let dow = Number(args.day_of_week);
-      if (dow >= 1 && dow <= 7 && !(dow >= 0 && dow <= 6 && Number.isInteger(dow) && dow !== 7)) {
-        // если значение похоже на 1-based (7 точно 1-based; в остальных случаях оставляем)
-      }
-      if (dow === 7) dow = 6; // вс
-      else if (dow < 0 || dow > 6) dow = ((dow - 1) % 7 + 7) % 7;
+      if (dow === 7) dow = 6;
+      if (dow < 0 || dow > 6) throw new Error("day_of_week вне диапазона 0..6");
       const { data, error } = await supabase
         .from("schedule_slots")
         .insert({
