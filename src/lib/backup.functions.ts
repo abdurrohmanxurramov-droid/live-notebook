@@ -11,6 +11,7 @@ const TABLES = [
   "finance",
   "homework",
   "rates",
+  "chat_messages",
   "user_settings",
 ] as const;
 
@@ -25,6 +26,7 @@ const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
   homework:
     "id, owner_id, student_id, assigned_date, due_date, task, status, note, deleted_at, created_at",
   rates: "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at",
+  chat_messages: "id, user_id, role, content, tool_calls, tool_call_id, name, created_at",
   user_settings:
     "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at",
 };
@@ -114,7 +116,7 @@ export const importBackup = createServerFn({ method: "POST" })
       const fixed = rows.map((r) => {
         const row = { ...r } as Record<string, unknown>;
         if ("owner_id" in row) row.owner_id = userId;
-        if (t === "user_settings") row.user_id = userId;
+        if ("user_id" in row) row.user_id = userId;
         return row;
       });
       const conflictCol = t === "user_settings" ? "user_id" : "id";
