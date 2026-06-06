@@ -60,10 +60,11 @@ export const Route = createFileRoute("/_authenticated")({
       try {
         const { data: settings } = await supabase
           .from("user_settings")
-          .select("onboarding_completed")
+          .select("onboarding_completed, gender")
           .eq("user_id", data.user.id)
           .maybeSingle();
-        if (!settings || settings.onboarding_completed === false) {
+        const done = !!settings && (settings.onboarding_completed === true || settings.gender != null);
+        if (!done) {
           throw redirect({ to: "/onboarding" });
         }
       } catch (e) {
