@@ -7,7 +7,7 @@ import { Card, SectionTitle, Avatar, Badge, Empty, Button } from "@/components/u
 import { CountUp } from "@/components/CountUp";
 import { StudentRoom } from "@/components/StudentRoom";
 import { GlassChips } from "@/components/GlassChips";
-import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META } from "@/lib/db";
+import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META, groupByStudentId } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
 import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check, BookOpen, TrendingUp, PlayCircle, BarChart3, FileText } from "lucide-react";
@@ -65,6 +65,7 @@ function Home() {
     students.forEach((s) => m.set(s.id, s));
     return m;
   }, [students]);
+  const financeByStudent = useMemo(() => groupByStudentId(finance), [finance]);
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -219,7 +220,7 @@ function Home() {
               );
             })
             .map((s) => {
-            const fin = finance.filter((f) => f.student_id === s.id);
+            const fin = financeByStudent.get(s.id) ?? [];
             const hasUnpaid = fin.some((f) => !f.is_paid);
             const today = new Date().toISOString().slice(0, 10);
             const isOverdue = fin.some((f) => !f.is_paid && f.pay_date && f.pay_date < today);
@@ -617,4 +618,3 @@ function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
     </button>
   );
 }
-
