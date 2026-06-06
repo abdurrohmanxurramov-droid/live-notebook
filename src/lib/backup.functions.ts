@@ -16,13 +16,17 @@ const TABLES = [
 
 const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
   students: "id, owner_id, name, days_per_week, subject, phone, status, deleted_at, created_at",
-  schedule_slots: "id, owner_id, student_id, day_of_week, start_time, duration_min, deleted_at, created_at",
-  lessons: "id, owner_id, student_id, scheduled_date, scheduled_time, duration_min, status, notes, source_slot_id, moved_from_id, deleted_at, created_at, updated_at",
+  schedule_slots:
+    "id, owner_id, student_id, day_of_week, start_time, duration_min, deleted_at, created_at",
+  lessons:
+    "id, owner_id, student_id, scheduled_date, scheduled_time, duration_min, status, notes, source_slot_id, moved_from_id, deleted_at, created_at, updated_at",
   attendance: "id, owner_id, student_id, date, status, note, compensated, deleted_at, created_at",
   finance: "id, owner_id, student_id, amount, currency, is_paid, pay_date, deleted_at, created_at",
-  homework: "id, owner_id, student_id, assigned_date, due_date, task, status, note, deleted_at, created_at",
+  homework:
+    "id, owner_id, student_id, assigned_date, due_date, task, status, note, deleted_at, created_at",
   rates: "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at",
-  user_settings: "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at",
+  user_settings:
+    "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at",
 };
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
