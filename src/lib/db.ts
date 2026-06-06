@@ -75,7 +75,7 @@ export function useStudents() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("students")
-        .select("*")
+        .select("id, name, days_per_week, subject, phone, created_at, status")
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -90,7 +90,7 @@ export function useFinance() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("finance")
-        .select("*")
+        .select("id, student_id, amount, currency, is_paid, pay_date, created_at")
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -105,7 +105,7 @@ export function useAttendance() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("attendance")
-        .select("*")
+        .select("id, student_id, date, status, note, compensated, created_at")
         .is("deleted_at", null)
         .order("date", { ascending: false });
       if (error) throw error;
@@ -120,7 +120,7 @@ export function useSchedule() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("schedule_slots")
-        .select("*")
+        .select("id, student_id, day_of_week, start_time, duration_min, created_at")
         .is("deleted_at", null)
         .order("day_of_week", { ascending: true })
         .order("start_time", { ascending: true });
@@ -136,7 +136,7 @@ export function useHomework() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("homework")
-        .select("*")
+        .select("id, student_id, assigned_date, due_date, task, status, note, created_at")
         .is("deleted_at", null)
         .order("assigned_date", { ascending: false })
         .order("created_at", { ascending: false });
@@ -152,7 +152,7 @@ export function useRates() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("rates")
-        .select("*")
+        .select("id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at")
         .order("updated_at", { ascending: false })
         .limit(1);
       if (error) throw error;
@@ -160,7 +160,7 @@ export function useRates() {
         const { data: inserted, error: insErr } = await (await sb())
           .from("rates")
           .insert({ usd_to_rub: 90, usdt_to_egp: 50, usd_to_egp: 50 })
-          .select()
+          .select("id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at")
           .single();
         if (insErr) throw insErr;
         return inserted as Rates;
@@ -216,4 +216,14 @@ export function convertToEGP(amount: number, currency: string, rates: Rates) {
   if (currency === "USD") return amount * rates.usdt_to_egp;
   if (currency === "RUB") return (amount / rates.usd_to_rub) * rates.usdt_to_egp;
   return amount;
+}
+
+export function groupByStudentId<T extends { student_id: string }>(rows: readonly T[]) {
+  const map = new Map<string, T[]>();
+  for (const row of rows) {
+    const bucket = map.get(row.student_id);
+    if (bucket) bucket.push(row);
+    else map.set(row.student_id, [row]);
+  }
+  return map;
 }
