@@ -10,7 +10,11 @@ import {
   useAttendance,
   formatMoney,
   STUDENT_STATUS_META,
+  groupByStudentId,
   type Student,
+  type Finance,
+  type Homework,
+  type Attendance,
 } from "@/lib/db";
 import { listLessons } from "@/lib/lessons.functions";
 import { FileText, Printer, User2, CalendarCheck, Wallet, ArrowLeft } from "lucide-react";
@@ -117,6 +121,9 @@ function StudentReport() {
     if (selected === "__all__") return students;
     return students.filter((s) => s.id === selected);
   }, [students, selected]);
+  const financeByStudent = useMemo(() => groupByStudentId(finance), [finance]);
+  const homeworkByStudent = useMemo(() => groupByStudentId(homework), [homework]);
+  const attendanceByStudent = useMemo(() => groupByStudentId(attendance), [attendance]);
 
   return (
     <>
@@ -142,9 +149,9 @@ function StudentReport() {
             <StudentCard
               key={s.id}
               student={s}
-              finance={finance}
-              homework={homework}
-              attendance={attendance}
+              finance={financeByStudent.get(s.id) ?? []}
+              homework={homeworkByStudent.get(s.id) ?? []}
+              attendance={attendanceByStudent.get(s.id) ?? []}
             />
           ))}
         </div>
@@ -160,20 +167,16 @@ function StudentCard({
   attendance,
 }: {
   student: Student;
-  finance: ReturnType<typeof useFinance>["data"];
-  homework: ReturnType<typeof useHomework>["data"];
-  attendance: ReturnType<typeof useAttendance>["data"];
+  finance: Finance[];
+  homework: Homework[];
+  attendance: Attendance[];
 }) {
-  const fin = (finance ?? []).filter((f) => f.student_id === student.id);
-  const hw = (homework ?? []).filter((h) => h.student_id === student.id);
-  const att = (attendance ?? []).filter((a) => a.student_id === student.id);
-
-  const attended = att.filter((a) => a.status === "present").length;
-  const paid = fin.filter((f) => f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
-  const owed = fin.filter((f) => !f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
-  const currency = fin[0]?.currency ?? "RUB";
-  const doneHw = hw.filter((h) => h.status === "done").length;
-  const totalHw = hw.length;
+  const attended = attendance.filter((a) => a.status === "present").length;
+  const paid = finance.filter((f) => f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
+  const owed = finance.filter((f) => !f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
+  const currency = finance[0]?.currency ?? "RUB";
+  const doneHw = homework.filter((h) => h.status === "done").length;
+  const totalHw = homework.length;
   const rate = totalHw ? Math.round((doneHw / totalHw) * 100) : 0;
   const meta = STUDENT_STATUS_META[student.status];
 
@@ -313,6 +316,11 @@ function FinanceReport() {
   const [to, setTo] = useState(todayIso());
   const { data: students = [] } = useStudents();
   const { data: finance = [] } = useFinance();
+  const studentsById = useMemo(() => {
+    const m = new Map<string, Student>();
+    students.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [students]);
 
   const inRange = useMemo(() => {
     return finance.filter((f) => {
@@ -387,7 +395,7 @@ function FinanceReport() {
             {byStudent.size === 0 ? (
               <tr><td colSpan={3} className="text-muted-foreground">Нет операций за период</td></tr>
             ) : Array.from(byStudent.entries()).map(([sid, v]) => {
-              const s = students.find((x) => x.id === sid);
+              const s = studentsById.get(sid);
               return (
                 <tr key={sid}>
                   <td>{s?.name ?? "—"}</td>
