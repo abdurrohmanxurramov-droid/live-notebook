@@ -7,10 +7,12 @@ const TABLES = [
   "students",
   "schedule_slots",
   "lessons",
+  "lessons_conducted",
   "attendance",
   "finance",
   "homework",
   "rates",
+  "chat_messages",
   "user_settings",
 ] as const;
 
@@ -20,11 +22,13 @@ const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
     "id, owner_id, student_id, day_of_week, start_time, duration_min, deleted_at, created_at",
   lessons:
     "id, owner_id, student_id, scheduled_date, scheduled_time, duration_min, status, notes, source_slot_id, moved_from_id, deleted_at, created_at, updated_at",
+  lessons_conducted: "id, owner_id, student_id, lessons_done, created_at",
   attendance: "id, owner_id, student_id, date, status, note, compensated, deleted_at, created_at",
   finance: "id, owner_id, student_id, amount, currency, is_paid, pay_date, deleted_at, created_at",
   homework:
     "id, owner_id, student_id, assigned_date, due_date, task, status, note, deleted_at, created_at",
   rates: "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at",
+  chat_messages: "id, user_id, role, content, tool_calls, tool_call_id, name, created_at",
   user_settings:
     "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at",
 };
@@ -114,7 +118,7 @@ export const importBackup = createServerFn({ method: "POST" })
       const fixed = rows.map((r) => {
         const row = { ...r } as Record<string, unknown>;
         if ("owner_id" in row) row.owner_id = userId;
-        if (t === "user_settings") row.user_id = userId;
+        if ("user_id" in row) row.user_id = userId;
         return row;
       });
       const conflictCol = t === "user_settings" ? "user_id" : "id";
