@@ -51,7 +51,7 @@ export const sendTestPush = createServerFn({ method: "POST" })
     const { sendPushTo } = await import("./push.server");
     const { data: sub } = await context.supabase
       .from("push_subscriptions")
-      .select("*")
+      .select("endpoint, p256dh, auth")
       .eq("endpoint", data.endpoint)
       .maybeSingle();
     if (!sub) throw new Error("Подписка не найдена");

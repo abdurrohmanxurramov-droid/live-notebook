@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
 import { GlassChips } from "@/components/GlassChips";
-import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, type Student, type StudentStatus } from "@/lib/db";
+import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, groupByStudentId, type Student, type StudentStatus } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
 import { regenerateLessons } from "@/lib/lessons.functions";
@@ -46,7 +46,7 @@ function StudentsPage() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("students")
-        .select("*")
+        .select("id, name, days_per_week, subject, phone, created_at, status")
         .not("deleted_at", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -65,7 +65,7 @@ function StudentsPage() {
       const iso = (d: Date) => d.toISOString().slice(0, 10);
       const { data, error } = await (await sb())
         .from("lessons")
-        .select("student_id, status, scheduled_date, deleted_at")
+        .select("student_id")
         .eq("status", "planned")
         .is("deleted_at", null)
         .gte("scheduled_date", iso(today))
@@ -80,6 +80,7 @@ function StudentsPage() {
   });
 
   const baseList = statusFilter === "trash" ? trashStudents : activeStudents;
+  const financeByStudent = useMemo(() => groupByStudentId(finance), [finance]);
 
   // Stats: counts per status from active (non-deleted) students
   const statusCounts = useMemo(() => {
@@ -120,7 +121,7 @@ function StudentsPage() {
         return false;
       if (subjectFilter && (s.subject ?? "") !== subjectFilter) return false;
       if (debtFilter !== "all") {
-        const fin = finance.filter((f) => f.student_id === s.id);
+        const fin = financeByStudent.get(s.id) ?? [];
         const hasUnpaid = fin.some((f) => !f.is_paid);
         if (debtFilter === "debt" && !hasUnpaid) return false;
         if (debtFilter === "paid" && (fin.length === 0 || hasUnpaid)) return false;
@@ -147,7 +148,7 @@ function StudentsPage() {
       }
     });
     return sorted;
-  }, [baseList, statusFilter, q, subjectFilter, debtFilter, upcomingOnly, upcomingByStudent, finance, sortBy]);
+  }, [baseList, statusFilter, q, subjectFilter, debtFilter, upcomingOnly, upcomingByStudent, financeByStudent, sortBy]);
 
   const softDelFn = useServerFn(softDeleteStudent);
   const del = useMut(async (id: string) => {
@@ -270,7 +271,7 @@ function StudentsPage() {
       ) : (
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
           {filtered.map((s, i) => {
-            const fin = finance.filter((f) => f.student_id === s.id);
+            const fin = financeByStudent.get(s.id) ?? [];
             const hasUnpaid = fin.some((f) => !f.is_paid);
             const overdue = overdueByStudent.get(s.id);
             const statusMeta = STUDENT_STATUS_META[s.status];
@@ -416,7 +417,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
         subject: subject.trim() || null,
         phone: phone.trim() || null,
       })
-      .select()
+      .select("id")
       .single();
     if (error) throw error;
 
@@ -430,7 +431,6 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
       }));
       const { error: slotErr } = await sup.from("schedule_slots").insert(rows);
       if (slotErr) throw slotErr;
-      // Автогенерация уроков в календаре
       try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
     }
   }, ["students", "schedule", "lessons"]);

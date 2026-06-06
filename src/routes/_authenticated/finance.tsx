@@ -21,6 +21,11 @@ function FinancePage() {
   const { data: students = [] } = useStudents();
   const { data: finance = [] } = useFinance();
   const { data: rates } = useRates();
+  const studentsById = useMemo(() => {
+    const m = new Map<string, (typeof students)[number]>();
+    students.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [students]);
 
   const totalsRUB = useMemo(() => {
     if (!rates) return { rub: 0, usdt: 0, egp: 0 };
@@ -64,7 +69,7 @@ function FinancePage() {
       ) : (
         <div className="space-y-2">
           {finance.map((f) => {
-            const s = students.find((x) => x.id === f.student_id);
+            const s = studentsById.get(f.student_id);
             return <PaymentRow key={f.id} f={f} name={s?.name ?? "—"} />;
           })}
         </div>

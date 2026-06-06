@@ -69,7 +69,7 @@ export const moveLesson = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: orig, error: e1 } = await supabase
       .from("lessons")
-      .select("*")
+      .select("student_id, duration_min, status, source_slot_id")
       .eq("id", data.id)
       .single();
     if (e1 || !orig) throw new Error(e1?.message ?? "Урок не найден");
