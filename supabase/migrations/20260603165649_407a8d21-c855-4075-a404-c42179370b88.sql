@@ -51,18 +51,19 @@ DROP TRIGGER IF EXISTS lessons_touch_updated ON public.lessons;
 CREATE TRIGGER lessons_touch_updated BEFORE UPDATE ON public.lessons
   FOR EACH ROW EXECUTE FUNCTION public.touch_updated_at();
 
--- FK with idempotency
+-- FK with idempotency; NOT VALID avoids failing on legacy orphaned rows.
 DO $$ BEGIN
-  ALTER TABLE public.finance ADD CONSTRAINT finance_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
+  ALTER TABLE public.finance ADD CONSTRAINT finance_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
-  ALTER TABLE public.homework ADD CONSTRAINT homework_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
+  ALTER TABLE public.homework ADD CONSTRAINT homework_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
-  ALTER TABLE public.schedule_slots ADD CONSTRAINT schedule_slots_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE;
+  ALTER TABLE public.schedule_slots ADD CONSTRAINT schedule_slots_student_fk FOREIGN KEY (student_id) REFERENCES public.students(id) ON DELETE CASCADE NOT VALID;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- Keep any existing public.lessons_conducted table intact; the replacement summary is exposed as v_lessons_conducted below.
+-- Keep any existing public.lessons_conducted table intact; the replacement
+-- summary is exposed as v_lessons_conducted below.
 
 CREATE OR REPLACE VIEW public.v_lessons_conducted AS
 SELECT
