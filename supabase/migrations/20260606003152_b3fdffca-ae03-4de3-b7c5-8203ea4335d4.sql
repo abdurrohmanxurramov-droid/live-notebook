@@ -1,0 +1,1 @@
+UPDATE public.user_settings SET onboarding_completed = true WHERE gender IS NOT NULL AND onboarding_completed = false;
