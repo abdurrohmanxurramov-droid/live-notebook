@@ -14,13 +14,16 @@ const DEFAULTS = {
   remind_homework: true,
 };
 
+const SETTINGS_SELECT =
+  "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at";
+
 export const getSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("user_settings")
-      .select("*")
+      .select(SETTINGS_SELECT)
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -28,7 +31,7 @@ export const getSettings = createServerFn({ method: "GET" })
     const { data: created, error: e2 } = await supabase
       .from("user_settings")
       .insert({ user_id: userId, ...DEFAULTS })
-      .select()
+      .select(SETTINGS_SELECT)
       .single();
     if (e2) throw new Error(e2.message);
     return created;
@@ -42,7 +45,7 @@ export const updateSettings = createServerFn({ method: "POST" })
     const { data: updated, error } = await supabase
       .from("user_settings")
       .upsert({ user_id: userId, ...DEFAULTS, ...data }, { onConflict: "user_id" })
-      .select()
+      .select(SETTINGS_SELECT)
       .single();
     if (error) throw new Error(error.message);
     return updated;
