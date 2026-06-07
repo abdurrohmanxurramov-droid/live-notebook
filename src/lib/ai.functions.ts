@@ -29,7 +29,13 @@ type Msg = {
   name?: string;
 };
 
-type ActionLog = { tool: string; args: unknown; result: unknown; ok: boolean };
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
+export type ActionLog = {
+  tool: string;
+  args: JsonValue;
+  result: JsonValue;
+  ok: boolean;
+};
 
 // ---------- Tool definitions for the model ----------
 const tools = [
@@ -239,7 +245,8 @@ const tools = [
 // ---------- Tool executor ----------
 async function execTool(
   name: string,
-  args: Record<string, unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args: any,
   supabase: SupabaseClient<Database>,
   userId: string,
 ) {
@@ -604,7 +611,7 @@ ${slotsStr}`,
           ok = false;
           result = { error: getErrorMessage(error, String(error)) };
         }
-        actions.push({ tool: fname, args: fargs, result, ok });
+        actions.push({ tool: fname, args: fargs as JsonValue, result: result as JsonValue, ok });
         const toolContent = JSON.stringify(result).slice(0, 4000);
         messages.push({
           role: "tool",
