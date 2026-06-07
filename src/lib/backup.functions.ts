@@ -44,7 +44,8 @@ export const exportBackup = createServerFn({ method: "GET" })
     const { supabase } = context;
     const tables: Record<string, BackupRow[]> = {};
     for (const t of TABLES) {
-      const { data, error } = await supabase.from(t).select(TABLE_SELECTS[t]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from as any)(t).select(TABLE_SELECTS[t]);
       if (error) throw new Error(`${t}: ${error.message}`);
       tables[t] = (data ?? []) as unknown as BackupRow[];
     }
@@ -87,9 +88,10 @@ export const exportCsv = createServerFn({ method: "GET" })
     const { supabase } = context;
     const out: Record<string, string> = {};
     for (const t of CSV_TABLES) {
-      const { data, error } = await supabase.from(t).select(TABLE_SELECTS[t]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.from as any)(t).select(TABLE_SELECTS[t]);
       if (error) throw new Error(`${t}: ${error.message}`);
-      out[t] = rowsToCsv((data ?? []) as Record<string, unknown>[]);
+      out[t] = rowsToCsv((data ?? []) as unknown as Record<string, unknown>[]);
     }
     return out as Record<(typeof CSV_TABLES)[number], string>;
   });
@@ -127,7 +129,7 @@ export const importBackup = createServerFn({ method: "POST" })
       const conflictCol =
         t === "user_settings" ? "user_id" : t === "push_subscriptions" ? "endpoint" : "id";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await supabase.from(t).upsert(fixed as any, { onConflict: conflictCol });
+      const { error } = await (supabase.from as any)(t).upsert(fixed as any, { onConflict: conflictCol });
       if (error) throw new Error(`${t}: ${error.message}`);
       counts[t] = fixed.length;
     }

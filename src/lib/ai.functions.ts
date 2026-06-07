@@ -29,7 +29,12 @@ type Msg = {
   name?: string;
 };
 
-type ActionLog = { tool: string; args: unknown; result: unknown; ok: boolean };
+export type ActionLog = {
+  tool: string;
+  args: Record<string, unknown>;
+  result: unknown;
+  ok: boolean;
+};
 
 // ---------- Tool definitions for the model ----------
 const tools = [
@@ -239,7 +244,8 @@ const tools = [
 // ---------- Tool executor ----------
 async function execTool(
   name: string,
-  args: Record<string, unknown>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args: any,
   supabase: SupabaseClient<Database>,
   userId: string,
 ) {

@@ -4,7 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, Loader2, Wrench, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 
-import { chatWithAssistant, getChatHistory, clearChatHistory } from "@/lib/ai.functions";
+import {
+  chatWithAssistant,
+  getChatHistory,
+  clearChatHistory,
+  type ActionLog,
+} from "@/lib/ai.functions";
 
 export const Route = createFileRoute("/_authenticated/assistant")({ component: AssistantPage });
 
@@ -64,10 +69,10 @@ function AssistantPage() {
   const mut = useMutation({
     mutationFn: async (userText: string) => {
       setMessages((m) => [...m, { role: "user", content: userText }]);
-      return await chat({ data: { userText } });
+      return (await chat({ data: { userText } })) as { reply: string; actions: ActionLog[] };
     },
     onSuccess: (res) => {
-      setMessages((m) => [...m, { role: "assistant", content: res.reply, actions: res.actions }]);
+      setMessages((m) => [...m, { role: "assistant", content: res.reply, actions: res.actions as Action[] }]);
       if (res.actions?.length) qc.invalidateQueries();
     },
     onError: (e: Error) =>
