@@ -29,10 +29,11 @@ type Msg = {
   name?: string;
 };
 
+type JsonValue = string | number | boolean | null | JsonValue[] | { [k: string]: JsonValue };
 export type ActionLog = {
   tool: string;
-  args: Record<string, unknown>;
-  result: unknown;
+  args: JsonValue;
+  result: JsonValue;
   ok: boolean;
 };
 
@@ -610,7 +611,7 @@ ${slotsStr}`,
           ok = false;
           result = { error: getErrorMessage(error, String(error)) };
         }
-        actions.push({ tool: fname, args: fargs, result, ok });
+        actions.push({ tool: fname, args: fargs as JsonValue, result: result as JsonValue, ok });
         const toolContent = JSON.stringify(result).slice(0, 4000);
         messages.push({
           role: "tool",
