@@ -6,7 +6,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, Badge, Button } from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
 import { useStudents } from "@/lib/db";
-import { listLessons, moveLesson, setLessonStatus, deleteLesson, type LessonStatus } from "@/lib/lessons.functions";
+import { getErrorMessage } from "@/lib/utils";
+import {
+  listLessons,
+  moveLesson,
+  setLessonStatus,
+  deleteLesson,
+  type LessonStatus,
+} from "@/lib/lessons.functions";
 import { QuickCreateLessonSheet } from "./QuickCreateLessonSheet";
 
 type View = "day" | "week" | "month";
@@ -61,17 +68,25 @@ function startOfMonthGrid(d: Date) {
 // Получасовые слоты с 08:00 до 22:00 включительно
 const SLOTS: { h: number; m: number }[] = (() => {
   const out: { h: number; m: number }[] = [];
-  for (let h = 8; h <= 22; h++) { out.push({ h, m: 0 }); if (h < 22) out.push({ h, m: 30 }); }
+  for (let h = 8; h <= 22; h++) {
+    out.push({ h, m: 0 });
+    if (h < 22) out.push({ h, m: 30 });
+  }
   return out;
 })();
 const SLOT_PX = 32;
 const HOUR_PX = SLOT_PX * 2;
 const BASE_MIN = 8 * 60;
-const slotTime = (s: { h: number; m: number }) => `${String(s.h).padStart(2,"0")}:${String(s.m).padStart(2,"0")}`;
+const slotTime = (s: { h: number; m: number }) =>
+  `${String(s.h).padStart(2, "0")}:${String(s.m).padStart(2, "0")}`;
 
 export function Calendar() {
   const [view, setView] = useState<View>("week");
-  const [cursor, setCursor] = useState<Date>(() => { const d = new Date(); d.setHours(0,0,0,0); return d; });
+  const [cursor, setCursor] = useState<Date>(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
   const [createSlot, setCreateSlot] = useState<{ date: string; time: string } | null>(null);
   const [active, setActive] = useState<Lesson | null>(null);
   const [moreDay, setMoreDay] = useState<string | null>(null);
@@ -105,16 +120,18 @@ export function Calendar() {
       await move({ data: { id, new_date: newDate, new_time: newTime } });
       qc.invalidateQueries({ queryKey: ["lessons"] });
       toast.success("Урок перенесён");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Ошибка переноса");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Ошибка переноса"));
     }
   }
 
   const label = useMemo(() => {
     const opts: Intl.DateTimeFormatOptions =
-      view === "month" ? { month: "long", year: "numeric" }
-      : view === "week" ? { day: "numeric", month: "short" }
-      : { weekday: "short", day: "numeric", month: "long" };
+      view === "month"
+        ? { month: "long", year: "numeric" }
+        : view === "week"
+          ? { day: "numeric", month: "short" }
+          : { weekday: "short", day: "numeric", month: "long" };
     if (view === "week") {
       const s = startOfWeek(cursor);
       const e = addDays(s, 6);
@@ -133,82 +150,167 @@ export function Calendar() {
 
   return (
     <>
-    <Card className="mt-4 p-3">
-      <div className="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">{label}</div>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1">
-          <button onClick={() => step(-1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Назад"><ChevronLeft className="h-4 w-4" /></button>
-          <button onClick={() => setCursor(new Date(new Date().setHours(0,0,0,0)))} className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary">Сегодня</button>
-          <button onClick={() => step(1)} className="rounded-full p-2 hover:bg-secondary" aria-label="Вперёд"><ChevronRight className="h-4 w-4" /></button>
+      <Card className="mt-4 p-3">
+        <div className="mb-2 text-center text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground capitalize">
+          {label}
         </div>
-        <CalendarViewPill view={view} setView={setView} />
-      </div>
-
-
-      <div className="mt-3 pb-2">
-        {isLoading ? (
-          <div className="h-40 animate-pulse rounded-xl bg-secondary/60" />
-        ) : view === "day" ? (
-          <DayView date={iso(cursor)} lessons={lessons} studentName={studentName} onDrop={handleDrop} onSlot={setCreateSlot} onLesson={setActive} />
-        ) : view === "week" ? (
-          <WeekView start={startOfWeek(cursor)} lessons={lessons} studentName={studentName} onDrop={handleDrop} onSlot={setCreateSlot} onLesson={setActive} />
-        ) : (
-          <MonthView start={startOfMonthGrid(cursor)} cursor={cursor} lessons={lessons} studentName={studentName} onDrop={handleDrop} onSlot={(d) => setCreateSlot({ date: d, time: "10:00" })} onMore={setMoreDay} onLesson={setActive} />
-        )}
-      </div>
-
-
-      <QuickCreateLessonSheet
-        open={!!createSlot}
-        onClose={() => setCreateSlot(null)}
-        initialDate={createSlot?.date}
-        initialTime={createSlot?.time}
-      />
-
-      <Sheet open={!!active} onClose={() => setActive(null)} title="Урок">
-        {active && (
-          <div className="grid gap-3">
-            <div>
-              <div className="text-base font-semibold text-foreground">{studentName(active.student_id)}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {active.scheduled_date} · {active.scheduled_time.slice(0,5)} · {active.duration_min} мин
-              </div>
-              <div className="mt-2"><Badge tone={STATUS_TONE[active.status]}>{STATUS_LABEL[active.status]}</Badge></div>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {(["planned","completed","cancelled"] as LessonStatus[]).map((s) => (
-                <Button key={s} variant={active.status===s?"gold":"outline"} onClick={async () => {
-                  try { await setStatus({ data: { id: active.id, status: s } }); qc.invalidateQueries({ queryKey: ["lessons"] }); toast.success("Статус обновлён"); setActive(null); }
-                  catch(e: any){ toast.error(e?.message ?? "Ошибка"); }
-                }}>{STATUS_LABEL[s]}</Button>
-              ))}
-            </div>
-            <Button variant="danger" onClick={async () => {
-              try { await del({ data: { id: active.id } }); qc.invalidateQueries({ queryKey: ["lessons"] }); toast.success("Урок удалён"); setActive(null); }
-              catch(e: any){ toast.error(e?.message ?? "Ошибка"); }
-            }}>Удалить</Button>
-          </div>
-        )}
-      </Sheet>
-
-      <Sheet open={!!moreDay} onClose={() => setMoreDay(null)} title={moreDay ? `Уроки ${moreDay}` : ""}>
-        <div className="grid gap-2">
-          {lessons.filter((l) => l.scheduled_date === moreDay).sort((a,b)=>a.scheduled_time.localeCompare(b.scheduled_time)).map((l) => (
-            <button key={l.id} onClick={() => { setActive(l); setMoreDay(null); }} className="flex items-center justify-between rounded-xl bg-secondary p-3 text-left">
-              <div>
-                <div className="text-sm font-semibold text-foreground">{studentName(l.student_id)}</div>
-                <div className="text-[11px] text-muted-foreground">{l.scheduled_time.slice(0,5)} · {l.duration_min} мин</div>
-              </div>
-              <Badge tone={STATUS_TONE[l.status]}>{STATUS_LABEL[l.status]}</Badge>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => step(-1)}
+              className="rounded-full p-2 hover:bg-secondary"
+              aria-label="Назад"
+            >
+              <ChevronLeft className="h-4 w-4" />
             </button>
-          ))}
+            <button
+              onClick={() => setCursor(new Date(new Date().setHours(0, 0, 0, 0)))}
+              className="rounded-full px-3 py-1.5 text-xs font-semibold hover:bg-secondary"
+            >
+              Сегодня
+            </button>
+            <button
+              onClick={() => step(1)}
+              className="rounded-full p-2 hover:bg-secondary"
+              aria-label="Вперёд"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          <CalendarViewPill view={view} setView={setView} />
         </div>
-      </Sheet>
-    </Card>
+
+        <div className="mt-3 pb-2">
+          {isLoading ? (
+            <div className="h-40 animate-pulse rounded-xl bg-secondary/60" />
+          ) : view === "day" ? (
+            <DayView
+              date={iso(cursor)}
+              lessons={lessons}
+              studentName={studentName}
+              onDrop={handleDrop}
+              onSlot={setCreateSlot}
+              onLesson={setActive}
+            />
+          ) : view === "week" ? (
+            <WeekView
+              start={startOfWeek(cursor)}
+              lessons={lessons}
+              studentName={studentName}
+              onDrop={handleDrop}
+              onSlot={setCreateSlot}
+              onLesson={setActive}
+            />
+          ) : (
+            <MonthView
+              start={startOfMonthGrid(cursor)}
+              cursor={cursor}
+              lessons={lessons}
+              studentName={studentName}
+              onDrop={handleDrop}
+              onSlot={(d) => setCreateSlot({ date: d, time: "10:00" })}
+              onMore={setMoreDay}
+              onLesson={setActive}
+            />
+          )}
+        </div>
+
+        <QuickCreateLessonSheet
+          open={!!createSlot}
+          onClose={() => setCreateSlot(null)}
+          initialDate={createSlot?.date}
+          initialTime={createSlot?.time}
+        />
+
+        <Sheet open={!!active} onClose={() => setActive(null)} title="Урок">
+          {active && (
+            <div className="grid gap-3">
+              <div>
+                <div className="text-base font-semibold text-foreground">
+                  {studentName(active.student_id)}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">
+                  {active.scheduled_date} · {active.scheduled_time.slice(0, 5)} ·{" "}
+                  {active.duration_min} мин
+                </div>
+                <div className="mt-2">
+                  <Badge tone={STATUS_TONE[active.status]}>{STATUS_LABEL[active.status]}</Badge>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {(["planned", "completed", "cancelled"] as LessonStatus[]).map((s) => (
+                  <Button
+                    key={s}
+                    variant={active.status === s ? "gold" : "outline"}
+                    onClick={async () => {
+                      try {
+                        await setStatus({ data: { id: active.id, status: s } });
+                        qc.invalidateQueries({ queryKey: ["lessons"] });
+                        toast.success("Статус обновлён");
+                        setActive(null);
+                      } catch (error: unknown) {
+                        toast.error(getErrorMessage(error));
+                      }
+                    }}
+                  >
+                    {STATUS_LABEL[s]}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="danger"
+                onClick={async () => {
+                  try {
+                    await del({ data: { id: active.id } });
+                    qc.invalidateQueries({ queryKey: ["lessons"] });
+                    toast.success("Урок удалён");
+                    setActive(null);
+                  } catch (error: unknown) {
+                    toast.error(getErrorMessage(error));
+                  }
+                }}
+              >
+                Удалить
+              </Button>
+            </div>
+          )}
+        </Sheet>
+
+        <Sheet
+          open={!!moreDay}
+          onClose={() => setMoreDay(null)}
+          title={moreDay ? `Уроки ${moreDay}` : ""}
+        >
+          <div className="grid gap-2">
+            {lessons
+              .filter((l) => l.scheduled_date === moreDay)
+              .sort((a, b) => a.scheduled_time.localeCompare(b.scheduled_time))
+              .map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => {
+                    setActive(l);
+                    setMoreDay(null);
+                  }}
+                  className="flex items-center justify-between rounded-xl bg-secondary p-3 text-left"
+                >
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">
+                      {studentName(l.student_id)}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {l.scheduled_time.slice(0, 5)} · {l.duration_min} мин
+                    </div>
+                  </div>
+                  <Badge tone={STATUS_TONE[l.status]}>{STATUS_LABEL[l.status]}</Badge>
+                </button>
+              ))}
+          </div>
+        </Sheet>
+      </Card>
     </>
   );
 }
-
 
 /* -------------------- VIEW SWITCH -------------------- */
 
@@ -250,8 +352,6 @@ function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) =>
         WebkitBackdropFilter: "blur(var(--glass-blur)) saturate(180%)",
       }}
     >
-
-
       {indicator && (
         <span
           aria-hidden
@@ -287,9 +387,14 @@ function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) =>
 
 /* -------------------- DAY -------------------- */
 
-
-
-function DayView({ date, lessons, studentName, onDrop, onSlot, onLesson }: {
+function DayView({
+  date,
+  lessons,
+  studentName,
+  onDrop,
+  onSlot,
+  onLesson,
+}: {
   date: string;
   lessons: Lesson[];
   studentName: (id: string) => string;
@@ -307,13 +412,21 @@ function DayView({ date, lessons, studentName, onDrop, onSlot, onLesson }: {
             key={t}
             slot={s}
             onClick={() => onSlot({ date, time: t })}
-            onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, date, t); }}
+            onDrop={() => {
+              const id = window.__draggingLessonId;
+              if (id) onDrop(id, date, t);
+            }}
           />
         );
       })}
       <div className="pointer-events-none absolute inset-y-0 left-12 right-2">
         {day.map((l) => (
-          <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} />
+          <PositionedBlock
+            key={l.id}
+            lesson={l}
+            studentName={studentName(l.student_id)}
+            onClick={() => onLesson(l)}
+          />
         ))}
       </div>
     </div>
@@ -322,7 +435,14 @@ function DayView({ date, lessons, studentName, onDrop, onSlot, onLesson }: {
 
 /* -------------------- WEEK -------------------- */
 
-function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
+function WeekView({
+  start,
+  lessons,
+  studentName,
+  onDrop,
+  onSlot,
+  onLesson,
+}: {
   start: Date;
   lessons: Lesson[];
   studentName: (id: string) => string;
@@ -340,17 +460,28 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
         {days.map((d) => {
           const ds = iso(d);
           return (
-            <div key={ds} className={`px-0.5 pb-1 text-center text-[10px] font-semibold leading-tight ${ds===today?"text-accent":"text-muted-foreground"}`}>
-              {d.toLocaleDateString("ru-RU",{weekday:"short"})}<br/>
+            <div
+              key={ds}
+              className={`px-0.5 pb-1 text-center text-[10px] font-semibold leading-tight ${ds === today ? "text-accent" : "text-muted-foreground"}`}
+            >
+              {d.toLocaleDateString("ru-RU", { weekday: "short" })}
+              <br />
               <span className="text-[12px] text-foreground">{d.getDate()}</span>
             </div>
           );
         })}
       </div>
-      <div className="relative grid rounded-xl border border-border bg-card/40" style={{ gridTemplateColumns: "32px repeat(7, minmax(0,1fr))" }}>
+      <div
+        className="relative grid rounded-xl border border-border bg-card/40"
+        style={{ gridTemplateColumns: "32px repeat(7, minmax(0,1fr))" }}
+      >
         <div>
           {SLOTS.map((s) => (
-            <div key={slotTime(s)} className="flex items-start justify-end pr-0.5 text-[9px] text-muted-foreground" style={{ height: SLOT_PX }}>
+            <div
+              key={slotTime(s)}
+              className="flex items-start justify-end pr-0.5 text-[9px] text-muted-foreground"
+              style={{ height: SLOT_PX }}
+            >
               {s.m === 0 ? `${s.h}` : ""}
             </div>
           ))}
@@ -367,13 +498,22 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
                     key={t}
                     slot={s}
                     onClick={() => onSlot({ date: ds, time: t })}
-                    onDrop={() => { const id = window.__draggingLessonId; if (id) onDrop(id, ds, t); }}
+                    onDrop={() => {
+                      const id = window.__draggingLessonId;
+                      if (id) onDrop(id, ds, t);
+                    }}
                   />
                 );
               })}
               <div className="pointer-events-none absolute inset-0">
                 {dayLessons.map((l) => (
-                  <PositionedBlock key={l.id} lesson={l} studentName={studentName(l.student_id)} onClick={() => onLesson(l)} compact />
+                  <PositionedBlock
+                    key={l.id}
+                    lesson={l}
+                    studentName={studentName(l.student_id)}
+                    onClick={() => onLesson(l)}
+                    compact
+                  />
                 ))}
               </div>
             </div>
@@ -386,7 +526,16 @@ function WeekView({ start, lessons, studentName, onDrop, onSlot, onLesson }: {
 
 /* -------------------- MONTH -------------------- */
 
-function MonthView({ start, cursor, lessons, studentName, onDrop, onSlot, onMore, onLesson }: {
+function MonthView({
+  start,
+  cursor,
+  lessons,
+  studentName,
+  onDrop,
+  onSlot,
+  onMore,
+  onLesson,
+}: {
   start: Date;
   cursor: Date;
   lessons: Lesson[];
@@ -401,44 +550,71 @@ function MonthView({ start, cursor, lessons, studentName, onDrop, onSlot, onMore
   const month = cursor.getMonth();
   return (
     <div className="grid grid-cols-7 gap-1">
-      {["Пн","Вт","Ср","Чт","Пт","Сб","Вс"].map((d) => (
-        <div key={d} className="pb-1 text-center text-[10px] font-semibold text-muted-foreground">{d}</div>
+      {["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"].map((d) => (
+        <div key={d} className="pb-1 text-center text-[10px] font-semibold text-muted-foreground">
+          {d}
+        </div>
       ))}
       {days.map((d) => {
         const ds = iso(d);
         const inMonth = d.getMonth() === month;
-        const dayLessons = lessons.filter((l) => l.scheduled_date === ds).sort((a,b)=>a.scheduled_time.localeCompare(b.scheduled_time));
+        const dayLessons = lessons
+          .filter((l) => l.scheduled_date === ds)
+          .sort((a, b) => a.scheduled_time.localeCompare(b.scheduled_time));
         const isToday = ds === today;
         return (
           <div
             key={ds}
             onClick={() => onSlot(ds)}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => { e.preventDefault(); const id = window.__draggingLessonId; if (id) {
-              // preserve time of dragged lesson
-              const dragged = lessons.find((l) => l.id === id);
-              const t = dragged ? dragged.scheduled_time.slice(0,5) : "10:00";
-              onDrop(id, ds, t);
-            }}}
-            className={`group relative min-h-[68px] cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(20,33,61,0.25)] active:scale-[0.98] ${inMonth?"border-border bg-card/40 hover:bg-card/70":"border-transparent bg-secondary/30 opacity-60"} ${isToday?"ring-1 ring-accent":""}`}
+            onDrop={(e) => {
+              e.preventDefault();
+              const id = window.__draggingLessonId;
+              if (id) {
+                // preserve time of dragged lesson
+                const dragged = lessons.find((l) => l.id === id);
+                const t = dragged ? dragged.scheduled_time.slice(0, 5) : "10:00";
+                onDrop(id, ds, t);
+              }
+            }}
+            className={`group relative min-h-[68px] cursor-pointer overflow-hidden rounded-lg border p-1 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-12px_rgba(20,33,61,0.25)] active:scale-[0.98] ${inMonth ? "border-border bg-card/40 hover:bg-card/70" : "border-transparent bg-secondary/30 opacity-60"} ${isToday ? "ring-1 ring-accent" : ""}`}
           >
-            <div className={`text-[11px] font-semibold ${isToday?"text-accent":"text-foreground"}`}>{d.getDate()}</div>
+            <div
+              className={`text-[11px] font-semibold ${isToday ? "text-accent" : "text-foreground"}`}
+            >
+              {d.getDate()}
+            </div>
             <div className="mt-0.5 space-y-0.5">
               {dayLessons.slice(0, 2).map((l) => (
                 <div
                   key={l.id}
                   draggable
-                  onDragStart={() => { window.__draggingLessonId = l.id; }}
-                  onDragEnd={() => { window.__draggingLessonId = null; }}
-                  onClick={(e) => { e.stopPropagation(); onLesson(l); }}
+                  onDragStart={() => {
+                    window.__draggingLessonId = l.id;
+                  }}
+                  onDragEnd={() => {
+                    window.__draggingLessonId = null;
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onLesson(l);
+                  }}
                   className={`truncate rounded px-1 text-[9px] font-medium ${toneBg(l.status)}`}
-                  title={`${l.scheduled_time.slice(0,5)} ${studentName(l.student_id)}`}
+                  title={`${l.scheduled_time.slice(0, 5)} ${studentName(l.student_id)}`}
                 >
-                  {l.scheduled_time.slice(0,5)} {studentName(l.student_id)}
+                  {l.scheduled_time.slice(0, 5)} {studentName(l.student_id)}
                 </div>
               ))}
               {dayLessons.length > 2 && (
-                <button onClick={(e) => { e.stopPropagation(); onMore(ds); }} className="text-[9px] font-semibold text-accent">+{dayLessons.length-2} ещё</button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMore(ds);
+                  }}
+                  className="text-[9px] font-semibold text-accent"
+                >
+                  +{dayLessons.length - 2} ещё
+                </button>
               )}
             </div>
           </div>
@@ -450,10 +626,21 @@ function MonthView({ start, cursor, lessons, studentName, onDrop, onSlot, onMore
 
 /* -------------------- PARTS -------------------- */
 
-function SlotRow({ slot, onClick, onDrop }: { slot: { h: number; m: number }; onClick: () => void; onDrop: () => void }) {
+function SlotRow({
+  slot,
+  onClick,
+  onDrop,
+}: {
+  slot: { h: number; m: number };
+  onClick: () => void;
+  onDrop: () => void;
+}) {
   const isHour = slot.m === 0;
   return (
-    <div className={`flex ${isHour ? "border-b border-border" : "border-b border-border/40"} last:border-b-0`} style={{ height: SLOT_PX }}>
+    <div
+      className={`flex ${isHour ? "border-b border-border" : "border-b border-border/40"} last:border-b-0`}
+      style={{ height: SLOT_PX }}
+    >
       <div className="flex w-12 shrink-0 items-start justify-end pr-1 pt-0.5 text-[10px] text-muted-foreground">
         {isHour ? `${slot.h}:00` : ""}
       </div>
@@ -461,7 +648,10 @@ function SlotRow({ slot, onClick, onDrop }: { slot: { h: number; m: number }; on
         type="button"
         onClick={onClick}
         onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => { e.preventDefault(); onDrop(); }}
+        onDrop={(e) => {
+          e.preventDefault();
+          onDrop();
+        }}
         className="flex-1 hover:bg-accent/5"
         aria-label="Создать урок"
       />
@@ -469,27 +659,43 @@ function SlotRow({ slot, onClick, onDrop }: { slot: { h: number; m: number }; on
   );
 }
 
-function SlotCell({ slot, onClick, onDrop }: { slot: { h: number; m: number }; onClick: () => void; onDrop: () => void }) {
+function SlotCell({
+  slot,
+  onClick,
+  onDrop,
+}: {
+  slot: { h: number; m: number };
+  onClick: () => void;
+  onDrop: () => void;
+}) {
   const isHour = slot.m === 0;
   return (
     <button
       type="button"
       onClick={onClick}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); onDrop(); }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
       className={`block w-full ${isHour ? "border-b border-border" : "border-b border-border/40"} hover:bg-accent/5`}
       style={{ height: SLOT_PX }}
     />
   );
 }
 
-function PositionedBlock({ lesson, studentName, onClick, compact }: {
+function PositionedBlock({
+  lesson,
+  studentName,
+  onClick,
+  compact,
+}: {
   lesson: Lesson;
   studentName: string;
   onClick: () => void;
   compact?: boolean;
 }) {
-  const [hh, mm] = lesson.scheduled_time.slice(0,5).split(":").map(Number);
+  const [hh, mm] = lesson.scheduled_time.slice(0, 5).split(":").map(Number);
   const startMin = hh * 60 + mm;
   const top = ((startMin - BASE_MIN) / 30) * SLOT_PX;
   const height = Math.max(SLOT_PX - 2, (lesson.duration_min / 30) * SLOT_PX - 2);
@@ -497,15 +703,23 @@ function PositionedBlock({ lesson, studentName, onClick, compact }: {
   return (
     <div
       draggable
-      onDragStart={() => { window.__draggingLessonId = lesson.id; }}
-      onDragEnd={() => { window.__draggingLessonId = null; }}
+      onDragStart={() => {
+        window.__draggingLessonId = lesson.id;
+      }}
+      onDragEnd={() => {
+        window.__draggingLessonId = null;
+      }}
       onClick={onClick}
       style={{ top, height, left: 2, right: 2 }}
       className={`pointer-events-auto absolute cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-[10px] font-semibold shadow-sm active:cursor-grabbing ${toneBg(lesson.status)}`}
     >
-      <div className="truncate">{lesson.scheduled_time.slice(0,5)} {studentName}</div>
+      <div className="truncate">
+        {lesson.scheduled_time.slice(0, 5)} {studentName}
+      </div>
       {!compact && height > 32 && (
-        <div className="mt-0.5 truncate text-[9px] opacity-80">{STATUS_LABEL[lesson.status]} · {lesson.duration_min} мин</div>
+        <div className="mt-0.5 truncate text-[9px] opacity-80">
+          {STATUS_LABEL[lesson.status]} · {lesson.duration_min} мин
+        </div>
       )}
     </div>
   );
@@ -513,13 +727,19 @@ function PositionedBlock({ lesson, studentName, onClick, compact }: {
 
 function toneBg(s: LessonStatus) {
   switch (s) {
-    case "planned": return "bg-accent/20 text-accent-foreground border border-accent/30";
-    case "completed": return "bg-[color:var(--success)]/20 text-foreground border border-[color:var(--success)]/30";
-    case "cancelled": return "bg-destructive/20 text-foreground border border-destructive/30";
-    case "moved": return "bg-secondary text-foreground border border-border";
+    case "planned":
+      return "bg-accent/20 text-accent-foreground border border-accent/30";
+    case "completed":
+      return "bg-[color:var(--success)]/20 text-foreground border border-[color:var(--success)]/30";
+    case "cancelled":
+      return "bg-destructive/20 text-foreground border border-destructive/30";
+    case "moved":
+      return "bg-secondary text-foreground border border-border";
   }
 }
 
 declare global {
-  interface Window { __draggingLessonId: string | null; }
+  interface Window {
+    __draggingLessonId: string | null;
+  }
 }

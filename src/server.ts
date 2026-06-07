@@ -1,16 +1,28 @@
 import "./lib/error-capture";
 
 // SSR shim: supabase client references localStorage at module init
-if (typeof (globalThis as any).localStorage === "undefined") {
+if (typeof globalThis.localStorage === "undefined") {
   const store = new Map<string, string>();
-  (globalThis as any).localStorage = {
+  const localStorageShim: Storage = {
     getItem: (k: string) => (store.has(k) ? (store.get(k) as string) : null),
-    setItem: (k: string, v: string) => { store.set(k, String(v)); },
-    removeItem: (k: string) => { store.delete(k); },
-    clear: () => { store.clear(); },
+    setItem: (k: string, v: string) => {
+      store.set(k, String(v));
+    },
+    removeItem: (k: string) => {
+      store.delete(k);
+    },
+    clear: () => {
+      store.clear();
+    },
     key: (i: number) => Array.from(store.keys())[i] ?? null,
-    get length() { return store.size; },
+    get length() {
+      return store.size;
+    },
   };
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: localStorageShim,
+  });
 }
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -25,7 +37,7 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => ((m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry)),
+      (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
     );
   }
   return serverEntryPromise;

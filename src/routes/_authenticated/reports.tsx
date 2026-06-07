@@ -65,9 +65,24 @@ function ReportsPage() {
 
 function Menu({ onPick }: { onPick: (v: View) => void }) {
   const items: { id: View; title: string; hint: string; icon: React.ReactNode }[] = [
-    { id: "student", title: "Отчёт по ученикам", hint: "Контакты, статус, оплата, ДЗ", icon: <User2 className="h-5 w-5" /> },
-    { id: "attendance", title: "Отчёт по посещаемости", hint: "Уроки за период", icon: <CalendarCheck className="h-5 w-5" /> },
-    { id: "finance", title: "Финансовый отчёт", hint: "Доход и задолженности", icon: <Wallet className="h-5 w-5" /> },
+    {
+      id: "student",
+      title: "Отчёт по ученикам",
+      hint: "Контакты, статус, оплата, ДЗ",
+      icon: <User2 className="h-5 w-5" />,
+    },
+    {
+      id: "attendance",
+      title: "Отчёт по посещаемости",
+      hint: "Уроки за период",
+      icon: <CalendarCheck className="h-5 w-5" />,
+    },
+    {
+      id: "finance",
+      title: "Финансовый отчёт",
+      hint: "Доход и задолженности",
+      icon: <Wallet className="h-5 w-5" />,
+    },
   ];
   return (
     <>
@@ -103,7 +118,9 @@ function PrintHeader({ title, sub }: { title: string; sub?: string }) {
     <div className="mb-4">
       <h1 className="text-xl font-bold text-foreground">{title}</h1>
       {sub && <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>}
-      <p className="mt-0.5 text-[11px] text-muted-foreground">Сформировано: {new Date().toLocaleString("ru-RU")}</p>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">
+        Сформировано: {new Date().toLocaleString("ru-RU")}
+      </p>
     </div>
   );
 }
@@ -133,7 +150,9 @@ function StudentReport() {
           <Select value={selected} onChange={(e) => setSelected(e.target.value)}>
             <option value="__all__">Все ученики</option>
             {students.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </Select>
         </label>
@@ -209,7 +228,9 @@ function StudentCard({
           </tr>
           <tr>
             <th className="text-left font-normal text-muted-foreground">Выполнение ДЗ</th>
-            <td className="text-right num font-semibold">{doneHw} / {totalHw} ({rate}%)</td>
+            <td className="text-right num font-semibold">
+              {doneHw} / {totalHw} ({rate}%)
+            </td>
           </tr>
         </tbody>
       </table>
@@ -275,21 +296,35 @@ function AttendanceReport() {
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={4} className="text-muted-foreground">Загрузка…</td></tr>
-            ) : lessons.length === 0 ? (
-              <tr><td colSpan={4} className="text-muted-foreground">Нет уроков за период</td></tr>
-            ) : lessons.map((l) => (
-              <tr key={l.id}>
-                <td className="num">{l.scheduled_date}</td>
-                <td className="num">{String(l.scheduled_time).slice(0, 5)}</td>
-                <td>{studentsById.get(l.student_id)?.name ?? "—"}</td>
-                <td>
-                  {l.status === "planned" ? "Запланирован"
-                    : l.status === "completed" ? "Проведён"
-                    : l.status === "cancelled" ? "Отменён" : "Перенесён"}
+              <tr>
+                <td colSpan={4} className="text-muted-foreground">
+                  Загрузка…
                 </td>
               </tr>
-            ))}
+            ) : lessons.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-muted-foreground">
+                  Нет уроков за период
+                </td>
+              </tr>
+            ) : (
+              lessons.map((l) => (
+                <tr key={l.id}>
+                  <td className="num">{l.scheduled_date}</td>
+                  <td className="num">{String(l.scheduled_time).slice(0, 5)}</td>
+                  <td>{studentsById.get(l.student_id)?.name ?? "—"}</td>
+                  <td>
+                    {l.status === "planned"
+                      ? "Запланирован"
+                      : l.status === "completed"
+                        ? "Проведён"
+                        : l.status === "cancelled"
+                          ? "Отменён"
+                          : "Перенесён"}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </Card>
@@ -298,10 +333,22 @@ function AttendanceReport() {
       <Card className="mt-2 p-4">
         <table className="w-full text-sm">
           <tbody>
-            <tr><th className="text-left font-normal text-muted-foreground">Проведено</th><td className="text-right num font-semibold">{totals.completed}</td></tr>
-            <tr><th className="text-left font-normal text-muted-foreground">Отменено</th><td className="text-right num font-semibold">{totals.cancelled}</td></tr>
-            <tr><th className="text-left font-normal text-muted-foreground">Запланировано</th><td className="text-right num font-semibold">{totals.planned}</td></tr>
-            <tr><th className="text-left font-normal text-muted-foreground">Всего</th><td className="text-right num font-semibold">{lessons.length}</td></tr>
+            <tr>
+              <th className="text-left font-normal text-muted-foreground">Проведено</th>
+              <td className="text-right num font-semibold">{totals.completed}</td>
+            </tr>
+            <tr>
+              <th className="text-left font-normal text-muted-foreground">Отменено</th>
+              <td className="text-right num font-semibold">{totals.cancelled}</td>
+            </tr>
+            <tr>
+              <th className="text-left font-normal text-muted-foreground">Запланировано</th>
+              <td className="text-right num font-semibold">{totals.planned}</td>
+            </tr>
+            <tr>
+              <th className="text-left font-normal text-muted-foreground">Всего</th>
+              <td className="text-right num font-semibold">{lessons.length}</td>
+            </tr>
           </tbody>
         </table>
       </Card>
@@ -375,8 +422,16 @@ function FinanceReport() {
       <Card className="p-4">
         <table className="w-full text-sm">
           <tbody>
-            <tr><th className="text-left font-normal text-muted-foreground">Всего получено</th><td className="text-right num font-semibold">{formatMoney(totalPaid, currency)}</td></tr>
-            <tr><th className="text-left font-normal text-muted-foreground">Ожидается</th><td className="text-right num font-semibold">{formatMoney(totalPending, currency)}</td></tr>
+            <tr>
+              <th className="text-left font-normal text-muted-foreground">Всего получено</th>
+              <td className="text-right num font-semibold">{formatMoney(totalPaid, currency)}</td>
+            </tr>
+            <tr>
+              <th className="text-left font-normal text-muted-foreground">Ожидается</th>
+              <td className="text-right num font-semibold">
+                {formatMoney(totalPending, currency)}
+              </td>
+            </tr>
           </tbody>
         </table>
       </Card>
@@ -393,17 +448,23 @@ function FinanceReport() {
           </thead>
           <tbody>
             {byStudent.size === 0 ? (
-              <tr><td colSpan={3} className="text-muted-foreground">Нет операций за период</td></tr>
-            ) : Array.from(byStudent.entries()).map(([sid, v]) => {
-              const s = studentsById.get(sid);
-              return (
-                <tr key={sid}>
-                  <td>{s?.name ?? "—"}</td>
-                  <td className="text-right num">{formatMoney(v.paid, v.currency)}</td>
-                  <td className="text-right num">{formatMoney(v.pending, v.currency)}</td>
-                </tr>
-              );
-            })}
+              <tr>
+                <td colSpan={3} className="text-muted-foreground">
+                  Нет операций за период
+                </td>
+              </tr>
+            ) : (
+              Array.from(byStudent.entries()).map(([sid, v]) => {
+                const s = studentsById.get(sid);
+                return (
+                  <tr key={sid}>
+                    <td>{s?.name ?? "—"}</td>
+                    <td className="text-right num">{formatMoney(v.paid, v.currency)}</td>
+                    <td className="text-right num">{formatMoney(v.pending, v.currency)}</td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </Card>
@@ -420,14 +481,20 @@ function FinanceReport() {
           </thead>
           <tbody>
             {byMonth.length === 0 ? (
-              <tr><td colSpan={3} className="text-muted-foreground">—</td></tr>
-            ) : byMonth.map(([m, v]) => (
-              <tr key={m}>
-                <td className="num">{m}</td>
-                <td className="text-right num">{formatMoney(v.paid, currency)}</td>
-                <td className="text-right num">{formatMoney(v.pending, currency)}</td>
+              <tr>
+                <td colSpan={3} className="text-muted-foreground">
+                  —
+                </td>
               </tr>
-            ))}
+            ) : (
+              byMonth.map(([m, v]) => (
+                <tr key={m}>
+                  <td className="num">{m}</td>
+                  <td className="text-right num">{formatMoney(v.paid, currency)}</td>
+                  <td className="text-right num">{formatMoney(v.pending, currency)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </Card>

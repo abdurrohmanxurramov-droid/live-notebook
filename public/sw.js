@@ -23,7 +23,7 @@ self.addEventListener("push", (event) => {
       data: { url: payload.url || "/" },
       vibrate: [120, 60, 120],
       requireInteraction: false,
-    })
+    }),
   );
 });
 
@@ -39,6 +39,6 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
       if (self.clients.openWindow) return self.clients.openWindow(url);
-    })
+    }),
   );
 });

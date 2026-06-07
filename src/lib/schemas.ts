@@ -12,14 +12,22 @@ export const paymentSchema = z.object({
   amount: z.number().min(0).max(10_000_000),
   currency: z.enum(["RUB", "USD", "EGP"]),
   is_paid: z.boolean(),
-  pay_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  pay_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
 });
 
 export const homeworkSchema = z.object({
   student_id: z.string().uuid(),
   task: z.string().trim().min(1, "Опишите задание").max(2000),
   assigned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  due_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
   status: z.enum(["assigned", "done", "not_done", "partial"]),
   note: z.string().max(2000).nullable().optional(),
 });

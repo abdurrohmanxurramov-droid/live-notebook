@@ -43,12 +43,17 @@ export async function subscribePush(): Promise<boolean> {
   // Push API не работает в кросс-доменных iframe (превью Lovable).
   // Откройте приложение в отдельной вкладке.
   let isIframe = false;
-  try { isIframe = window.self !== window.top; } catch { isIframe = true; }
+  try {
+    isIframe = window.self !== window.top;
+  } catch {
+    isIframe = true;
+  }
   if (isIframe) {
     throw new Error("Откройте приложение в отдельной вкладке — в превью push не работает");
   }
   const perm = await Notification.requestPermission();
-  if (perm === "denied") throw new Error("Разрешение отклонено. Включите уведомления в настройках браузера");
+  if (perm === "denied")
+    throw new Error("Разрешение отклонено. Включите уведомления в настройках браузера");
   if (perm !== "granted") throw new Error("Разрешение не получено");
   const reg = await getRegistration();
   if (!reg) throw new Error("Не удалось зарегистрировать service worker");

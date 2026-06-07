@@ -32,22 +32,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run lint (non-blocking baseline)
-        id: lint
-        continue-on-error: true
+      - name: Run lint
         run: npm run lint
-
-      - name: Report lint status
-        if: always()
-        shell: bash
-        run: |
-          if [[ "${{ steps.lint.outcome }}" == "success" ]]; then
-            echo "### Lint passed" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "::warning title=Lint baseline is currently failing::Review the lint step output. The failure is visible but does not block the build until the existing main-branch lint debt is fixed."
-            echo "### Lint reported existing errors" >> "$GITHUB_STEP_SUMMARY"
-            echo "The lint failure is non-blocking for now. Review the lint step output before merging." >> "$GITHUB_STEP_SUMMARY"
-          fi
 
       - name: Build application
         run: npm run build

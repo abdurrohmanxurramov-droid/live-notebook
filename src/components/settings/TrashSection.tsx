@@ -81,7 +81,9 @@ export function TrashSection() {
         rows.length === 0 ? null : (
           <Card key={table} className="p-4">
             <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">{TABLE_LABELS[table] ?? table}</span>
+              <span className="text-sm font-semibold text-foreground">
+                {TABLE_LABELS[table] ?? table}
+              </span>
               <Badge>{rows.length}</Badge>
             </div>
             <div className="space-y-2">
@@ -101,7 +103,10 @@ export function TrashSection() {
                   label = `${studentName(r.student_id as string)} · день ${r.day_of_week} · ${String(r.start_time ?? "").slice(0, 5)}`;
 
                 return (
-                  <div key={id} className="flex items-center justify-between gap-2 rounded-xl bg-secondary/40 p-2">
+                  <div
+                    key={id}
+                    className="flex items-center justify-between gap-2 rounded-xl bg-secondary/40 p-2"
+                  >
                     <span className="min-w-0 flex-1 truncate text-xs text-foreground">{label}</span>
                     <button
                       onClick={() => doRestore(table, id)}

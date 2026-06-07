@@ -1,16 +1,46 @@
 import { createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Avatar,
+  Badge,
+  Empty,
+  SectionTitle,
+} from "@/components/ui-bits";
 import { GlassChips } from "@/components/GlassChips";
 import { Sheet } from "@/components/Sheet";
-import { useStudents, useHomework, useMut, initials, type HomeworkStatus, type Homework } from "@/lib/db";
+import {
+  useStudents,
+  useHomework,
+  useMut,
+  initials,
+  type HomeworkStatus,
+  type Homework,
+} from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { BookOpen, Plus, Trash2, Check, X, MinusCircle, Clock, Filter } from "lucide-react";
+import { getErrorMessage } from "@/lib/utils";
+import {
+  BookOpen,
+  Plus,
+  Trash2,
+  Check,
+  X,
+  MinusCircle,
+  Clock,
+  Filter,
+  type LucideIcon,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/homework")({ component: HomeworkPage });
 
-const STATUS: Record<HomeworkStatus, { label: string; tone: "neutral" | "success" | "danger" | "gold"; icon: any }> = {
+const STATUS: Record<
+  HomeworkStatus,
+  { label: string; tone: "neutral" | "success" | "danger" | "gold"; icon: LucideIcon }
+> = {
   assigned: { label: "Задано", tone: "neutral", icon: Clock },
   done: { label: "Сдал", tone: "success", icon: Check },
   partial: { label: "Частично", tone: "gold", icon: MinusCircle },
@@ -29,11 +59,13 @@ function HomeworkPage() {
   useEffect(() => {
     const wantsNew =
       typeof location.search === "object" && location.search !== null
-        ? (location.search as Record<string, unknown>).new === 1 || (location.search as Record<string, unknown>).new === "1"
-        : typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1";
+        ? (location.search as Record<string, unknown>).new === 1 ||
+          (location.search as Record<string, unknown>).new === "1"
+        : typeof window !== "undefined" &&
+          new URLSearchParams(window.location.search).get("new") === "1";
     if (wantsNew) {
       setOpen(true);
-      navigate({ to: "/homework", search: {} as any, replace: true });
+      navigate({ href: "/homework", replace: true });
     }
   }, [location.search, navigate]);
 
@@ -71,7 +103,9 @@ function HomeworkPage() {
       <Card className="mt-3 p-3">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Успеваемость</div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Успеваемость
+            </div>
             <div className="num mt-1 text-2xl text-foreground">{stats.rate}%</div>
           </div>
           <Button variant="gold" onClick={() => setOpen(true)}>
@@ -79,7 +113,10 @@ function HomeworkPage() {
           </Button>
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
-          <div className="h-full rounded-full bg-[color:var(--success)]" style={{ width: `${stats.rate}%` }} />
+          <div
+            className="h-full rounded-full bg-[color:var(--success)]"
+            style={{ width: `${stats.rate}%` }}
+          />
         </div>
       </Card>
 
@@ -90,17 +127,25 @@ function HomeworkPage() {
           leading={<Filter className="h-4 w-4 shrink-0 text-muted-foreground" />}
           items={[
             { key: "all", label: "Все" },
-            ...(Object.keys(STATUS) as HomeworkStatus[]).map((k) => ({ key: k, label: STATUS[k].label })),
+            ...(Object.keys(STATUS) as HomeworkStatus[]).map((k) => ({
+              key: k,
+              label: STATUS[k].label,
+            })),
           ]}
         />
       </div>
 
-
       {students.length > 1 && (
-        <Select className="mt-2" value={studentFilter} onChange={(e) => setStudentFilter(e.target.value)}>
+        <Select
+          className="mt-2"
+          value={studentFilter}
+          onChange={(e) => setStudentFilter(e.target.value)}
+        >
           <option value="">Все ученики</option>
           {students.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </Select>
       )}
@@ -126,7 +171,15 @@ function HomeworkPage() {
   );
 }
 
-function MiniStat({ n, label, tone }: { n: number; label: string; tone: "neutral" | "success" | "danger" | "gold" }) {
+function MiniStat({
+  n,
+  label,
+  tone,
+}: {
+  n: number;
+  label: string;
+  tone: "neutral" | "success" | "danger" | "gold";
+}) {
   const cls: Record<string, string> = {
     neutral: "text-foreground",
     success: "text-[color:var(--success)]",
@@ -141,28 +194,41 @@ function MiniStat({ n, label, tone }: { n: number; label: string; tone: "neutral
   );
 }
 
-
 function HomeworkCard({ h, studentName }: { h: Homework; studentName: string }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState(h.note ?? "");
 
-  const setStatus = useMut(async (status: HomeworkStatus) => {
-    const { error } = await (await sb()).from("homework").update({ status }).eq("id", h.id);
-    if (error) throw error;
-  }, ["homework"]);
+  const setStatus = useMut(
+    async (status: HomeworkStatus) => {
+      const { error } = await (await sb()).from("homework").update({ status }).eq("id", h.id);
+      if (error) throw error;
+    },
+    ["homework"],
+  );
 
   const saveNote = useMut(async () => {
-    const { error } = await (await sb()).from("homework").update({ note: note.trim() || null }).eq("id", h.id);
+    const { error } = await (
+      await sb()
+    )
+      .from("homework")
+      .update({ note: note.trim() || null })
+      .eq("id", h.id);
     if (error) throw error;
   }, ["homework"]);
 
   const del = useMut(async () => {
-    const { error } = await (await sb()).from("homework").update({ deleted_at: new Date().toISOString() }).eq("id", h.id);
+    const { error } = await (await sb())
+      .from("homework")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", h.id);
     if (error) throw error;
   }, ["homework"]);
 
   const cfg = STATUS[h.status];
-  const overdue = h.status === "assigned" && h.due_date && new Date(h.due_date) < new Date(new Date().toDateString());
+  const overdue =
+    h.status === "assigned" &&
+    h.due_date &&
+    new Date(h.due_date) < new Date(new Date().toDateString());
 
   return (
     <Card className="p-3">
@@ -179,10 +245,17 @@ function HomeworkCard({ h, studentName }: { h: Homework; studentName: string }) 
             <span>Задано: {new Date(h.assigned_date).toLocaleDateString("ru-RU")}</span>
             {h.due_date && <span>До: {new Date(h.due_date).toLocaleDateString("ru-RU")}</span>}
           </div>
-          {h.note && <p className="mt-1.5 rounded-lg bg-secondary px-2 py-1.5 text-[12px] text-muted-foreground">{h.note}</p>}
+          {h.note && (
+            <p className="mt-1.5 rounded-lg bg-secondary px-2 py-1.5 text-[12px] text-muted-foreground">
+              {h.note}
+            </p>
+          )}
         </div>
         <button
-          onClick={async () => { await del.mutateAsync(undefined as never); toast.success("Удалено"); }}
+          onClick={async () => {
+            await del.mutateAsync(undefined as never);
+            toast.success("Удалено");
+          }}
           className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           aria-label="Удалить"
         >
@@ -206,7 +279,9 @@ function HomeworkCard({ h, studentName }: { h: Homework; studentName: string }) 
               key={k}
               onClick={() => setStatus.mutateAsync(k).then(() => toast.success(c.label))}
               className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-2 text-[10px] font-semibold transition-colors ${
-                active ? toneActive[c.tone] : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                active
+                  ? toneActive[c.tone]
+                  : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
               }`}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -224,7 +299,11 @@ function HomeworkCard({ h, studentName }: { h: Homework; studentName: string }) 
       </button>
       {noteOpen && (
         <div className="mt-2 flex gap-2">
-          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Комментарий..." />
+          <Input
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Комментарий..."
+          />
           <Button
             variant="outline"
             onClick={async () => {
@@ -272,41 +351,45 @@ function AddHomeworkSheet({
     <Sheet open={open} onClose={onClose} title="Добавить ДЗ">
       <div className="space-y-3">
         <div className="stagger-item" style={{ animationDelay: "40ms" }}>
-        <Field label="Ученик">
-          <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-            <option value="">— выберите —</option>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </Select>
-        </Field>
+          <Field label="Ученик">
+            <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+              <option value="">— выберите —</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
         </div>
         <div className="stagger-item" style={{ animationDelay: "95ms" }}>
-        <Field label="Задание">
-          <textarea
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            placeholder="Например: §12, упр. 4–7"
-            rows={3}
-            className="liquid-control w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground"
-          />
-        </Field>
+          <Field label="Задание">
+            <textarea
+              value={task}
+              onChange={(e) => setTask(e.target.value)}
+              placeholder="Например: §12, упр. 4–7"
+              rows={3}
+              className="liquid-control w-full rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground"
+            />
+          </Field>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="stagger-item" style={{ animationDelay: "150ms" }}>
-          <Field label="Задано">
-            <Input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} />
-          </Field>
+            <Field label="Задано">
+              <Input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} />
+            </Field>
           </div>
           <div className="stagger-item" style={{ animationDelay: "205ms" }}>
-          <Field label="Сдать до">
-            <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
-          </Field>
+            <Field label="Сдать до">
+              <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+            </Field>
           </div>
         </div>
       </div>
       <div className="mt-5 flex gap-2">
-        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>
+          Отмена
+        </Button>
         <Button
           variant="gold"
           className="liquid-action flex-1"
@@ -315,10 +398,11 @@ function AddHomeworkSheet({
             try {
               await add.mutateAsync(undefined as never);
               toast.success("Задание создано");
-              setTask(""); setDue("");
+              setTask("");
+              setDue("");
               onClose();
-            } catch (e: any) {
-              toast.error(e?.message ?? "Ошибка");
+            } catch (error: unknown) {
+              toast.error(getErrorMessage(error));
             }
           }}
         >

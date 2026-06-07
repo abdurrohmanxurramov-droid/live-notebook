@@ -14,16 +14,25 @@ function AuthErrorComponent({ error, reset }: { error: Error; reset: () => void 
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset?.(); }}
+            onClick={() => {
+              router.invalidate();
+              reset?.();
+            }}
             className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground"
           >
             Повторить
           </button>
-          <Link to="/" className="rounded-xl border border-border px-4 py-2 text-sm text-foreground">
+          <Link
+            to="/"
+            className="rounded-xl border border-border px-4 py-2 text-sm text-foreground"
+          >
             На главную
           </Link>
           <button
-            onClick={async () => { await supabase.auth.signOut(); window.location.href = "/auth"; }}
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = "/auth";
+            }}
             className="rounded-xl border border-border px-4 py-2 text-sm text-foreground"
           >
             Выйти
@@ -40,7 +49,10 @@ function AuthNotFound() {
       <div className="max-w-md text-center">
         <h1 className="text-5xl font-bold text-foreground">404</h1>
         <p className="mt-2 text-sm text-muted-foreground">Страница не найдена</p>
-        <Link to="/" className="mt-6 inline-block rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground">
+        <Link
+          to="/"
+          className="mt-6 inline-block rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground"
+        >
           На главную
         </Link>
       </div>
@@ -63,7 +75,8 @@ export const Route = createFileRoute("/_authenticated")({
           .select("onboarding_completed, gender")
           .eq("user_id", data.user.id)
           .maybeSingle();
-        const done = !!settings && (settings.onboarding_completed === true || settings.gender != null);
+        const done =
+          !!settings && (settings.onboarding_completed === true || settings.gender != null);
         if (!done) {
           throw redirect({ to: "/onboarding" });
         }

@@ -1,7 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Avatar,
+  Badge,
+  Empty,
+  SectionTitle,
+} from "@/components/ui-bits";
 import {
   useStudents,
   useFinance,
@@ -11,8 +20,10 @@ import {
   convertToRUB,
   convertToUSDT,
   convertToEGP,
+  type Finance,
 } from "@/lib/db";
 import { sb } from "@/lib/sb";
+import { getErrorMessage } from "@/lib/utils";
 import { RefreshCw, Trash2, Wallet } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/finance")({ component: FinancePage });
@@ -30,7 +41,8 @@ function FinancePage() {
   const totalsRUB = useMemo(() => {
     if (!rates) return { rub: 0, usdt: 0, egp: 0 };
     let rub = 0;
-    for (const f of finance) if (f.is_paid) rub += convertToRUB(Number(f.amount), f.currency, rates);
+    for (const f of finance)
+      if (f.is_paid) rub += convertToRUB(Number(f.amount), f.currency, rates);
     return {
       rub: Math.round(rub),
       usdt: Math.round((rub / rates.usd_to_rub) * 100) / 100,
@@ -54,7 +66,11 @@ function FinancePage() {
 
       <SectionTitle>Ученики</SectionTitle>
       {students.length === 0 ? (
-        <Empty icon={<Wallet className="h-8 w-8" />} title="Нет учеников" hint="Сначала добавьте ученика" />
+        <Empty
+          icon={<Wallet className="h-8 w-8" />}
+          title="Нет учеников"
+          hint="Сначала добавьте ученика"
+        />
       ) : (
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
           {students.map((s) => (
@@ -81,7 +97,9 @@ function FinancePage() {
 function SumCard({ label, value }: { label: string; value: string }) {
   return (
     <Card className="p-4">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
       <div className="num mt-1 text-xl text-foreground">{value}</div>
     </Card>
   );
@@ -96,7 +114,9 @@ export function RatesCard() {
 
   const save = useMut(async () => {
     if (!rates) return;
-    const { error } = await (await sb())
+    const { error } = await (
+      await sb()
+    )
       .from("rates")
       .update({
         usd_to_rub: Number(usdRub || rates.usd_to_rub),
@@ -120,8 +140,8 @@ export function RatesCard() {
       setUsdEgp(String(Math.round(egp * 100) / 100));
       if (!usdtEgp) setUsdtEgp(String(Math.round(egp * 100) / 100));
       toast.success("Курс обновлён");
-    } catch (e: any) {
-      toast.error(e?.message ?? "Не удалось получить курс");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Не удалось получить курс"));
     } finally {
       setLoading(false);
     }
@@ -137,16 +157,35 @@ export function RatesCard() {
         </Button>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <RateInput label="1 USD = ₽" value={usdRub} onChange={setUsdRub} placeholder={String(rates?.usd_to_rub ?? "")} />
-        <RateInput label="1 USDT = £" value={usdtEgp} onChange={setUsdtEgp} placeholder={String(rates?.usdt_to_egp ?? "")} />
-        <RateInput label="1 USD = £" value={usdEgp} onChange={setUsdEgp} placeholder={String(rates?.usd_to_egp ?? "")} />
+        <RateInput
+          label="1 USD = ₽"
+          value={usdRub}
+          onChange={setUsdRub}
+          placeholder={String(rates?.usd_to_rub ?? "")}
+        />
+        <RateInput
+          label="1 USDT = £"
+          value={usdtEgp}
+          onChange={setUsdtEgp}
+          placeholder={String(rates?.usdt_to_egp ?? "")}
+        />
+        <RateInput
+          label="1 USD = £"
+          value={usdEgp}
+          onChange={setUsdEgp}
+          placeholder={String(rates?.usd_to_egp ?? "")}
+        />
       </div>
       <Button
         variant="primary"
         className="mt-3 w-full"
         onClick={async () => {
-          try { await save.mutateAsync(undefined as never); toast.success("Сохранено"); }
-          catch (e: any) { toast.error(e?.message ?? "Ошибка"); }
+          try {
+            await save.mutateAsync(undefined as never);
+            toast.success("Сохранено");
+          } catch (error: unknown) {
+            toast.error(getErrorMessage(error));
+          }
         }}
       >
         Сохранить курсы
@@ -155,11 +194,26 @@ export function RatesCard() {
   );
 }
 
-function RateInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (s: string) => void; placeholder: string }) {
+function RateInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (s: string) => void;
+  placeholder: string;
+}) {
   return (
     <label className="block">
       <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
-      <Input inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+      <Input
+        inputMode="decimal"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
     </label>
   );
 }
@@ -204,7 +258,10 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <Select value={currency} onChange={(e) => setCurrency(e.target.value as any)}>
+        <Select
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value as Finance["currency"])}
+        >
           <option value="RUB">₽ RUB</option>
           <option value="USD">$ USD</option>
           <option value="EGP">£ EGP</option>
@@ -231,7 +288,9 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
       <button
         onClick={() => setIsPaid((p) => !p)}
         className={`mt-2 w-full rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
-          isPaid ? "bg-[color:var(--success)]/15 text-[color:var(--success)]" : "bg-destructive/15 text-destructive"
+          isPaid
+            ? "bg-[color:var(--success)]/15 text-[color:var(--success)]"
+            : "bg-destructive/15 text-destructive"
         }`}
       >
         {isPaid ? "✓ Оплачено" : "✗ Не оплачено"}
@@ -246,8 +305,8 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
             await add.mutateAsync(undefined as never);
             toast.success("Платёж добавлен");
             setAmount("");
-          } catch (e: any) {
-            toast.error(e?.message ?? "Ошибка");
+          } catch (error: unknown) {
+            toast.error(getErrorMessage(error));
           }
         }}
       >
@@ -257,13 +316,19 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
   );
 }
 
-function PaymentRow({ f, name }: { f: any; name: string }) {
+function PaymentRow({ f, name }: { f: Finance; name: string }) {
   const del = useMut(async () => {
-    const { error } = await (await sb()).from("finance").update({ deleted_at: new Date().toISOString() }).eq("id", f.id);
+    const { error } = await (await sb())
+      .from("finance")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", f.id);
     if (error) throw error;
   }, ["finance"]);
   const toggle = useMut(async () => {
-    const { error } = await (await sb()).from("finance").update({ is_paid: !f.is_paid }).eq("id", f.id);
+    const { error } = await (await sb())
+      .from("finance")
+      .update({ is_paid: !f.is_paid })
+      .eq("id", f.id);
     if (error) throw error;
   }, ["finance"]);
 
@@ -285,14 +350,19 @@ function PaymentRow({ f, name }: { f: any; name: string }) {
         <button
           onClick={() => toggle.mutateAsync(undefined as never)}
           className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-            f.is_paid ? "bg-[color:var(--success)]/15 text-[color:var(--success)]" : "bg-destructive/15 text-destructive"
+            f.is_paid
+              ? "bg-[color:var(--success)]/15 text-[color:var(--success)]"
+              : "bg-destructive/15 text-destructive"
           }`}
         >
           {f.is_paid ? "Оплачено" : "Долг"}
         </button>
       </div>
       <button
-        onClick={async () => { await del.mutateAsync(undefined as never); toast.success("Удалено"); }}
+        onClick={async () => {
+          await del.mutateAsync(undefined as never);
+          toast.success("Удалено");
+        }}
         className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         aria-label="Удалить"
       >

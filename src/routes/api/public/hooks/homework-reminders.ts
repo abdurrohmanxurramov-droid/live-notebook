@@ -39,9 +39,7 @@ async function handle() {
     .select("user_id, remind_homework")
     .in("user_id", ownerIds);
   const allowed = new Set(
-    (settings ?? [])
-      .filter((s) => s.remind_homework !== false)
-      .map((s) => s.user_id)
+    (settings ?? []).filter((s) => s.remind_homework !== false).map((s) => s.user_id),
   );
   ownerIds.forEach((id) => {
     if (!(settings ?? []).some((s) => s.user_id === id)) allowed.add(id);

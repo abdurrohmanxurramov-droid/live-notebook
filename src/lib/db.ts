@@ -12,7 +12,10 @@ export type Student = {
   status: StudentStatus;
 };
 
-export const STUDENT_STATUS_META: Record<StudentStatus, { label: string; tone: "success" | "gold" | "neutral" | "danger" }> = {
+export const STUDENT_STATUS_META: Record<
+  StudentStatus,
+  { label: string; tone: "success" | "gold" | "neutral" | "danger" }
+> = {
   active: { label: "Активный", tone: "success" },
   paused: { label: "На паузе", tone: "gold" },
   completed: { label: "Завершён", tone: "neutral" },

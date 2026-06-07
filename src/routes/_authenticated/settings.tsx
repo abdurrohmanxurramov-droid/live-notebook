@@ -4,7 +4,13 @@ import { Card, Button, SectionTitle } from "@/components/ui-bits";
 import { RatesCard } from "./finance";
 import { Moon, Sun, Info, Heart, Bell, BellOff, LogOut, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { pushSupported, isSubscribed, subscribePush, unsubscribePush, getRegistration } from "@/lib/push";
+import {
+  pushSupported,
+  isSubscribed,
+  subscribePush,
+  unsubscribePush,
+  getRegistration,
+} from "@/lib/push";
 import { sendTestPush } from "@/lib/push.functions";
 import { regenerateLessons } from "@/lib/lessons.functions";
 import { useServerFn } from "@tanstack/react-start";
@@ -50,7 +56,10 @@ function SettingsPage() {
       setInIframe(true);
     }
     if (typeof Notification !== "undefined") setPermission(Notification.permission);
-    if (s) isSubscribed().then(setSubscribed).catch(() => {});
+    if (s)
+      isSubscribed()
+        .then(setSubscribed)
+        .catch(() => {});
   }, []);
 
   function toggle() {
@@ -147,13 +156,13 @@ function SettingsPage() {
 
       <ThemePicker />
 
-
       <SectionTitle>Уведомления</SectionTitle>
       {inIframe && (
         <Card className="mb-2 border-amber-500/30 bg-amber-500/5 p-4 text-sm">
           <div className="mb-2 font-medium text-foreground">Push не работает в превью</div>
           <div className="mb-3 text-muted-foreground">
-            Браузер блокирует уведомления внутри встроенного окна Lovable. Откройте приложение в отдельной вкладке, чтобы включить push.
+            Браузер блокирует уведомления внутри встроенного окна Lovable. Откройте приложение в
+            отдельной вкладке, чтобы включить push.
           </div>
           <Button
             variant="outline"
@@ -178,17 +187,21 @@ function SettingsPage() {
           className="flex w-full items-center justify-between text-left disabled:opacity-60"
         >
           <span className="flex items-center gap-3">
-            <span className={`flex h-10 w-10 items-center justify-center rounded-full ${subscribed ? "bg-emerald-500/15 text-emerald-500" : "bg-accent/15 text-accent"}`}>
+            <span
+              className={`flex h-10 w-10 items-center justify-center rounded-full ${subscribed ? "bg-emerald-500/15 text-emerald-500" : "bg-accent/15 text-accent"}`}
+            >
               {subscribed ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
             </span>
             <span className="flex flex-col">
-              <span className="text-[15px] font-semibold text-foreground">Push за 10 минут до урока</span>
+              <span className="text-[15px] font-semibold text-foreground">
+                Push за 10 минут до урока
+              </span>
               <span className="text-xs text-muted-foreground">
                 {!supported
                   ? "Браузер не поддерживает (на iOS установите PWA на главный экран)"
                   : subscribed
-                  ? "Включено на этом устройстве"
-                  : "Получать напоминания по расписанию"}
+                    ? "Включено на этом устройстве"
+                    : "Получать напоминания по расписанию"}
               </span>
             </span>
           </span>
@@ -218,7 +231,8 @@ function SettingsPage() {
       <SectionTitle>История уроков</SectionTitle>
       <Card className="p-4">
         <div className="mb-3 text-sm text-muted-foreground">
-          Сгенерировать уроки из расписания за последние 3 месяца и на месяц вперёд. Уже существующие уроки не затрагиваются.
+          Сгенерировать уроки из расписания за последние 3 месяца и на месяц вперёд. Уже
+          существующие уроки не затрагиваются.
         </div>
         <Button variant="outline" className="w-full" disabled={busy} onClick={regenerate}>
           <RefreshCw className="h-4 w-4" /> Пересоздать историю
@@ -234,7 +248,13 @@ function SettingsPage() {
       <SectionTitle>Аккаунт</SectionTitle>
       <Card className="p-4">
         <div className="mb-3 text-sm text-muted-foreground">
-          {email ? <>Вы вошли как <span className="font-medium text-foreground">{email}</span></> : "—"}
+          {email ? (
+            <>
+              Вы вошли как <span className="font-medium text-foreground">{email}</span>
+            </>
+          ) : (
+            "—"
+          )}
         </div>
         <Button variant="outline" className="w-full" onClick={handleLogout}>
           <LogOut className="h-4 w-4" /> Выйти
@@ -253,8 +273,8 @@ function SettingsPage() {
           </div>
         </div>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          Премиум-блокнот для учёта учеников, посещаемости и оплат. Работает на телефоне,
-          планшете и компьютере. Все данные сохраняются в облаке.
+          Премиум-блокнот для учёта учеников, посещаемости и оплат. Работает на телефоне, планшете и
+          компьютере. Все данные сохраняются в облаке.
         </p>
         <div className="mt-4 flex items-center gap-1 text-xs text-muted-foreground">
           Сделано с <Heart className="h-3 w-3 text-destructive" /> в Lovable

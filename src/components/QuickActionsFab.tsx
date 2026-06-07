@@ -58,7 +58,9 @@ export function QuickActionsFab() {
         setPos(clampPos(saved));
         return;
       }
-    } catch {}
+    } catch {
+      // Ignore malformed saved positions and use the default.
+    }
     setPos(getDefaultPos());
   }, []);
 
@@ -72,11 +74,42 @@ export function QuickActionsFab() {
   if (pathname.startsWith("/auth")) return null;
 
   const actions = [
-    { icon: GraduationCap, label: "Добавить ученика", hint: "Новая карточка", onClick: () => navigate({ to: "/students", search: { new: 1 } as any }) },
-    { icon: Wallet, label: "Добавить платёж", hint: "Финансы", onClick: () => navigate({ to: "/finance" }) },
-    { icon: CalendarCheck, label: "Отметить посещаемость", hint: "Журнал", onClick: () => navigate({ to: "/attendance" }) },
-    { icon: BookOpen, label: "Добавить ДЗ", hint: "Домашнее задание", onClick: () => { setOpen(false); navigate({ to: "/homework", search: { new: 1 } as any }); } },
-    { icon: CalendarDays, label: "Запланировать урок", hint: "Быстрое создание", onClick: () => { setOpen(false); setLessonOpen(true); } },
+    {
+      icon: GraduationCap,
+      label: "Добавить ученика",
+      hint: "Новая карточка",
+      onClick: () => navigate({ href: "/students?new=1" }),
+    },
+    {
+      icon: Wallet,
+      label: "Добавить платёж",
+      hint: "Финансы",
+      onClick: () => navigate({ to: "/finance" }),
+    },
+    {
+      icon: CalendarCheck,
+      label: "Отметить посещаемость",
+      hint: "Журнал",
+      onClick: () => navigate({ to: "/attendance" }),
+    },
+    {
+      icon: BookOpen,
+      label: "Добавить ДЗ",
+      hint: "Домашнее задание",
+      onClick: () => {
+        setOpen(false);
+        navigate({ href: "/homework?new=1" });
+      },
+    },
+    {
+      icon: CalendarDays,
+      label: "Запланировать урок",
+      hint: "Быстрое создание",
+      onClick: () => {
+        setOpen(false);
+        setLessonOpen(true);
+      },
+    },
   ];
 
   const onPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -110,7 +143,9 @@ export function QuickActionsFab() {
     if (!info) return;
     try {
       (e.currentTarget as HTMLButtonElement).releasePointerCapture(info.pointerId);
-    } catch {}
+    } catch {
+      // Pointer capture may already be released by the browser.
+    }
     const wasDrag = info.moved;
     dragInfo.current = null;
     setDragging(false);
@@ -126,7 +161,9 @@ export function QuickActionsFab() {
       setPos(snapped);
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(snapped));
-      } catch {}
+      } catch {
+        // Storage can be unavailable in private browsing contexts.
+      }
     } else {
       setOpen(true);
     }
@@ -157,7 +194,10 @@ export function QuickActionsFab() {
           aria-hidden
           className="pointer-events-none absolute -inset-y-1 -left-1/2 w-1/2 -skew-x-12 bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100"
         />
-        <Plus className={`relative h-6 w-6 transition-transform duration-300 ${dragging ? "" : "group-hover:rotate-90"}`} strokeWidth={2.5} />
+        <Plus
+          className={`relative h-6 w-6 transition-transform duration-300 ${dragging ? "" : "group-hover:rotate-90"}`}
+          strokeWidth={2.5}
+        />
       </button>
 
       <Sheet open={open} onClose={() => setOpen(false)} title="Быстрые действия">
@@ -168,7 +208,10 @@ export function QuickActionsFab() {
               <button
                 key={a.label}
                 style={{ animationDelay: `${60 + i * 55}ms` }}
-                onClick={() => { a.onClick(); if (a.label !== "Запланировать урок") setOpen(false); }}
+                onClick={() => {
+                  a.onClick();
+                  if (a.label !== "Запланировать урок") setOpen(false);
+                }}
                 className="liquid-action stagger-item group relative flex min-h-[64px] items-center gap-3 overflow-hidden rounded-2xl p-3 text-left transition-all duration-300 ease-out active:scale-[0.98]"
               >
                 <span

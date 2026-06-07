@@ -43,7 +43,7 @@ export async function sendPushTo(sub: PushSubRow, payload: PushPayload) {
         keys: { p256dh: sub.p256dh, auth: sub.auth },
       },
       JSON.stringify(payload),
-      { TTL: 600 }
+      { TTL: 600 },
     );
     return { ok: true as const };
   } catch (e: unknown) {

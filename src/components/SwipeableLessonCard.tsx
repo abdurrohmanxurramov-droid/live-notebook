@@ -12,7 +12,13 @@ type Props = {
 
 const THRESHOLD = 96; // px to trigger an action
 
-export function SwipeableLessonCard({ children, enabled = true, onComplete, onCancel, onReschedule }: Props) {
+export function SwipeableLessonCard({
+  children,
+  enabled = true,
+  onComplete,
+  onCancel,
+  onReschedule,
+}: Props) {
   const [dx, setDx] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startX = useRef(0);
@@ -42,7 +48,11 @@ export function SwipeableLessonCard({ children, enabled = true, onComplete, onCa
       }
       if (Math.abs(x) > 8) {
         lockedH.current = true;
-        try { (e.target as Element).setPointerCapture?.(e.pointerId); } catch {}
+        try {
+          (e.target as Element).setPointerCapture?.(e.pointerId);
+        } catch {
+          // Pointer capture is best-effort on touch devices.
+        }
       }
     }
     if (lockedH.current) {

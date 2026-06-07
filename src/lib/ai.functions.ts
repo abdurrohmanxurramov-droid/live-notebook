@@ -1,20 +1,35 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+import { getErrorMessage } from "@/lib/utils";
+
+type ToolCall = {
+  id: string;
+  function?: {
+    name?: string;
+    arguments?: string;
+  };
+};
 
 const chatInputSchema = z.object({
-  userText: z.string().trim().min(1, "Сообщение не может быть пустым").max(4000, "Слишком длинное сообщение"),
+  userText: z
+    .string()
+    .trim()
+    .min(1, "Сообщение не может быть пустым")
+    .max(4000, "Слишком длинное сообщение"),
 });
 
 type Msg = {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
   tool_call_id?: string;
-  tool_calls?: any[];
+  tool_calls?: ToolCall[];
   name?: string;
 };
 
-type ActionLog = { tool: string; args: any; result: any; ok: boolean };
+type ActionLog = { tool: string; args: unknown; result: unknown; ok: boolean };
 
 // ---------- Tool definitions for the model ----------
 const tools = [
@@ -78,7 +93,10 @@ const tools = [
         type: "object",
         properties: {
           student_id: { type: "string" },
-          day_of_week: { type: "number", description: "День недели: 0=пн, 1=вт, 2=ср, 3=чт, 4=пт, 5=сб, 6=вс" },
+          day_of_week: {
+            type: "number",
+            description: "День недели: 0=пн, 1=вт, 2=ср, 3=чт, 4=пт, 5=сб, 6=вс",
+          },
           start_time: { type: "string", description: "Время HH:MM" },
           duration_min: { type: "number" },
         },
@@ -219,7 +237,12 @@ const tools = [
 ];
 
 // ---------- Tool executor ----------
-async function execTool(name: string, args: any, supabase: any, userId: string) {
+async function execTool(
+  name: string,
+  args: Record<string, unknown>,
+  supabase: SupabaseClient<Database>,
+  userId: string,
+) {
   switch (name) {
     case "list_students": {
       const { data, error } = await supabase
@@ -247,7 +270,12 @@ async function execTool(name: string, args: any, supabase: any, userId: string) 
     }
     case "update_student": {
       const { id, ...rest } = args;
-      const { data, error } = await supabase.from("students").update(rest).eq("id", id).select().single();
+      const { data, error } = await supabase
+        .from("students")
+        .update(rest)
+        .eq("id", id)
+        .select()
+        .single();
       if (error) throw error;
       return data;
     }
@@ -429,19 +457,31 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(60);
 
-    const prior = (history ?? []).reverse().map((m: any) => {
-      const msg: any = { role: m.role, content: m.content ?? "" };
-      if (m.tool_calls) msg.tool_calls = m.tool_calls;
-      if (m.tool_call_id) msg.tool_call_id = m.tool_call_id;
-      if (m.name) msg.name = m.name;
+    const prior = (history ?? []).reverse().map((message) => {
+      const msg: Msg = {
+        role: message.role as Msg["role"],
+        content: message.content ?? "",
+      };
+      if (Array.isArray(message.tool_calls)) {
+        msg.tool_calls = message.tool_calls as unknown as ToolCall[];
+      }
+      if (message.tool_call_id) msg.tool_call_id = message.tool_call_id;
+      if (message.name) msg.name = message.name;
       return msg;
     });
 
     // 3. Собираем богатый контекст
     const [{ data: students }, { data: slots }, { data: settings }] = await Promise.all([
       supabase.from("students").select("id, name, subject, days_per_week").is("deleted_at", null),
-      supabase.from("schedule_slots").select("student_id, day_of_week, start_time, duration_min").is("deleted_at", null),
-      supabase.from("user_settings").select("default_currency, default_lesson_price, default_lesson_duration").eq("user_id", userId).maybeSingle(),
+      supabase
+        .from("schedule_slots")
+        .select("student_id, day_of_week, start_time, duration_min")
+        .is("deleted_at", null),
+      supabase
+        .from("user_settings")
+        .select("default_currency, default_lesson_price, default_lesson_duration")
+        .eq("user_id", userId)
+        .maybeSingle(),
     ]);
 
     const today = new Date();
@@ -451,12 +491,18 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
 
     const studentsStr =
       (students ?? [])
-        .map((s: any) => `- ${s.name} [id=${s.id}] ${s.subject ?? "?"}, ${s.days_per_week ?? 0} р/нед`)
+        .map(
+          (student) =>
+            `- ${student.name} [id=${student.id}] ${student.subject ?? "?"}, ${student.days_per_week ?? 0} р/нед`,
+        )
         .join("\n") || "(пока нет учеников)";
 
     const slotsStr =
       (slots ?? [])
-        .map((s: any) => `- ${dayNames[s.day_of_week]} ${s.start_time} (${s.duration_min}мин) ученик=${s.student_id}`)
+        .map(
+          (slot) =>
+            `- ${dayNames[slot.day_of_week]} ${slot.start_time} (${slot.duration_min}мин) ученик=${slot.student_id}`,
+        )
         .join("\n") || "(расписание пустое)";
 
     const settingsStr = settings
@@ -492,7 +538,7 @@ ${studentsStr}
 ${slotsStr}`,
     };
 
-    const messages: any[] = [system, ...prior];
+    const messages: Msg[] = [system, ...prior];
     const actions: ActionLog[] = [];
     const MAX_STEPS = 10;
     let finalReply = "";
@@ -511,7 +557,8 @@ ${slotsStr}`,
 
       if (!res.ok) {
         if (res.status === 429) throw new Error("Слишком много запросов, попробуйте позже.");
-        if (res.status === 402) throw new Error("Закончились кредиты ИИ. Пополните в Settings → Workspace → Usage.");
+        if (res.status === 402)
+          throw new Error("Закончились кредиты ИИ. Пополните в Settings → Workspace → Usage.");
         const t = await res.text().catch(() => "");
         throw new Error(`AI ошибка ${res.status}: ${t.slice(0, 200)}`);
       }
@@ -543,19 +590,19 @@ ${slotsStr}`,
 
       for (const tc of toolCalls) {
         const fname = tc.function?.name;
-        let fargs: any = {};
+        let fargs: Record<string, unknown> = {};
         try {
           fargs = tc.function?.arguments ? JSON.parse(tc.function.arguments) : {};
         } catch {
           fargs = {};
         }
-        let result: any;
+        let result: unknown;
         let ok = true;
         try {
           result = await execTool(fname, fargs, supabase, userId);
-        } catch (e: any) {
+        } catch (error: unknown) {
           ok = false;
-          result = { error: e?.message ?? String(e) };
+          result = { error: getErrorMessage(error, String(error)) };
         }
         actions.push({ tool: fname, args: fargs, result, ok });
         const toolContent = JSON.stringify(result).slice(0, 4000);
@@ -595,7 +642,7 @@ export const getChatHistory = createServerFn({ method: "GET" })
       .order("created_at", { ascending: true })
       .limit(200);
     if (error) throw error;
-    return (data ?? []).filter((m: any) => m.content && m.content.trim().length > 0);
+    return (data ?? []).filter((message) => message.content && message.content.trim().length > 0);
   });
 
 export const clearChatHistory = createServerFn({ method: "POST" })

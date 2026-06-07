@@ -12,22 +12,20 @@ export const savePushSubscription = createServerFn({ method: "POST" })
         auth: z.string().min(1).max(500),
         user_agent: z.string().max(500).optional(),
       })
-      .parse(input)
+      .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { error } = await supabase
-      .from("push_subscriptions")
-      .upsert(
-        {
-          owner_id: userId,
-          endpoint: data.endpoint,
-          p256dh: data.p256dh,
-          auth: data.auth,
-          user_agent: data.user_agent ?? null,
-        },
-        { onConflict: "endpoint" }
-      );
+    const { error } = await supabase.from("push_subscriptions").upsert(
+      {
+        owner_id: userId,
+        endpoint: data.endpoint,
+        p256dh: data.p256dh,
+        auth: data.auth,
+        user_agent: data.user_agent ?? null,
+      },
+      { onConflict: "endpoint" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });

@@ -4,6 +4,12 @@
 
 type Intensity = "light" | "medium" | "heavy" | "success" | "warning" | "error" | "selection";
 
+declare global {
+  interface Window {
+    __hapticsInstalled?: boolean;
+  }
+}
+
 const patterns: Record<Intensity, number | number[]> = {
   selection: 8,
   light: 12,
@@ -31,14 +37,14 @@ export function haptic(intensity: Intensity = "light") {
 /** Global delegation: vibrate on every tap of an interactive element. */
 export function installGlobalHaptics() {
   if (typeof window === "undefined") return;
-  if ((window as any).__hapticsInstalled) return;
-  (window as any).__hapticsInstalled = true;
+  if (window.__hapticsInstalled) return;
+  window.__hapticsInstalled = true;
 
   const handler = (e: Event) => {
     const target = e.target as HTMLElement | null;
     if (!target) return;
     const el = target.closest(
-      'button, a, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], input[type="checkbox"], input[type="radio"], label, summary'
+      'button, a, [role="button"], [role="tab"], [role="switch"], [role="menuitem"], input[type="checkbox"], input[type="radio"], label, summary',
     ) as HTMLElement | null;
     if (!el) return;
     if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") return;

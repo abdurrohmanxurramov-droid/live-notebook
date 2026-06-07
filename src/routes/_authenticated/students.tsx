@@ -2,16 +2,44 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Avatar,
+  Badge,
+  Empty,
+  SectionTitle,
+} from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
 import { GlassChips } from "@/components/GlassChips";
-import { useStudents, useFinance, useMut, initials, STUDENT_STATUS_META, groupByStudentId, type Student, type StudentStatus } from "@/lib/db";
+import {
+  useStudents,
+  useFinance,
+  useMut,
+  initials,
+  STUDENT_STATUS_META,
+  groupByStudentId,
+  type Student,
+  type StudentStatus,
+} from "@/lib/db";
 import { sb } from "@/lib/sb";
+import { getErrorMessage } from "@/lib/utils";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
 import { regenerateLessons } from "@/lib/lessons.functions";
 import { useServerFn } from "@tanstack/react-start";
-import { GraduationCap, Plus, Search, Trash2, Phone, BookOpen, ChevronRight, Pencil, AlertCircle } from "lucide-react";
-
+import {
+  GraduationCap,
+  Plus,
+  Search,
+  Trash2,
+  Phone,
+  BookOpen,
+  ChevronRight,
+  Pencil,
+  AlertCircle,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/students")({ component: StudentsPage });
 
@@ -33,7 +61,10 @@ function StudentsPage() {
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("new") === "1") {
+    if (
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("new") === "1"
+    ) {
       setOpen(true);
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -85,7 +116,9 @@ function StudentsPage() {
   // Stats: counts per status from active (non-deleted) students
   const statusCounts = useMemo(() => {
     const c: Record<StudentStatus, number> = { active: 0, paused: 0, completed: 0, archived: 0 };
-    activeStudents.forEach((s) => { c[s.status] = (c[s.status] ?? 0) + 1; });
+    activeStudents.forEach((s) => {
+      c[s.status] = (c[s.status] ?? 0) + 1;
+    });
     return c;
   }, [activeStudents]);
 
@@ -104,7 +137,6 @@ function StudentsPage() {
     return m;
   }, [finance, today]);
 
-
   const subjects = useMemo(() => {
     const set = new Set<string>();
     activeStudents.forEach((s) => {
@@ -116,8 +148,12 @@ function StudentsPage() {
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = baseList.filter((s) => {
-      if (statusFilter !== "all" && statusFilter !== "trash" && s.status !== statusFilter) return false;
-      if (needle && !((s.name + " " + (s.subject ?? "") + " " + (s.phone ?? "")).toLowerCase().includes(needle)))
+      if (statusFilter !== "all" && statusFilter !== "trash" && s.status !== statusFilter)
+        return false;
+      if (
+        needle &&
+        !(s.name + " " + (s.subject ?? "") + " " + (s.phone ?? "")).toLowerCase().includes(needle)
+      )
         return false;
       if (subjectFilter && (s.subject ?? "") !== subjectFilter) return false;
       if (debtFilter !== "all") {
@@ -148,12 +184,25 @@ function StudentsPage() {
       }
     });
     return sorted;
-  }, [baseList, statusFilter, q, subjectFilter, debtFilter, upcomingOnly, upcomingByStudent, financeByStudent, sortBy]);
+  }, [
+    baseList,
+    statusFilter,
+    q,
+    subjectFilter,
+    debtFilter,
+    upcomingOnly,
+    upcomingByStudent,
+    financeByStudent,
+    sortBy,
+  ]);
 
   const softDelFn = useServerFn(softDeleteStudent);
-  const del = useMut(async (id: string) => {
-    await softDelFn({ data: { id } });
-  }, ["students", "finance", "attendance", "schedule", "homework", "lessons"]);
+  const del = useMut(
+    async (id: string) => {
+      await softDelFn({ data: { id } });
+    },
+    ["students", "finance", "attendance", "schedule", "homework", "lessons"],
+  );
 
   const Chip = ({
     active,
@@ -173,14 +222,15 @@ function StudentsPage() {
           : "text-muted-foreground ring-white/30 dark:ring-white/10 hover:text-foreground"
       }`}
       style={{
-        background: active ? "color-mix(in oklab, var(--accent) 28%, var(--glass-bg))" : "var(--glass-bg)",
+        background: active
+          ? "color-mix(in oklab, var(--accent) 28%, var(--glass-bg))"
+          : "var(--glass-bg)",
         backdropFilter: "blur(var(--glass-blur)) saturate(180%)",
         WebkitBackdropFilter: "blur(var(--glass-blur)) saturate(180%)",
       }}
     >
       {children}
     </button>
-
   );
 
   return (
@@ -191,7 +241,12 @@ function StudentsPage() {
       <div className="mt-4 flex items-center gap-2">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Поиск ученика..." className="pl-9" value={q} onChange={(e) => setQ(e.target.value)} />
+          <Input
+            placeholder="Поиск ученика..."
+            className="pl-9"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
         </div>
         <Button variant="gold" onClick={() => setOpen(true)}>
           <Plus className="h-4 w-4" /> Добавить
@@ -207,7 +262,9 @@ function StudentsPage() {
             <Select value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value)}>
               <option value="">Все</option>
               {subjects.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </Select>
           </label>
@@ -227,7 +284,6 @@ function StudentsPage() {
         </div>
         <GlassChips<DebtFilter>
           active={debtFilter}
-
           onChange={(k) => setDebtFilter(k)}
           items={[
             { key: "all", label: "Все оплаты" },
@@ -241,12 +297,16 @@ function StudentsPage() {
             Урок в ближайшие 7 дней
           </Chip>
         </div>
-
       </Card>
 
       {/* Status stats + filter */}
       <div className="mt-4 -mx-1 flex gap-1.5 overflow-x-auto px-1 pt-2 pb-1">
-        <StatusStat label="Все" count={activeStudents.length} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+        <StatusStat
+          label="Все"
+          count={activeStudents.length}
+          active={statusFilter === "all"}
+          onClick={() => setStatusFilter("all")}
+        />
         {(["active", "paused", "completed", "archived"] as StudentStatus[]).map((st) => (
           <StatusStat
             key={st}
@@ -257,16 +317,27 @@ function StudentsPage() {
             onClick={() => setStatusFilter(st)}
           />
         ))}
-        <StatusStat label="Корзина" count={trashStudents.length} active={statusFilter === "trash"} onClick={() => setStatusFilter("trash")} />
+        <StatusStat
+          label="Корзина"
+          count={trashStudents.length}
+          active={statusFilter === "trash"}
+          onClick={() => setStatusFilter("trash")}
+        />
       </div>
 
-      <SectionTitle>{filtered.length} {filtered.length === 1 ? "ученик" : "учеников"}</SectionTitle>
+      <SectionTitle>
+        {filtered.length} {filtered.length === 1 ? "ученик" : "учеников"}
+      </SectionTitle>
 
       {filtered.length === 0 ? (
         <Empty
           icon={<GraduationCap className="h-8 w-8" />}
           title={baseList.length === 0 ? "Список пуст" : "Никого не найдено"}
-          hint={baseList.length === 0 ? "Нажмите «Добавить», чтобы начать" : "Попробуйте изменить фильтры"}
+          hint={
+            baseList.length === 0
+              ? "Нажмите «Добавить», чтобы начать"
+              : "Попробуйте изменить фильтры"
+          }
         />
       ) : (
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(300px,1fr))]">
@@ -278,7 +349,11 @@ function StudentsPage() {
             return (
               <Card key={s.id} className={`p-4 ${overdue ? "ring-1 ring-destructive/60" : ""}`}>
                 <div className="flex items-start gap-3">
-                  <Link to="/students/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-start gap-3">
+                  <Link
+                    to="/students/$id"
+                    params={{ id: s.id }}
+                    className="flex min-w-0 flex-1 items-start gap-3"
+                  >
                     <Avatar initials={initials(s.name)} />
                     <div className="min-w-0 flex-1">
                       <div className="name-italic flex items-center gap-1 truncate text-[15px] font-semibold text-foreground">
@@ -311,17 +386,24 @@ function StudentsPage() {
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <div className="rounded-xl bg-secondary px-3 py-2">
                     <div className="num text-lg text-foreground">{s.days_per_week}</div>
-                    <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">дн/нед</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      дн/нед
+                    </div>
                   </div>
                   <div className="rounded-xl bg-secondary px-3 py-2">
                     <div className="num text-lg text-foreground">{s.days_per_week * 4}</div>
-                    <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">уроков/мес</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      уроков/мес
+                    </div>
                   </div>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                   {s.phone ? (
-                    <a href={`tel:${s.phone}`} className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground">
+                    <a
+                      href={`tel:${s.phone}`}
+                      className="flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
+                    >
                       <Phone className="h-3 w-3" /> {s.phone}
                     </a>
                   ) : (
@@ -333,7 +415,8 @@ function StudentsPage() {
                     <Badge tone={statusMeta.tone}>{statusMeta.label}</Badge>
                     {overdue ? (
                       <Badge tone="danger">
-                        <AlertCircle className="mr-0.5 inline h-3 w-3" />Долг {overdue.days}д
+                        <AlertCircle className="mr-0.5 inline h-3 w-3" />
+                        Долг {overdue.days}д
                       </Badge>
                     ) : fin.length === 0 ? (
                       <Badge>Без платежей</Badge>
@@ -350,10 +433,8 @@ function StudentsPage() {
         </div>
       )}
 
-
       <AddStudentSheet open={open} onClose={() => setOpen(false)} />
       <EditStudentSheet student={editStudent} onClose={() => setEditStudent(null)} />
-
 
       <Sheet open={!!confirmId} onClose={() => setConfirmId(null)} title="Удалить ученика?">
         <p className="text-sm text-muted-foreground">
@@ -372,8 +453,8 @@ function StudentsPage() {
                 await del.mutateAsync(confirmId);
                 toast.success("Ученик перемещён в Корзину");
                 setConfirmId(null);
-              } catch (e: any) {
-                toast.error(e?.message ?? "Ошибка");
+              } catch (error: unknown) {
+                toast.error(getErrorMessage(error));
               }
             }}
           >
@@ -404,9 +485,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
   const add = useMut(async () => {
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
-      pattern === "custom"
-        ? Math.max(1, Math.min(7, Number(customDays) || 1))
-        : slotDays.length;
+      pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
 
     const sup = await sb();
     const { data: created, error } = await sup
@@ -431,7 +510,11 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
       }));
       const { error: slotErr } = await sup.from("schedule_slots").insert(rows);
       if (slotErr) throw slotErr;
-      try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
+      try {
+        await regenFn();
+      } catch (e) {
+        console.error("regenerateLessons failed", e);
+      }
     }
   }, ["students", "schedule", "lessons"]);
 
@@ -461,13 +544,16 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
     );
   };
 
-
   return (
     <Sheet open={open} onClose={onClose} title="Новый ученик">
       <div className="space-y-3">
         <div className="stagger-item" style={{ animationDelay: "40ms" }}>
           <Field label="Имя">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Например, Анна Иванова" />
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Например, Анна Иванова"
+            />
           </Field>
         </div>
 
@@ -501,19 +587,36 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
                 <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
               </Field>
               <Field label="Длительность, мин">
-                <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
+                <Input
+                  type="number"
+                  min={15}
+                  max={240}
+                  step={5}
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                />
               </Field>
             </div>
           ) : (
             <Field label="Дней в неделю (1–7)">
-              <Input type="number" min={1} max={7} value={customDays} onChange={(e) => setCustomDays(e.target.value)} />
+              <Input
+                type="number"
+                min={1}
+                max={7}
+                value={customDays}
+                onChange={(e) => setCustomDays(e.target.value)}
+              />
             </Field>
           )}
         </div>
 
         <div className="stagger-item" style={{ animationDelay: "205ms" }}>
           <Field label="Предмет (необязательно)">
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Математика" />
+            <Input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Математика"
+            />
           </Field>
         </div>
         <div className="stagger-item" style={{ animationDelay: "260ms" }}>
@@ -524,7 +627,9 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
       </div>
 
       <div className="mt-8 flex gap-3 pb-2">
-        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="flex-1" onClick={onClose}>
+          Отмена
+        </Button>
         <Button
           variant="gold"
           className="flex-1"
@@ -533,11 +638,16 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
             try {
               await add.mutateAsync(undefined as never);
               toast.success("Ученик добавлен");
-              setName(""); setPattern("mwf"); setCustomDays("2");
-              setSubject(""); setPhone(""); setTime("16:00"); setDuration("60");
+              setName("");
+              setPattern("mwf");
+              setCustomDays("2");
+              setSubject("");
+              setPhone("");
+              setTime("16:00");
+              setDuration("60");
               onClose();
-            } catch (e: any) {
-              toast.error(e?.message ?? "Ошибка");
+            } catch (error: unknown) {
+              toast.error(getErrorMessage(error));
             }
           }}
         >
@@ -584,7 +694,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         .select("day_of_week, start_time, duration_min")
         .eq("student_id", student.id)
         .order("day_of_week");
-      const days = (slots ?? []).map((s: any) => s.day_of_week).sort();
+      const days = (slots ?? []).map((slot) => slot.day_of_week).sort();
       const mwf = JSON.stringify(days) === JSON.stringify([0, 2, 4]);
       const tts = JSON.stringify(days) === JSON.stringify([1, 3, 5]);
       setPattern(mwf ? "mwf" : tts ? "tts" : "custom");
@@ -597,15 +707,13 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
       }
       setLoadingSlots(false);
     })();
-  }, [student?.id]);
+  }, [student]);
 
   const save = useMut(async () => {
     if (!student) return;
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
-      pattern === "custom"
-        ? Math.max(1, Math.min(7, Number(customDays) || 1))
-        : slotDays.length;
+      pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
 
     const sup = await sb();
     const { error: upErr } = await sup
@@ -621,7 +729,10 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
 
     if (pattern !== "custom") {
       // Перезаписать слоты
-      const { error: delErr } = await sup.from("schedule_slots").delete().eq("student_id", student.id);
+      const { error: delErr } = await sup
+        .from("schedule_slots")
+        .delete()
+        .eq("student_id", student.id);
       if (delErr) throw delErr;
       const dur = Math.max(15, Math.min(240, Number(duration) || 60));
       const rows = slotDays.map((d) => ({
@@ -641,7 +752,11 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         .eq("student_id", student.id);
       if (updSlotErr) throw updSlotErr;
     }
-    try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
+    try {
+      await regenFn();
+    } catch (e) {
+      console.error("regenerateLessons failed", e);
+    }
   }, ["students", "schedule", "finance", "lessons"]);
 
   const PatternBtn = ({ value, label, hint }: { value: Pattern; label: string; hint: string }) => {
@@ -670,7 +785,6 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     );
   };
 
-
   return (
     <Sheet open={!!student} onClose={onClose} title="Редактировать ученика">
       {loadingSlots ? (
@@ -683,7 +797,9 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
             </Field>
 
             <div>
-              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">Расписание</span>
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Расписание
+              </span>
               <div className="flex gap-2">
                 <PatternBtn value="mwf" label="Пн / Ср / Пт" hint="3 урока в неделю" />
                 <PatternBtn value="tts" label="Вт / Чт / Сб" hint="3 урока в неделю" />
@@ -706,26 +822,49 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
                 <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
               </Field>
               <Field label="Длительность, мин">
-                <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
+                <Input
+                  type="number"
+                  min={15}
+                  max={240}
+                  step={5}
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                />
               </Field>
             </div>
 
             {pattern === "custom" && (
               <Field label="Дней в неделю (1–7)">
-                <Input type="number" min={1} max={7} value={customDays} onChange={(e) => setCustomDays(e.target.value)} />
+                <Input
+                  type="number"
+                  min={1}
+                  max={7}
+                  value={customDays}
+                  onChange={(e) => setCustomDays(e.target.value)}
+                />
               </Field>
             )}
 
             <Field label="Предмет">
-              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Математика" />
+              <Input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Математика"
+              />
             </Field>
             <Field label="Телефон">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 ..." />
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+7 ..."
+              />
             </Field>
           </div>
 
           <div className="mt-8 flex gap-3 pb-2">
-            <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+            <Button variant="outline" className="flex-1" onClick={onClose}>
+              Отмена
+            </Button>
             <Button
               variant="gold"
               className="flex-1"
@@ -735,8 +874,8 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
                   await save.mutateAsync(undefined as never);
                   toast.success("Изменения сохранены");
                   onClose();
-                } catch (e: any) {
-                  toast.error(e?.message ?? "Ошибка");
+                } catch (error: unknown) {
+                  toast.error(getErrorMessage(error));
                 }
               }}
             >
@@ -779,7 +918,9 @@ function StatusStat({
       }`}
     >
       <div className="num text-base text-foreground leading-none">{count}</div>
-      <div className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
     </button>
   );
 }

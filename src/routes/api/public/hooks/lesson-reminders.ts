@@ -60,7 +60,10 @@ async function handle() {
   const { data: subs } = await supabaseAdmin
     .from("push_subscriptions")
     .select("endpoint, p256dh, auth, owner_id")
-    .in("owner_id", allowedOwners.length ? allowedOwners : ["00000000-0000-0000-0000-000000000000"]);
+    .in(
+      "owner_id",
+      allowedOwners.length ? allowedOwners : ["00000000-0000-0000-0000-000000000000"],
+    );
   const subsByOwner = new Map<string, NonNullable<typeof subs>>();
   (subs ?? []).forEach((s) => {
     const arr = subsByOwner.get(s.owner_id) ?? [];

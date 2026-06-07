@@ -25,6 +25,7 @@ import {
   initials,
 } from "@/lib/db";
 import { BarChart3, TrendingUp, Users, AlertTriangle, BookOpen } from "lucide-react";
+import type { ReactNode } from "react";
 
 export const Route = createFileRoute("/_authenticated/analytics")({ component: AnalyticsPage });
 
@@ -82,7 +83,8 @@ function AnalyticsPage() {
   // Pie распределения статусов
   const attendancePie = useMemo(() => {
     const acc = { present: 0, absent: 0, excused: 0 };
-    for (const r of attendance) acc[r.status as keyof typeof acc] = (acc[r.status as keyof typeof acc] ?? 0) + 1;
+    for (const r of attendance)
+      acc[r.status as keyof typeof acc] = (acc[r.status as keyof typeof acc] ?? 0) + 1;
     return [
       { name: "Присутствовал", value: acc.present, color: "var(--success)" },
       { name: "Отсутствовал", value: acc.absent, color: "var(--destructive)" },
@@ -91,7 +93,9 @@ function AnalyticsPage() {
   }, [attendance]);
   const totalAtt = attendancePie.reduce((s, x) => s + x.value, 0);
   const attRate = totalAtt
-    ? Math.round(((attendancePie.find((x) => x.name === "Присутствовал")?.value ?? 0) / totalAtt) * 100)
+    ? Math.round(
+        ((attendancePie.find((x) => x.name === "Присутствовал")?.value ?? 0) / totalAtt) * 100,
+      )
     : 0;
 
   // Топ учеников по доходу
@@ -100,7 +104,10 @@ function AnalyticsPage() {
     const map = new Map<string, number>();
     for (const f of finance) {
       if (!f.is_paid) continue;
-      map.set(f.student_id, (map.get(f.student_id) ?? 0) + convertToRUB(Number(f.amount), f.currency, rates));
+      map.set(
+        f.student_id,
+        (map.get(f.student_id) ?? 0) + convertToRUB(Number(f.amount), f.currency, rates),
+      );
     }
     return students
       .map((s) => ({ s, rub: Math.round(map.get(s.id) ?? 0) }))
@@ -112,7 +119,8 @@ function AnalyticsPage() {
   // Должники
   const debtors = useMemo(() => {
     const map = new Map<string, number>();
-    for (const f of finance) if (!f.is_paid) map.set(f.student_id, (map.get(f.student_id) ?? 0) + 1);
+    for (const f of finance)
+      if (!f.is_paid) map.set(f.student_id, (map.get(f.student_id) ?? 0) + 1);
     return students
       .map((s) => ({ s, n: map.get(s.id) ?? 0 }))
       .filter((x) => x.n > 0)
@@ -122,14 +130,18 @@ function AnalyticsPage() {
   // Аналитика ДЗ
   const hwStats = useMemo(() => {
     const acc = { assigned: 0, done: 0, partial: 0, not_done: 0 };
-    for (const h of homework) acc[h.status as keyof typeof acc] = (acc[h.status as keyof typeof acc] ?? 0) + 1;
+    for (const h of homework)
+      acc[h.status as keyof typeof acc] = (acc[h.status as keyof typeof acc] ?? 0) + 1;
     const evaluated = acc.done + acc.partial + acc.not_done;
     const rate = evaluated ? Math.round(((acc.done + acc.partial * 0.5) / evaluated) * 100) : 0;
     return { ...acc, rate, evaluated };
   }, [homework]);
 
   const hwByStudent = useMemo(() => {
-    const map = new Map<string, { done: number; partial: number; not_done: number; assigned: number }>();
+    const map = new Map<
+      string,
+      { done: number; partial: number; not_done: number; assigned: number }
+    >();
     for (const h of homework) {
       const m = map.get(h.student_id) ?? { done: 0, partial: 0, not_done: 0, assigned: 0 };
       m[h.status as keyof typeof m] += 1;
@@ -147,8 +159,8 @@ function AnalyticsPage() {
       .sort((a, b) => b.rate - a.rate);
   }, [students, homework]);
 
-  const hasAny = students.length > 0 && (finance.length > 0 || attendance.length > 0 || homework.length > 0);
-
+  const hasAny =
+    students.length > 0 && (finance.length > 0 || attendance.length > 0 || homework.length > 0);
 
   return (
     <div className="px-4 pt-6">
@@ -182,12 +194,16 @@ function AnalyticsPage() {
               <div className="num mt-3 text-2xl text-foreground">
                 {avgIncome.toLocaleString("ru-RU")} ₽
               </div>
-              <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Средний месяц</div>
+              <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+                Средний месяц
+              </div>
             </Card>
             <Card className="p-4">
               <Users className="h-5 w-5 text-foreground" />
               <div className="num mt-3 text-2xl text-foreground">{attRate}%</div>
-              <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Посещаемость</div>
+              <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+                Посещаемость
+              </div>
             </Card>
             <Card className="p-4">
               <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -196,11 +212,7 @@ function AnalyticsPage() {
             </Card>
           </div>
 
-          <SectionTitle
-            action={
-              <RangePill value={range} onChange={setRange} options={[6, 12]} />
-            }
-          >
+          <SectionTitle action={<RangePill value={range} onChange={setRange} options={[6, 12]} />}>
             Доход по месяцам
           </SectionTitle>
           <Card className="p-3">
@@ -260,9 +272,24 @@ function AnalyticsPage() {
                     allowDecimals={false}
                   />
                   <Tooltip content={<ChartTooltip />} />
-                  <Bar dataKey="present" stackId="a" fill="var(--success)" shape={<StackBar dataKey="present" order={["absent", "excused", "present"]} />} />
-                  <Bar dataKey="excused" stackId="a" fill="var(--accent)" shape={<StackBar dataKey="excused" order={["absent", "excused", "present"]} />} />
-                  <Bar dataKey="absent" stackId="a" fill="var(--destructive)" shape={<StackBar dataKey="absent" order={["absent", "excused", "present"]} />} />
+                  <Bar
+                    dataKey="present"
+                    stackId="a"
+                    fill="var(--success)"
+                    shape={<StackBar dataKey="present" order={["absent", "excused", "present"]} />}
+                  />
+                  <Bar
+                    dataKey="excused"
+                    stackId="a"
+                    fill="var(--accent)"
+                    shape={<StackBar dataKey="excused" order={["absent", "excused", "present"]} />}
+                  />
+                  <Bar
+                    dataKey="absent"
+                    stackId="a"
+                    fill="var(--destructive)"
+                    shape={<StackBar dataKey="absent" order={["absent", "excused", "present"]} />}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -321,15 +348,22 @@ function AnalyticsPage() {
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Успеваемость по ДЗ</div>
+                    <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Успеваемость по ДЗ
+                    </div>
                     <div className="num text-2xl text-foreground">{hwStats.rate}%</div>
                   </div>
                   <div className="text-right text-[11px] text-muted-foreground">
-                    Оценено<br />{hwStats.evaluated} из {homework.length}
+                    Оценено
+                    <br />
+                    {hwStats.evaluated} из {homework.length}
                   </div>
                 </div>
                 <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-secondary">
-                  <div className="h-full rounded-full bg-[color:var(--success)]" style={{ width: `${hwStats.rate}%` }} />
+                  <div
+                    className="h-full rounded-full bg-[color:var(--success)]"
+                    style={{ width: `${hwStats.rate}%` }}
+                  />
                 </div>
                 <div className="mt-3 grid grid-cols-4 gap-2 text-center text-[11px]">
                   <div className="rounded-xl bg-secondary py-2">
@@ -359,7 +393,9 @@ function AnalyticsPage() {
                         <Avatar initials={initials(s.name)} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="name-italic truncate text-[14px] font-semibold">{s.name}</div>
+                            <div className="name-italic truncate text-[14px] font-semibold">
+                              {s.name}
+                            </div>
                             <div className="num text-sm text-foreground">{rate}%</div>
                           </div>
                           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -367,7 +403,12 @@ function AnalyticsPage() {
                               className="h-full rounded-full transition-all"
                               style={{
                                 width: `${rate}%`,
-                                background: rate >= 80 ? "var(--success)" : rate >= 50 ? "var(--accent)" : "var(--destructive)",
+                                background:
+                                  rate >= 80
+                                    ? "var(--success)"
+                                    : rate >= 50
+                                      ? "var(--accent)"
+                                      : "var(--destructive)",
                               }}
                             />
                           </div>
@@ -386,8 +427,6 @@ function AnalyticsPage() {
             </>
           )}
 
-
-
           {topStudents.length > 0 && (
             <>
               <SectionTitle>Топ учеников по доходу</SectionTitle>
@@ -398,10 +437,14 @@ function AnalyticsPage() {
                   return (
                     <Card key={s.id} className="p-3">
                       <div className="flex items-center gap-3">
-                        <div className="num w-5 text-center text-sm text-muted-foreground">{i + 1}</div>
+                        <div className="num w-5 text-center text-sm text-muted-foreground">
+                          {i + 1}
+                        </div>
                         <Avatar initials={initials(s.name)} />
                         <div className="min-w-0 flex-1">
-                          <div className="name-italic truncate text-[14px] font-semibold">{s.name}</div>
+                          <div className="name-italic truncate text-[14px] font-semibold">
+                            {s.name}
+                          </div>
                           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                             <div
                               className="h-full rounded-full bg-accent transition-all"
@@ -454,10 +497,21 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
-function StackBar(props: any) {
+type StackBarProps = {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  fill?: string;
+  payload?: Record<string, unknown>;
+  dataKey?: string;
+  order?: string[];
+};
+
+function StackBar(props: StackBarProps) {
   const { x, y, width, height, fill, payload, dataKey, order } = props;
-  if (!width || !height) return null;
-  const topKey = (order as string[]).find((k) => Number(payload?.[k]) > 0);
+  if (x == null || y == null || !width || !height) return null;
+  const topKey = order?.find((key) => Number(payload?.[key]) > 0);
   const isTop = dataKey === topKey;
   const r = Math.min(6, width / 2, height);
   if (!isTop || r <= 0) {
@@ -467,14 +521,34 @@ function StackBar(props: any) {
   return <path d={path} fill={fill} />;
 }
 
-function ChartTooltip({ active, payload, label, suffix = "" }: any) {
+type TooltipEntry = {
+  color?: string;
+  name?: ReactNode;
+  value?: string | number;
+  payload?: { color?: string };
+};
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  suffix = "",
+}: {
+  active?: boolean;
+  payload?: TooltipEntry[];
+  label?: ReactNode;
+  suffix?: string;
+}) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-border/60 bg-card px-3 py-2 text-xs shadow-lg">
       {label != null && <div className="mb-1 font-semibold text-foreground">{label}</div>}
-      {payload.map((p: any, i: number) => (
+      {payload.map((p, i) => (
         <div key={i} className="flex items-center gap-2 text-muted-foreground">
-          <span className="inline-block h-2 w-2 rounded-full" style={{ background: p.color || p.payload?.color }} />
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ background: p.color || p.payload?.color }}
+          />
           <span>{p.name}:</span>
           <span className="num text-foreground">
             {Number(p.value).toLocaleString("ru-RU")}
