@@ -1,18 +1,16 @@
 import { ReactNode, ButtonHTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={`glass rounded-2xl ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`glass rounded-2xl ${className}`}>{children}</div>;
 }
 
 export function Button({
   variant = "primary",
   className = "",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "ghost" | "gold" | "danger" | "outline" }) {
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "primary" | "ghost" | "gold" | "danger" | "outline";
+}) {
   const base =
     "inline-flex items-center justify-center gap-2 rounded-xl px-4 min-h-[44px] text-sm font-medium transition-all active:scale-[0.98] disabled:opacity-50";
   const variants: Record<string, string> = {
@@ -45,7 +43,13 @@ export function Select(props: SelectHTMLAttributes<HTMLSelectElement> & { childr
   );
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "success" | "danger" | "gold" }) {
+export function Badge({
+  children,
+  tone = "neutral",
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "success" | "danger" | "gold";
+}) {
   const tones: Record<string, string> = {
     neutral: "bg-secondary text-secondary-foreground",
     success: "bg-[color:var(--success)]/15 text-[color:var(--success)]",
@@ -53,7 +57,9 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
     gold: "bg-accent/15 text-accent",
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tones[tone]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${tones[tone]}`}
+    >
       {children}
     </span>
   );
@@ -76,7 +82,17 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
   );
 }
 
-export function Empty({ icon, title, hint, action }: { icon: ReactNode; title: string; hint?: string; action?: ReactNode }) {
+export function Empty({
+  icon,
+  title,
+  hint,
+  action,
+}: {
+  icon: ReactNode;
+  title: string;
+  hint?: string;
+  action?: ReactNode;
+}) {
   return (
     <Card className="flex flex-col items-center justify-center px-6 py-12 text-center">
       <div className="mb-3 text-muted-foreground">{icon}</div>

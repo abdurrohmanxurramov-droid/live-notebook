@@ -62,7 +62,6 @@ export function GlassChips<K extends string>({
           scrollbarWidth: "none",
         }}
       >
-
         {indicator && (
           <span
             aria-hidden

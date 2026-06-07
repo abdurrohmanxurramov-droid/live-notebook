@@ -1,21 +1,45 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Card, Button, Input, Select, Empty, SectionTitle, Badge, Avatar } from "@/components/ui-bits";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Empty,
+  SectionTitle,
+  Badge,
+  Avatar,
+} from "@/components/ui-bits";
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { CalendarDays, Plus, Trash2, Clock, Check, X, ArrowRight } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listLessons, setLessonStatus, moveLesson, regenerateLessons, type LessonStatus } from "@/lib/lessons.functions";
+import {
+  listLessons,
+  setLessonStatus,
+  moveLesson,
+  regenerateLessons,
+  type LessonStatus,
+} from "@/lib/lessons.functions";
 import { Calendar } from "@/components/calendar/Calendar";
 import { SwipeableLessonCard } from "@/components/SwipeableLessonCard";
+import { getErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
 const DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
-const DAYS_FULL = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"] as const;
+const DAYS_FULL = [
+  "Понедельник",
+  "Вторник",
+  "Среда",
+  "Четверг",
+  "Пятница",
+  "Суббота",
+  "Воскресенье",
+] as const;
 
 function jsDayToMon(jsDay: number) {
   // JS: 0=Sun..6=Sat → 0=Mon..6=Sun
@@ -55,10 +79,16 @@ function SchedulePage() {
 
   const todayDow = jsDayToMon(new Date().getDay());
 
-  const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("schedule_slots").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    if (error) throw error;
-  }, ["schedule"]);
+  const del = useMut(
+    async (id: string) => {
+      const { error } = await (await sb())
+        .from("schedule_slots")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    ["schedule"],
+  );
 
   return (
     <div className="px-4 pt-6">
@@ -75,9 +105,6 @@ function SchedulePage() {
       <Calendar />
 
       <UpcomingLessons studentsById={studentsById} />
-
-
-
 
       {slots.length === 0 ? (
         <div className="mt-6">
@@ -96,13 +123,17 @@ function SchedulePage() {
               <section key={i}>
                 <div className="mb-2 flex items-center justify-between px-1">
                   <div className="flex items-center gap-2">
-                    <span className={`text-[15px] font-semibold tracking-tight ${isToday ? "text-accent" : "text-foreground"}`}>
+                    <span
+                      className={`text-[15px] font-semibold tracking-tight ${isToday ? "text-accent" : "text-foreground"}`}
+                    >
                       {DAYS_FULL[i]}
                     </span>
                     {isToday && <Badge tone="gold">сегодня</Badge>}
                   </div>
                   <span className="text-xs text-muted-foreground">
-                    {dayItems.length === 0 ? "—" : `${dayItems.length} ${dayItems.length === 1 ? "урок" : "урока"}`}
+                    {dayItems.length === 0
+                      ? "—"
+                      : `${dayItems.length} ${dayItems.length === 1 ? "урок" : "урока"}`}
                   </span>
                 </div>
 
@@ -118,8 +149,12 @@ function SchedulePage() {
                       return (
                         <Card key={slot.id} className="flex items-center gap-3 p-3">
                           <div className="flex w-16 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-2">
-                            <span className="num text-base leading-tight text-accent">{fmtTime(slot.start_time)}</span>
-                            <span className="text-[10px] font-medium text-muted-foreground">{end}</span>
+                            <span className="num text-base leading-tight text-accent">
+                              {fmtTime(slot.start_time)}
+                            </span>
+                            <span className="text-[10px] font-medium text-muted-foreground">
+                              {end}
+                            </span>
                           </div>
                           <Avatar initials={initials(st?.name ?? "?")} />
                           <div className="min-w-0 flex-1">
@@ -155,7 +190,9 @@ function SchedulePage() {
       <Sheet open={!!confirmId} onClose={() => setConfirmId(null)} title="Удалить слот?">
         <p className="text-sm text-muted-foreground">Регулярный урок будет удалён из расписания.</p>
         <div className="mt-5 flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={() => setConfirmId(null)}>Отмена</Button>
+          <Button variant="outline" className="flex-1" onClick={() => setConfirmId(null)}>
+            Отмена
+          </Button>
           <Button
             variant="danger"
             className="flex-1"
@@ -165,8 +202,8 @@ function SchedulePage() {
                 await del.mutateAsync(confirmId);
                 toast.success("Слот удалён");
                 setConfirmId(null);
-              } catch (e: any) {
-                toast.error(e?.message ?? "Ошибка");
+              } catch (error: unknown) {
+                toast.error(getErrorMessage(error));
               }
             }}
           >
@@ -202,7 +239,11 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
       duration_min: Math.max(15, Math.min(240, Number(duration) || 60)),
     });
     if (error) throw error;
-    try { await regenFn(); } catch (e) { console.error("regenerateLessons failed", e); }
+    try {
+      await regenFn();
+    } catch (e) {
+      console.error("regenerateLessons failed", e);
+    }
   }, ["schedule", "lessons"]);
 
   return (
@@ -214,82 +255,93 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
       ) : (
         <div className="space-y-3">
           <div className="stagger-item" style={{ animationDelay: "40ms" }}>
-          <Field label="Ученик">
-            <Input
-              type="text"
-              inputMode="search"
-              placeholder="Поиск ученика…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <div className="liquid-control mt-2 max-h-44 overflow-y-auto rounded-xl p-1">
-              {filtered.length === 0 ? (
-                <p className="px-3 py-2 text-xs text-muted-foreground">Никого не нашли</p>
-              ) : (
-                filtered.map((s) => {
-                  const active = studentId === s.id;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setStudentId(s.id)}
-                      className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                        active ? "bg-accent text-accent-foreground" : "hover:bg-secondary text-foreground"
-                      }`}
-                    >
-                      <Avatar initials={initials(s.name)} />
-                      <span className="name-italic truncate font-semibold">{s.name}</span>
-                      {s.subject && (
-                        <span className={`ml-auto text-[11px] ${active ? "opacity-80" : "text-muted-foreground"}`}>
-                          {s.subject}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </Field>
+            <Field label="Ученик">
+              <Input
+                type="text"
+                inputMode="search"
+                placeholder="Поиск ученика…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <div className="liquid-control mt-2 max-h-44 overflow-y-auto rounded-xl p-1">
+                {filtered.length === 0 ? (
+                  <p className="px-3 py-2 text-xs text-muted-foreground">Никого не нашли</p>
+                ) : (
+                  filtered.map((s) => {
+                    const active = studentId === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setStudentId(s.id)}
+                        className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                          active
+                            ? "bg-accent text-accent-foreground"
+                            : "hover:bg-secondary text-foreground"
+                        }`}
+                      >
+                        <Avatar initials={initials(s.name)} />
+                        <span className="name-italic truncate font-semibold">{s.name}</span>
+                        {s.subject && (
+                          <span
+                            className={`ml-auto text-[11px] ${active ? "opacity-80" : "text-muted-foreground"}`}
+                          >
+                            {s.subject}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </Field>
           </div>
           <div className="stagger-item" style={{ animationDelay: "95ms" }}>
-          <Field label="День недели">
-            <div className="grid grid-cols-7 gap-1.5">
-              {DAYS.map((d, i) => {
-                const active = day === i;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setDay(i)}
-                    className={`liquid-action min-h-[44px] rounded-xl text-sm font-semibold transition-colors ${
-                      active
-                        ? "bg-accent text-accent-foreground"
-                        : "text-foreground"
-                    }`}
-                  >
-                    {d}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
+            <Field label="День недели">
+              <div className="grid grid-cols-7 gap-1.5">
+                {DAYS.map((d, i) => {
+                  const active = day === i;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setDay(i)}
+                      className={`liquid-action min-h-[44px] rounded-xl text-sm font-semibold transition-colors ${
+                        active ? "bg-accent text-accent-foreground" : "text-foreground"
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="stagger-item" style={{ animationDelay: "150ms" }}>
-            <Field label="Время">
-              <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
-            </Field>
+              <Field label="Время">
+                <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+              </Field>
             </div>
             <div className="stagger-item" style={{ animationDelay: "205ms" }}>
-            <Field label="Длительность, мин">
-              <Input type="number" min={15} max={240} step={5} value={duration} onChange={(e) => setDuration(e.target.value)} />
-            </Field>
+              <Field label="Длительность, мин">
+                <Input
+                  type="number"
+                  min={15}
+                  max={240}
+                  step={5}
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                />
+              </Field>
             </div>
           </div>
         </div>
       )}
       <div className="mt-5 flex gap-2">
-        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="liquid-action flex-1" onClick={onClose}>
+          Отмена
+        </Button>
         <Button
           variant="gold"
           className="liquid-action flex-1"
@@ -298,10 +350,14 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
             try {
               await add.mutateAsync(undefined as never);
               toast.success("Урок добавлен");
-              setStudentId(""); setQuery(""); setDay(0); setTime("16:00"); setDuration("60");
+              setStudentId("");
+              setQuery("");
+              setDay(0);
+              setTime("16:00");
+              setDuration("60");
               onClose();
-            } catch (e: any) {
-              toast.error(e?.message ?? "Ошибка");
+            } catch (error: unknown) {
+              toast.error(getErrorMessage(error));
             }
           }}
         >
@@ -311,7 +367,6 @@ function AddSlotSheet({ open, onClose }: { open: boolean; onClose: () => void })
     </Sheet>
   );
 }
-
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -329,20 +384,36 @@ function statusTone(s: LessonStatus): "neutral" | "success" | "danger" | "gold" 
   return "gold";
 }
 function statusLabel(s: LessonStatus) {
-  return s === "planned" ? "Запланирован" : s === "completed" ? "Проведён" : s === "cancelled" ? "Отменён" : "Перенесён";
+  return s === "planned"
+    ? "Запланирован"
+    : s === "completed"
+      ? "Проведён"
+      : s === "cancelled"
+        ? "Отменён"
+        : "Перенесён";
 }
 
-function isoDate(d: Date) { return d.toISOString().slice(0, 10); }
+function isoDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
 
-function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: string; subject: string | null }> }) {
+function UpcomingLessons({
+  studentsById,
+}: {
+  studentsById: Map<string, { name: string; subject: string | null }>;
+}) {
   const listFn = useServerFn(listLessons);
   const setFn = useServerFn(setLessonStatus);
   const moveFn = useServerFn(moveLesson);
   const qc = useQueryClient();
-  const [moveTarget, setMoveTarget] = useState<{ id: string; date: string; time: string } | null>(null);
+  const [moveTarget, setMoveTarget] = useState<{ id: string; date: string; time: string } | null>(
+    null,
+  );
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  const weekAhead = new Date(today); weekAhead.setDate(weekAhead.getDate() + 7);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const weekAhead = new Date(today);
+  weekAhead.setDate(weekAhead.getDate() + 7);
   const from = isoDate(today);
   const to = isoDate(weekAhead);
 
@@ -379,7 +450,9 @@ function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: s
     <>
       <SectionTitle>Ближайшие уроки (7 дней)</SectionTitle>
       {isLoading ? (
-        <Card className="p-4"><p className="text-xs text-muted-foreground">Загрузка…</p></Card>
+        <Card className="p-4">
+          <p className="text-xs text-muted-foreground">Загрузка…</p>
+        </Card>
       ) : lessons.length === 0 ? (
         <Card className="p-4">
           <p className="text-xs text-muted-foreground">
@@ -397,7 +470,9 @@ function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: s
               <Card className="p-3 tap-pulse">
                 <div className="flex items-center gap-3">
                   <div className="flex w-20 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-2">
-                    <span className="num text-xs leading-tight text-accent">{l.scheduled_date.slice(5)}</span>
+                    <span className="num text-xs leading-tight text-accent">
+                      {l.scheduled_date.slice(5)}
+                    </span>
                     <span className="num text-base leading-tight text-foreground">{time}</span>
                   </div>
                   <Avatar initials={initials(st?.name ?? "?")} />
@@ -409,17 +484,35 @@ function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: s
                       {st?.subject ?? ""}
                     </div>
                   </div>
-                  <Badge tone={statusTone(l.status as LessonStatus)}>{statusLabel(l.status as LessonStatus)}</Badge>
+                  <Badge tone={statusTone(l.status as LessonStatus)}>
+                    {statusLabel(l.status as LessonStatus)}
+                  </Badge>
                 </div>
                 {planned && (
                   <div className="mt-3 flex gap-2">
-                    <Button variant="outline" className="flex-1" data-haptic="success" onClick={() => changeStatus(l.id, "completed")}>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      data-haptic="success"
+                      onClick={() => changeStatus(l.id, "completed")}
+                    >
                       <Check className="h-4 w-4" /> Провёл
                     </Button>
-                    <Button variant="outline" className="flex-1" data-haptic="warning" onClick={() => changeStatus(l.id, "cancelled")}>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      data-haptic="warning"
+                      onClick={() => changeStatus(l.id, "cancelled")}
+                    >
                       <X className="h-4 w-4" /> Отменил
                     </Button>
-                    <Button variant="outline" className="flex-1" data-haptic="medium" onClick={() => setMoveTarget({ id: l.id, date: l.scheduled_date, time })} disabled={isPast}>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      data-haptic="medium"
+                      onClick={() => setMoveTarget({ id: l.id, date: l.scheduled_date, time })}
+                      disabled={isPast}
+                    >
                       <ArrowRight className="h-4 w-4" /> Перенёс
                     </Button>
                   </div>
@@ -432,7 +525,11 @@ function UpcomingLessons({ studentsById }: { studentsById: Map<string, { name: s
                 enabled={planned}
                 onComplete={() => changeStatus(l.id, "completed")}
                 onCancel={() => changeStatus(l.id, "cancelled")}
-                onReschedule={isPast ? undefined : () => setMoveTarget({ id: l.id, date: l.scheduled_date, time })}
+                onReschedule={
+                  isPast
+                    ? undefined
+                    : () => setMoveTarget({ id: l.id, date: l.scheduled_date, time })
+                }
               >
                 {cardInner}
               </SwipeableLessonCard>
@@ -462,9 +559,12 @@ function MoveLessonSheet({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   // Reset when target changes
-  useMemo(() => {
-    if (target) { setDate(target.date); setTime(target.time); }
-  }, [target?.id]);
+  useEffect(() => {
+    if (target) {
+      setDate(target.date);
+      setTime(target.time);
+    }
+  }, [target]);
 
   return (
     <Sheet open={!!target} onClose={onClose} title="Перенести урок">
@@ -477,7 +577,9 @@ function MoveLessonSheet({
         </Field>
       </div>
       <div className="mt-5 flex gap-2">
-        <Button variant="outline" className="flex-1" onClick={onClose}>Отмена</Button>
+        <Button variant="outline" className="flex-1" onClick={onClose}>
+          Отмена
+        </Button>
         <Button
           variant="gold"
           className="flex-1"
@@ -490,4 +592,3 @@ function MoveLessonSheet({
     </Sheet>
   );
 }
-

@@ -2,7 +2,16 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Avatar,
+  Badge,
+  Empty,
+  SectionTitle,
+} from "@/components/ui-bits";
 import {
   useStudents,
   useAttendance,
@@ -14,23 +23,49 @@ import {
   type HomeworkStatus,
   type AttendanceStatus,
   type Attendance,
+  type Homework,
+  type Finance,
   type StudentStatus,
 } from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, BookOpen, Wallet, Check, X, Trash2, Phone, Target, RotateCcw, History as HistoryIcon, StickyNote, Paperclip, FileText, MinusCircle, AlertTriangle, type LucideIcon } from "lucide-react";
+import { getErrorMessage } from "@/lib/utils";
+import {
+  CalendarCheck,
+  BookOpen,
+  Wallet,
+  Check,
+  X,
+  Trash2,
+  Phone,
+  Target,
+  RotateCcw,
+  History as HistoryIcon,
+  StickyNote,
+  Paperclip,
+  FileText,
+  MinusCircle,
+  AlertTriangle,
+  type LucideIcon,
+} from "lucide-react";
 
 const LESSONS_PER_CYCLE = 12;
 const EXCUSED_LIMIT = 3;
 
-const ATT_STATUS: Record<AttendanceStatus, { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }> = {
+const ATT_STATUS: Record<
+  AttendanceStatus,
+  { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }
+> = {
   present: { label: "Был", Icon: Check, tone: "success" },
   absent: { label: "Не был", Icon: X, tone: "danger" },
   excused: { label: "Уваж.", Icon: Paperclip, tone: "gold" },
   rescheduled_by_teacher: { label: "Перенос мной", Icon: RotateCcw, tone: "neutral" },
 };
 
-const HW_STATUS: Record<HomeworkStatus, { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }> = {
+const HW_STATUS: Record<
+  HomeworkStatus,
+  { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" | "neutral" }
+> = {
   assigned: { label: "Задано", Icon: FileText, tone: "neutral" },
   done: { label: "Сделано", Icon: Check, tone: "success" },
   partial: { label: "Частично", Icon: MinusCircle, tone: "gold" },
@@ -61,7 +96,9 @@ export function StudentRoom({ id }: { id: string }) {
   const excusedReached = excusedCount >= EXCUSED_LIMIT;
 
   // Долг учителя — переносы, не возмещённые
-  const teacherDebt = att.filter((a) => a.status === "rescheduled_by_teacher" && !a.compensated).length;
+  const teacherDebt = att.filter(
+    (a) => a.status === "rescheduled_by_teacher" && !a.compensated,
+  ).length;
 
   const [tab, setTab] = useState<"att" | "hw" | "fin" | "timeline">("att");
 
@@ -75,12 +112,17 @@ export function StudentRoom({ id }: { id: string }) {
         <div className="flex items-start gap-3">
           <Avatar initials={initials(student.name)} />
           <div className="min-w-0 flex-1">
-            <div className="name-italic truncate text-lg font-semibold text-foreground">{student.name}</div>
+            <div className="name-italic truncate text-lg font-semibold text-foreground">
+              {student.name}
+            </div>
             <div className="text-xs text-muted-foreground">
               {student.subject || "—"} · {student.days_per_week} дн/нед
             </div>
             {student.phone && (
-              <a href={`tel:${student.phone}`} className="mt-1 inline-flex items-center gap-1 text-xs text-accent">
+              <a
+                href={`tel:${student.phone}`}
+                className="mt-1 inline-flex items-center gap-1 text-xs text-accent"
+              >
                 <Phone className="h-3 w-3" /> {student.phone}
               </a>
             )}
@@ -89,10 +131,11 @@ export function StudentRoom({ id }: { id: string }) {
 
         <StatusSwitcher studentId={student.id} current={student.status} />
 
-
         <div className="mt-4 rounded-xl bg-secondary p-3">
           <div className="flex items-center justify-between">
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Цикл уроков</div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Цикл уроков
+            </div>
             {needsPayment ? (
               <Badge tone="danger">Нужна оплата ({unpaidCount})</Badge>
             ) : (
@@ -102,7 +145,10 @@ export function StudentRoom({ id }: { id: string }) {
             )}
           </div>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-card">
-            <div className="h-full bg-accent transition-all" style={{ width: `${(progress / LESSONS_PER_CYCLE) * 100}%` }} />
+            <div
+              className="h-full bg-accent transition-all"
+              style={{ width: `${(progress / LESSONS_PER_CYCLE) * 100}%` }}
+            />
           </div>
           <div className="mt-2 text-[11px] text-muted-foreground">
             Засчитано: <span className="num text-foreground">{countedCount}</span> · Циклов:{" "}
@@ -113,7 +159,9 @@ export function StudentRoom({ id }: { id: string }) {
 
         <div className="mt-2 rounded-xl bg-secondary p-3">
           <div className="flex items-center justify-between">
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Шансы на перенос</div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Шансы на перенос
+            </div>
             <Badge tone={excusedReached ? "danger" : excusedCount > 0 ? "gold" : "neutral"}>
               {excusedCount} / {EXCUSED_LIMIT}
             </Badge>
@@ -127,14 +175,18 @@ export function StudentRoom({ id }: { id: string }) {
             ))}
           </div>
           {excusedReached && (
-            <div className="mt-1.5 text-[11px] text-destructive">Лимит исчерпан — новые уваж. причины не принимаются</div>
+            <div className="mt-1.5 text-[11px] text-destructive">
+              Лимит исчерпан — новые уваж. причины не принимаются
+            </div>
           )}
         </div>
 
         {teacherDebt > 0 && (
           <div className="mt-2 rounded-xl bg-destructive/10 p-3">
             <div className="flex items-center justify-between">
-              <div className="text-[11px] font-medium uppercase tracking-wide text-destructive">Я должен ученику</div>
+              <div className="text-[11px] font-medium uppercase tracking-wide text-destructive">
+                Я должен ученику
+              </div>
               <Badge tone="danger">{teacherDebt} ур.</Badge>
             </div>
           </div>
@@ -148,10 +200,30 @@ export function StudentRoom({ id }: { id: string }) {
       </Card>
 
       <div className="mt-4 grid grid-cols-4 gap-2">
-        <TabBtn active={tab === "att"} onClick={() => setTab("att")} icon={<CalendarCheck className="h-4 w-4" />} label="Посещения" />
-        <TabBtn active={tab === "hw"} onClick={() => setTab("hw")} icon={<BookOpen className="h-4 w-4" />} label="ДЗ" />
-        <TabBtn active={tab === "fin"} onClick={() => setTab("fin")} icon={<Wallet className="h-4 w-4" />} label="Оплаты" />
-        <TabBtn active={tab === "timeline"} onClick={() => setTab("timeline")} icon={<HistoryIcon className="h-4 w-4" />} label="История" />
+        <TabBtn
+          active={tab === "att"}
+          onClick={() => setTab("att")}
+          icon={<CalendarCheck className="h-4 w-4" />}
+          label="Посещения"
+        />
+        <TabBtn
+          active={tab === "hw"}
+          onClick={() => setTab("hw")}
+          icon={<BookOpen className="h-4 w-4" />}
+          label="ДЗ"
+        />
+        <TabBtn
+          active={tab === "fin"}
+          onClick={() => setTab("fin")}
+          icon={<Wallet className="h-4 w-4" />}
+          label="Оплаты"
+        />
+        <TabBtn
+          active={tab === "timeline"}
+          onClick={() => setTab("timeline")}
+          icon={<HistoryIcon className="h-4 w-4" />}
+          label="История"
+        />
       </div>
 
       {tab === "att" && (
@@ -169,12 +241,24 @@ export function StudentRoom({ id }: { id: string }) {
   );
 }
 
-function TabBtn({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+function TabBtn({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
   return (
     <button
       onClick={onClick}
       className={`flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-xs font-semibold transition-colors ${
-        active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card text-muted-foreground"
+        active
+          ? "border-accent bg-accent text-accent-foreground"
+          : "border-border bg-card text-muted-foreground"
       }`}
     >
       {icon}
@@ -246,18 +330,27 @@ function AttendanceTab({
     }
   }, ["attendance", "finance"]);
 
-  const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("attendance").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    if (error) throw error;
-  }, ["attendance"]);
+  const del = useMut(
+    async (id: string) => {
+      const { error } = await (await sb())
+        .from("attendance")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    ["attendance"],
+  );
 
-  const toggleCompensated = useMut(async (r: Attendance) => {
-    const { error } = await (await sb())
-      .from("attendance")
-      .update({ compensated: !r.compensated })
-      .eq("id", r.id);
-    if (error) throw error;
-  }, ["attendance"]);
+  const toggleCompensated = useMut(
+    async (r: Attendance) => {
+      const { error } = await (await sb())
+        .from("attendance")
+        .update({ compensated: !r.compensated })
+        .eq("id", r.id);
+      if (error) throw error;
+    },
+    ["attendance"],
+  );
 
   const excusedReached = excusedCount >= EXCUSED_LIMIT;
   const willBlock = status === "excused" && excusedReached;
@@ -271,7 +364,12 @@ function AttendanceTab({
           </Field>
           <Field label="Статус">
             <Select value={status} onChange={(e) => setStatus(e.target.value as AttendanceStatus)}>
-              {(Object.entries(ATT_STATUS) as [AttendanceStatus, typeof ATT_STATUS[AttendanceStatus]][]).map(([k, v]) => (
+              {(
+                Object.entries(ATT_STATUS) as [
+                  AttendanceStatus,
+                  (typeof ATT_STATUS)[AttendanceStatus],
+                ][]
+              ).map(([k, v]) => (
                 <option key={k} value={k} disabled={k === "excused" && excusedReached}>
                   {v.label}
                   {k === "excused" ? ` (${excusedCount}/${EXCUSED_LIMIT})` : ""}
@@ -285,7 +383,8 @@ function AttendanceTab({
         </Field>
         {willBlock && (
           <div className="mt-2 flex items-center gap-2 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Лимит уваж. причин (3) исчерпан — выберите другой статус
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" /> Лимит уваж. причин (3) исчерпан —
+            выберите другой статус
           </div>
         )}
         <Button
@@ -317,7 +416,9 @@ function AttendanceTab({
             return (
               <Card key={r.id} className="p-3">
                 <div className="flex items-center gap-3">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : cfg?.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}>
+                  <div
+                    className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : cfg?.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}
+                  >
                     {cfg?.Icon ? <cfg.Icon className="h-5 w-5" /> : <span>·</span>}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -365,7 +466,7 @@ function AttendanceTab({
   );
 }
 
-function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
+function HomeworkTab({ studentId, hw }: { studentId: string; hw: Homework[] }) {
   const today = new Date().toISOString().slice(0, 10);
   const [task, setTask] = useState("");
   const [assignedDate, setAssignedDate] = useState(today);
@@ -383,25 +484,42 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
     if (error) throw error;
   }, ["homework"]);
 
-  const setStatus = useMut(async ({ id, status }: { id: string; status: HomeworkStatus }) => {
-    const { error } = await (await sb()).from("homework").update({ status }).eq("id", id);
-    if (error) throw error;
-  }, ["homework"]);
+  const setStatus = useMut(
+    async ({ id, status }: { id: string; status: HomeworkStatus }) => {
+      const { error } = await (await sb()).from("homework").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    ["homework"],
+  );
 
-  const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("homework").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    if (error) throw error;
-  }, ["homework"]);
+  const del = useMut(
+    async (id: string) => {
+      const { error } = await (await sb())
+        .from("homework")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    ["homework"],
+  );
 
   return (
     <>
       <Card className="mt-4 p-4">
         <Field label="Задание">
-          <Input value={task} onChange={(e) => setTask(e.target.value)} placeholder="Что именно задал" />
+          <Input
+            value={task}
+            onChange={(e) => setTask(e.target.value)}
+            placeholder="Что именно задал"
+          />
         </Field>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <Field label="Задано">
-            <Input type="date" value={assignedDate} onChange={(e) => setAssignedDate(e.target.value)} />
+            <Input
+              type="date"
+              value={assignedDate}
+              onChange={(e) => setAssignedDate(e.target.value)}
+            />
           </Field>
           <Field label="К сроку">
             <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
@@ -416,8 +534,8 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
               await add.mutateAsync(undefined as never);
               setTask("");
               toast.success("ДЗ добавлено");
-            } catch (e: any) {
-              toast.error(e?.message ?? "Ошибка");
+            } catch (error: unknown) {
+              toast.error(getErrorMessage(error));
             }
           }}
         >
@@ -435,7 +553,9 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
             return (
               <Card key={h.id} className="p-3">
                 <div className="flex items-start gap-3">
-                  <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary ${cfg.tone === "success" ? "text-[color:var(--success)]" : cfg.tone === "danger" ? "text-destructive" : cfg.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}>
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary ${cfg.tone === "success" ? "text-[color:var(--success)]" : cfg.tone === "danger" ? "text-destructive" : cfg.tone === "gold" ? "text-accent" : "text-muted-foreground"}`}
+                  >
                     <cfg.Icon className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -473,7 +593,9 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
                             : "bg-secondary text-muted-foreground"
                         }`}
                       >
-                        <span className="inline-flex items-center justify-center gap-1"><c.Icon className="h-3.5 w-3.5" /> {c.label}</span>
+                        <span className="inline-flex items-center justify-center gap-1">
+                          <c.Icon className="h-3.5 w-3.5" /> {c.label}
+                        </span>
                       </button>
                     );
                   })}
@@ -487,7 +609,7 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: any[] }) {
   );
 }
 
-function FinanceTab({ studentId, fin }: { studentId: string; fin: any[] }) {
+function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
   const today = new Date().toISOString().slice(0, 10);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<"RUB" | "USD" | "EGP">("RUB");
@@ -507,21 +629,36 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: any[] }) {
     if (error) throw error;
   }, ["finance"]);
 
-  const toggle = useMut(async (f: any) => {
-    const { error } = await (await sb()).from("finance").update({ is_paid: !f.is_paid }).eq("id", f.id);
-    if (error) throw error;
-  }, ["finance"]);
+  const toggle = useMut(
+    async (f: Finance) => {
+      const { error } = await (await sb())
+        .from("finance")
+        .update({ is_paid: !f.is_paid })
+        .eq("id", f.id);
+      if (error) throw error;
+    },
+    ["finance"],
+  );
 
-  const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("finance").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    if (error) throw error;
-  }, ["finance"]);
+  const del = useMut(
+    async (id: string) => {
+      const { error } = await (await sb())
+        .from("finance")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    ["finance"],
+  );
 
   return (
     <>
       <Card className="mt-4 p-4">
         <div className="grid grid-cols-3 gap-2">
-          <Select value={currency} onChange={(e) => setCurrency(e.target.value as any)}>
+          <Select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value as Finance["currency"])}
+          >
             <option value="RUB">₽ RUB</option>
             <option value="USD">$ USD</option>
             <option value="EGP">£ EGP</option>
@@ -534,11 +671,18 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: any[] }) {
             className="col-span-2"
           />
         </div>
-        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-2" />
+        <Input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="mt-2"
+        />
         <button
           onClick={() => setIsPaid((p) => !p)}
           className={`mt-2 w-full rounded-xl px-3 py-2 text-xs font-semibold ${
-            isPaid ? "bg-[color:var(--success)]/15 text-[color:var(--success)]" : "bg-destructive/15 text-destructive"
+            isPaid
+              ? "bg-[color:var(--success)]/15 text-[color:var(--success)]"
+              : "bg-destructive/15 text-destructive"
           }`}
         >
           {isPaid ? "✓ Оплачено" : "✗ Не оплачено"}
@@ -552,8 +696,8 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: any[] }) {
               await add.mutateAsync(undefined as never);
               setAmount("");
               toast.success("Платёж добавлен");
-            } catch (e: any) {
-              toast.error(e?.message ?? "Ошибка");
+            } catch (error: unknown) {
+              toast.error(getErrorMessage(error));
             }
           }}
         >
@@ -616,10 +760,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function StatusSwitcher({ studentId, current }: { studentId: string; current: StudentStatus }) {
-  const upd = useMut(async (next: StudentStatus) => {
-    const { error } = await (await sb()).from("students").update({ status: next }).eq("id", studentId);
-    if (error) throw error;
-  }, ["students"]);
+  const upd = useMut(
+    async (next: StudentStatus) => {
+      const { error } = await (await sb())
+        .from("students")
+        .update({ status: next })
+        .eq("id", studentId);
+      if (error) throw error;
+    },
+    ["students"],
+  );
   const items: StudentStatus[] = ["active", "paused", "completed", "archived"];
   return (
     <div className="mt-3 flex gap-1.5 overflow-x-auto -mx-1 px-1">
@@ -635,7 +785,7 @@ function StatusSwitcher({ studentId, current }: { studentId: string; current: St
               if (active) return;
               upd.mutate(s, {
                 onSuccess: () => toast.success(`Статус: ${meta.label}`),
-                onError: (e: any) => toast.error(e?.message ?? "Ошибка"),
+                onError: (error: unknown) => toast.error(getErrorMessage(error)),
               });
             }}
             className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
@@ -652,7 +802,7 @@ function StatusSwitcher({ studentId, current }: { studentId: string; current: St
   );
 }
 
-function TimelineTab({ att, hw, fin }: { att: any[]; hw: any[]; fin: any[] }) {
+function TimelineTab({ att, hw, fin }: { att: Attendance[]; hw: Homework[]; fin: Finance[] }) {
   type Item = {
     id: string;
     date: string;
@@ -712,17 +862,22 @@ function TimelineTab({ att, hw, fin }: { att: any[]; hw: any[]; fin: any[] }) {
         icon: <Wallet className="h-3.5 w-3.5" />,
       });
     }
-    return out
-      .filter((i) => i.date)
-      .sort((a, b) => b.date.localeCompare(a.date));
+    return out.filter((i) => i.date).sort((a, b) => b.date.localeCompare(a.date));
   }, [att, hw, fin]);
 
   if (items.length === 0) {
-    return <Empty icon={<HistoryIcon className="h-8 w-8" />} title="История пуста" hint="Добавьте уроки, ДЗ или оплаты" />;
+    return (
+      <Empty
+        icon={<HistoryIcon className="h-8 w-8" />}
+        title="История пуста"
+        hint="Добавьте уроки, ДЗ или оплаты"
+      />
+    );
   }
 
   const toneClasses: Record<Item["tone"], string> = {
-    success: "bg-[color:var(--success)]/15 text-[color:var(--success)] border-[color:var(--success)]/30",
+    success:
+      "bg-[color:var(--success)]/15 text-[color:var(--success)] border-[color:var(--success)]/30",
     danger: "bg-destructive/15 text-destructive border-destructive/30",
     gold: "bg-accent/15 text-accent border-accent/30",
     neutral: "bg-secondary text-muted-foreground border-border",
@@ -735,17 +890,28 @@ function TimelineTab({ att, hw, fin }: { att: any[]; hw: any[]; fin: any[] }) {
         <div className="space-y-3">
           {items.map((it) => (
             <div key={it.id} className="relative">
-              <div className={`absolute -left-6 top-1 flex h-6 w-6 items-center justify-center rounded-full border ${toneClasses[it.tone]}`}>
+              <div
+                className={`absolute -left-6 top-1 flex h-6 w-6 items-center justify-center rounded-full border ${toneClasses[it.tone]}`}
+              >
                 {it.icon}
               </div>
               <Card className="p-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-semibold text-foreground">{it.title}</div>
-                    {it.sub && <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{it.sub}</div>}
+                    <div className="truncate text-[13px] font-semibold text-foreground">
+                      {it.title}
+                    </div>
+                    {it.sub && (
+                      <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                        {it.sub}
+                      </div>
+                    )}
                   </div>
                   <div className="num text-[11px] text-muted-foreground shrink-0">
-                    {new Date(it.date).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
+                    {new Date(it.date).toLocaleDateString("ru-RU", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
                   </div>
                 </div>
               </Card>

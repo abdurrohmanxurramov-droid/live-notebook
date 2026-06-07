@@ -66,9 +66,7 @@ function OnboardingPage() {
               <span className="h-6 w-6 rounded-full" style={{ background: "#B38B59" }} />
               <span className="h-6 w-6 rounded-full" style={{ background: "#EEE8DC" }} />
             </div>
-            {busy === "male" && (
-              <div className="mt-4 text-xs text-[#C9C3B5]">Применяем…</div>
-            )}
+            {busy === "male" && <div className="mt-4 text-xs text-[#C9C3B5]">Применяем…</div>}
           </button>
 
           <button
@@ -79,8 +77,7 @@ function OnboardingPage() {
             onClick={() => pick("female")}
             className="glass group relative overflow-hidden rounded-3xl p-6 text-left no-anim"
             style={{
-              background:
-                "linear-gradient(160deg, #FFF4F7 0%, #FFE0EA 60%, #FFC8DA 100%)",
+              background: "linear-gradient(160deg, #FFF4F7 0%, #FFE0EA 60%, #FFC8DA 100%)",
             }}
           >
             <div className="text-5xl" style={{ color: "#C2548A" }}>

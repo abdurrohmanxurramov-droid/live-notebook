@@ -1,14 +1,35 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Card, Button, Input, Select, Avatar, Badge, Empty, SectionTitle } from "@/components/ui-bits";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  Avatar,
+  Badge,
+  Empty,
+  SectionTitle,
+} from "@/components/ui-bits";
 import { useStudents, useAttendance, useMut, initials } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { CalendarCheck, Check, X, FileText, Trash2, Paperclip, type LucideIcon } from "lucide-react";
+import { getErrorMessage } from "@/lib/utils";
+import {
+  CalendarCheck,
+  Check,
+  X,
+  FileText,
+  Trash2,
+  Paperclip,
+  type LucideIcon,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/attendance")({ component: AttendancePage });
 
-const STATUS: Record<"present" | "absent" | "excused", { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" }> = {
+const STATUS: Record<
+  "present" | "absent" | "excused",
+  { label: string; Icon: LucideIcon; tone: "success" | "danger" | "gold" }
+> = {
   present: { label: "Присутствовал", Icon: Check, tone: "success" },
   absent: { label: "Отсутствовал", Icon: X, tone: "danger" },
   excused: { label: "Уваж. причина", Icon: Paperclip, tone: "gold" },
@@ -35,15 +56,22 @@ function AttendancePage() {
     if (error) throw error;
   }, ["attendance"]);
 
-  const del = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("attendance").update({ deleted_at: new Date().toISOString() }).eq("id", id);
-    if (error) throw error;
-  }, ["attendance"]);
+  const del = useMut(
+    async (id: string) => {
+      const { error } = await (await sb())
+        .from("attendance")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    ["attendance"],
+  );
 
   const studentMap = useMemo(() => Object.fromEntries(students.map((s) => [s.id, s])), [students]);
 
   const perStudentStats = useMemo(() => {
-    const map: Record<string, { present: number; absent: number; excused: number; total: number }> = {};
+    const map: Record<string, { present: number; absent: number; excused: number; total: number }> =
+      {};
     for (const r of records) {
       const m = (map[r.student_id] ??= { present: 0, absent: 0, excused: 0, total: 0 });
       m[r.status as keyof typeof STATUS] += 1;
@@ -63,7 +91,9 @@ function AttendancePage() {
             <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
               <option value="">— выберите —</option>
               {students.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
               ))}
             </Select>
           </Field>
@@ -72,9 +102,14 @@ function AttendancePage() {
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
             <Field label="Статус">
-              <Select value={status} onChange={(e) => setStatus(e.target.value as keyof typeof STATUS)}>
+              <Select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as keyof typeof STATUS)}
+              >
                 {Object.entries(STATUS).map(([k, v]) => (
-                  <option key={k} value={k}>{v.label}</option>
+                  <option key={k} value={k}>
+                    {v.label}
+                  </option>
                 ))}
               </Select>
             </Field>
@@ -91,8 +126,8 @@ function AttendancePage() {
                 await add.mutateAsync(undefined as never);
                 toast.success("Записано");
                 setNote("");
-              } catch (e: any) {
-                toast.error(e?.message ?? "Ошибка");
+              } catch (error: unknown) {
+                toast.error(getErrorMessage(error));
               }
             }}
           >
@@ -103,7 +138,11 @@ function AttendancePage() {
 
       <SectionTitle>Статистика</SectionTitle>
       {students.length === 0 ? (
-        <Empty icon={<CalendarCheck className="h-8 w-8" />} title="Нет учеников" hint="Сначала добавьте ученика" />
+        <Empty
+          icon={<CalendarCheck className="h-8 w-8" />}
+          title="Нет учеников"
+          hint="Сначала добавьте ученика"
+        />
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {students.map((s) => {
@@ -140,18 +179,25 @@ function AttendancePage() {
             const StatusIcon = cfg?.Icon;
             return (
               <Card key={r.id} className="flex items-center gap-3 p-3">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : "text-accent"}`}>
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-full bg-secondary ${cfg?.tone === "success" ? "text-[color:var(--success)]" : cfg?.tone === "danger" ? "text-destructive" : "text-accent"}`}
+                >
                   {StatusIcon ? <StatusIcon className="h-5 w-5" /> : <span>·</span>}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="name-italic truncate text-[14px] font-semibold">{s?.name ?? "—"}</div>
+                  <div className="name-italic truncate text-[14px] font-semibold">
+                    {s?.name ?? "—"}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(r.date).toLocaleDateString("ru-RU")} · {cfg?.label}
                     {r.note ? ` · ${r.note}` : ""}
                   </div>
                 </div>
                 <button
-                  onClick={async () => { await del.mutateAsync(r.id); toast.success("Удалено"); }}
+                  onClick={async () => {
+                    await del.mutateAsync(r.id);
+                    toast.success("Удалено");
+                  }}
                   className="rounded-full p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                   aria-label="Удалить"
                 >
@@ -175,7 +221,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Stat({ n, icon, tone }: { n: number; icon: React.ReactNode; tone: "success" | "danger" | "gold" }) {
+function Stat({
+  n,
+  icon,
+  tone,
+}: {
+  n: number;
+  icon: React.ReactNode;
+  tone: "success" | "danger" | "gold";
+}) {
   const toneCls: Record<string, string> = {
     success: "text-[color:var(--success)]",
     danger: "text-destructive",

@@ -49,10 +49,16 @@ export const softDeleteStudent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const now = new Date().toISOString();
-    const { error: e1 } = await supabase.from("students").update({ deleted_at: now }).eq("id", data.id);
+    const { error: e1 } = await supabase
+      .from("students")
+      .update({ deleted_at: now })
+      .eq("id", data.id);
     if (e1) throw new Error(`students: ${e1.message}`);
     for (const t of ["schedule_slots", "lessons", "attendance", "finance", "homework"] as const) {
-      const { error } = await supabase.from(t).update({ deleted_at: now }).eq("student_id", data.id);
+      const { error } = await supabase
+        .from(t)
+        .update({ deleted_at: now })
+        .eq("student_id", data.id);
       if (error) throw new Error(`${t}: ${error.message}`);
     }
     return { ok: true };
@@ -63,10 +69,16 @@ export const restoreStudent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error: e1 } = await supabase.from("students").update({ deleted_at: null }).eq("id", data.id);
+    const { error: e1 } = await supabase
+      .from("students")
+      .update({ deleted_at: null })
+      .eq("id", data.id);
     if (e1) throw new Error(`students: ${e1.message}`);
     for (const t of ["schedule_slots", "lessons", "attendance", "finance", "homework"] as const) {
-      const { error } = await supabase.from(t).update({ deleted_at: null }).eq("student_id", data.id);
+      const { error } = await supabase
+        .from(t)
+        .update({ deleted_at: null })
+        .eq("student_id", data.id);
       if (error) throw new Error(`${t}: ${error.message}`);
     }
     return { ok: true };

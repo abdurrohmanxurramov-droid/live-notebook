@@ -45,8 +45,12 @@ export function SplashScreen() {
           <div className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-[2.5rem] border border-white/60 bg-gradient-to-br from-white/60 to-white/20 shadow-[0_22px_40px_-10px_rgba(20,33,61,0.08)] backdrop-blur-2xl">
             <div className="absolute inset-0 -translate-x-full bg-gradient-to-tr from-transparent via-white/30 to-transparent transition-transform duration-1000 ease-in-out group-hover:translate-x-full" />
             <div className="relative flex items-baseline">
-              <span className="text-[3.2rem] font-bold leading-none tracking-[-0.05em] text-foreground">L</span>
-              <span className="-ml-1 text-[3.2rem] font-medium leading-none tracking-[-0.05em] text-foreground">N</span>
+              <span className="text-[3.2rem] font-bold leading-none tracking-[-0.05em] text-foreground">
+                L
+              </span>
+              <span className="-ml-1 text-[3.2rem] font-medium leading-none tracking-[-0.05em] text-foreground">
+                N
+              </span>
               <div className="absolute -bottom-1 -right-3 h-3 w-3 rounded-full bg-accent shadow-sm" />
             </div>
           </div>

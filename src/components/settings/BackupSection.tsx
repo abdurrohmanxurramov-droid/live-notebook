@@ -66,11 +66,7 @@ export function BackupSection() {
         downloaded++;
         await delay(350);
       }
-      toast.success(
-        downloaded === 0
-          ? "Нет данных для экспорта"
-          : `Скачано файлов: ${downloaded}`
-      );
+      toast.success(downloaded === 0 ? "Нет данных для экспорта" : `Скачано файлов: ${downloaded}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
@@ -79,7 +75,10 @@ export function BackupSection() {
   }
 
   async function handleFile(file: File) {
-    if (!confirm("Импортировать данные из бэкапа? Существующие записи с теми же ID будут обновлены.")) return;
+    if (
+      !confirm("Импортировать данные из бэкапа? Существующие записи с теми же ID будут обновлены.")
+    )
+      return;
     setBusy(true);
     try {
       const text = await file.text();
@@ -99,7 +98,8 @@ export function BackupSection() {
   return (
     <Card className="p-4 space-y-3">
       <div className="text-sm text-muted-foreground">
-        Скачайте JSON-файл со всеми вашими данными, выгрузите таблицы в CSV или загрузите ранее сохранённый бэкап.
+        Скачайте JSON-файл со всеми вашими данными, выгрузите таблицы в CSV или загрузите ранее
+        сохранённый бэкап.
       </div>
       <Button variant="outline" className="w-full" disabled={busy} onClick={handleExport}>
         <Download className="h-4 w-4" /> Скачать бэкап (JSON)
@@ -117,7 +117,12 @@ export function BackupSection() {
           if (f) handleFile(f);
         }}
       />
-      <Button variant="outline" className="w-full" disabled={busy} onClick={() => fileRef.current?.click()}>
+      <Button
+        variant="outline"
+        className="w-full"
+        disabled={busy}
+        onClick={() => fileRef.current?.click()}
+      >
         <Upload className="h-4 w-4" /> Импортировать из файла
       </Button>
     </Card>

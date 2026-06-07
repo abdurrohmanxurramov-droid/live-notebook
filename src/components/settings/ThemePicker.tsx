@@ -20,7 +20,7 @@ export function ThemePicker() {
     staleTime: 60_000,
   });
 
-  const current: Theme = ((data as { theme?: Theme } | undefined)?.theme ?? "classic");
+  const current: Theme = (data as { theme?: Theme } | undefined)?.theme ?? "classic";
   const gender = (data as { gender?: "male" | "female" | null } | undefined)?.gender ?? null;
 
   async function setTheme(next: Theme) {
@@ -65,9 +65,7 @@ export function ThemePicker() {
             disabled={busy}
             onClick={() => setTheme("classic")}
             className={`relative overflow-hidden rounded-2xl border p-3 text-left transition no-anim ${
-              current === "classic"
-                ? "border-accent ring-2 ring-accent/40"
-                : "border-border"
+              current === "classic" ? "border-accent ring-2 ring-accent/40" : "border-border"
             }`}
             style={{ background: "linear-gradient(160deg, #1B263B 0%, #14213D 100%)" }}
           >
@@ -81,9 +79,7 @@ export function ThemePicker() {
             disabled={busy}
             onClick={() => setTheme("bloom")}
             className={`relative overflow-hidden rounded-2xl border p-3 text-left transition no-anim ${
-              current === "bloom"
-                ? "border-accent ring-2 ring-accent/40"
-                : "border-border"
+              current === "bloom" ? "border-accent ring-2 ring-accent/40" : "border-border"
             }`}
             style={{
               background: "linear-gradient(160deg, #FFF4F7 0%, #FFE0EA 60%, #FFC8DA 100%)",

@@ -7,11 +7,41 @@ import { Card, SectionTitle, Avatar, Badge, Empty, Button } from "@/components/u
 import { CountUp } from "@/components/CountUp";
 import { StudentRoom } from "@/components/StudentRoom";
 import { GlassChips } from "@/components/GlassChips";
-import { useStudents, useFinance, useRates, useSchedule, useAttendance, useHomework, useMut, initials, convertToRUB, formatMoney, STUDENT_STATUS_META, groupByStudentId } from "@/lib/db";
+import {
+  useStudents,
+  useFinance,
+  useRates,
+  useSchedule,
+  useAttendance,
+  useHomework,
+  useMut,
+  initials,
+  convertToRUB,
+  formatMoney,
+  STUDENT_STATUS_META,
+  groupByStudentId,
+} from "@/lib/db";
 import { getSettings } from "@/lib/settings.functions";
 import { sb } from "@/lib/sb";
-import { Wallet, GraduationCap, CheckCircle2, AlertTriangle, Sparkles, Clock, CalendarDays, X, Search, AlertCircle, Check, BookOpen, TrendingUp, PlayCircle, BarChart3, FileText } from "lucide-react";
-
+import { getErrorMessage } from "@/lib/utils";
+import {
+  Wallet,
+  GraduationCap,
+  CheckCircle2,
+  AlertTriangle,
+  Sparkles,
+  Clock,
+  CalendarDays,
+  X,
+  Search,
+  AlertCircle,
+  Check,
+  BookOpen,
+  TrendingUp,
+  PlayCircle,
+  BarChart3,
+  FileText,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
 
@@ -40,25 +70,35 @@ function Home() {
         const u = data.user;
         if (!u) return;
         const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
-        const raw = (meta.full_name as string) || (meta.name as string) || (meta.display_name as string) || "";
+        const raw =
+          (meta.full_name as string) ||
+          (meta.name as string) ||
+          (meta.display_name as string) ||
+          "";
         const fromName = raw.trim().split(/\s+/)[0];
         const fromEmail = u.email ? u.email.split("@")[0].split(/[._-]/)[0] : "";
         const pick = fromName || fromEmail || "";
         setTeacherName(pick ? pick.charAt(0).toUpperCase() + pick.slice(1) : "");
-      } catch {}
+      } catch {
+        // The greeting can fall back to its generic form.
+      }
     })();
   }, []);
 
   useEffect(() => {
     document.body.style.overflow = openId ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [openId]);
-
 
   const todayDow = (new Date().getDay() + 6) % 7;
   const todayLessons = useMemo(
-    () => schedule.filter((s) => s.day_of_week === todayDow).sort((a, b) => a.start_time.localeCompare(b.start_time)),
-    [schedule, todayDow]
+    () =>
+      schedule
+        .filter((s) => s.day_of_week === todayDow)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    [schedule, todayDow],
   );
   const studentsById = useMemo(() => {
     const m = new Map<string, (typeof students)[number]>();
@@ -77,16 +117,27 @@ function Home() {
     for (const f of finance) {
       const d = f.pay_date ? new Date(f.pay_date) : new Date(f.created_at);
       const inMonth = d.getMonth() === m && d.getFullYear() === y;
-      if (rates && inMonth && f.is_paid) incomeRUB += convertToRUB(Number(f.amount), f.currency, rates);
-      if (f.is_paid) paid += 1; else unpaid += 1;
+      if (rates && inMonth && f.is_paid)
+        incomeRUB += convertToRUB(Number(f.amount), f.currency, rates);
+      if (f.is_paid) paid += 1;
+      else unpaid += 1;
     }
     return { incomeRUB: Math.round(incomeRUB), paid, unpaid };
   }, [finance, rates]);
 
-  const dateLabel = new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", weekday: "long" });
+  const dateLabel = new Date().toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    weekday: "long",
+  });
 
   const metrics = [
-    { icon: Wallet, label: "Доход за месяц", value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽", tone: "gold" },
+    {
+      icon: Wallet,
+      label: "Доход за месяц",
+      value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽",
+      tone: "gold",
+    },
     { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy" },
     { icon: CheckCircle2, label: "Оплатили", value: String(stats.paid), tone: "success" },
     { icon: AlertTriangle, label: "Должники", value: String(stats.unpaid), tone: "danger" },
@@ -102,11 +153,16 @@ function Home() {
   return (
     <div className="px-4 pt-6">
       <header className="mb-5">
-        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">{dateLabel}</p>
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+          {dateLabel}
+        </p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground">
-          {greetingForNow()}{teacherName ? `, ${teacherName}` : ""}
+          {greetingForNow()}
+          {teacherName ? `, ${teacherName}` : ""}
           <GraduationCap className="ml-2 inline h-6 w-6 text-accent bloom-hide" strokeWidth={2.2} />
-          <span className="ml-2 hidden bloom-show align-middle text-2xl" aria-hidden>🌸</span>
+          <span className="ml-2 hidden bloom-show align-middle text-2xl" aria-hidden>
+            🌸
+          </span>
         </h1>
       </header>
 
@@ -128,7 +184,6 @@ function Home() {
 
       <PaymentsWidget />
 
-
       <SectionTitle>Быстрые действия</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
         <QuickAction to="/assistant" icon={<Sparkles className="h-5 w-5" />} label="ИИ" />
@@ -137,9 +192,13 @@ function Home() {
         <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="Журнал" />
       </div>
 
-
-      <SectionTitle action={<Link to="/schedule" className="text-xs font-medium text-accent">Открыть →</Link>}>
-
+      <SectionTitle
+        action={
+          <Link to="/schedule" className="text-xs font-medium text-accent">
+            Открыть →
+          </Link>
+        }
+      >
         Сегодня
       </SectionTitle>
       {todayLessons.length === 0 ? (
@@ -161,12 +220,18 @@ function Home() {
               >
                 <Card className="flex items-center gap-3 p-3 transition-colors active:bg-secondary">
                   <div className="flex w-14 shrink-0 flex-col items-center rounded-xl bg-accent/10 px-2 py-1.5">
-                    <span className="num text-sm leading-tight text-accent">{slot.start_time.slice(0, 5)}</span>
-                    <span className="text-[10px] text-muted-foreground">{slot.duration_min} мин</span>
+                    <span className="num text-sm leading-tight text-accent">
+                      {slot.start_time.slice(0, 5)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {slot.duration_min} мин
+                    </span>
                   </div>
                   <Avatar initials={initials(st?.name ?? "?")} />
                   <div className="min-w-0 flex-1">
-                    <div className="name-italic truncate text-[14px] font-semibold text-foreground">{st?.name ?? "—"}</div>
+                    <div className="name-italic truncate text-[14px] font-semibold text-foreground">
+                      {st?.name ?? "—"}
+                    </div>
                     <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
                       <Clock className="h-3 w-3" /> {st?.subject || "Урок"}
                     </div>
@@ -178,7 +243,13 @@ function Home() {
         </div>
       )}
 
-      <SectionTitle action={<Link to="/students" className="text-xs font-medium text-accent">Все →</Link>}>
+      <SectionTitle
+        action={
+          <Link to="/students" className="text-xs font-medium text-accent">
+            Все →
+          </Link>
+        }
+      >
         Ученики
       </SectionTitle>
       {students.length === 0 ? (
@@ -208,63 +279,74 @@ function Home() {
               </button>
             )}
           </div>
-        <div className="space-y-2 pb-4">
-          {students
-            .filter((s) => {
-              if (!q.trim()) return true;
-              const needle = q.trim().toLowerCase();
-              return (
-                s.name.toLowerCase().includes(needle) ||
-                (s.subject ?? "").toLowerCase().includes(needle) ||
-                (s.phone ?? "").toLowerCase().includes(needle)
-              );
-            })
-            .map((s) => {
-            const fin = financeByStudent.get(s.id) ?? [];
-            const hasUnpaid = fin.some((f) => !f.is_paid);
-            const today = new Date().toISOString().slice(0, 10);
-            const isOverdue = fin.some((f) => !f.is_paid && f.pay_date && f.pay_date < today);
-            const meta = STUDENT_STATUS_META[s.status];
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => setOpenId(s.id)}
-                className="block w-full text-left"
-              >
-                <Card className={`flex items-center gap-3 p-3 transition-colors active:bg-secondary ${isOverdue ? "ring-1 ring-destructive/60" : ""}`}>
-                  <Avatar initials={initials(s.name)} />
-                  <div className="min-w-0 flex-1">
-                    <div className="name-italic flex items-center gap-1.5 truncate text-[15px] font-semibold text-foreground">
-                      {s.name}
-                      {isOverdue && <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Badge tone={meta.tone}>{meta.label}</Badge>
-                      <span className="truncate">{s.days_per_week} {pluralDays(s.days_per_week)} · {s.subject || "—"}</span>
-                    </div>
-                  </div>
-                  {fin.length === 0 ? (
-                    <Badge>—</Badge>
-                  ) : hasUnpaid ? (
-                    <Badge tone="danger">Должник</Badge>
-                  ) : (
-                    <Badge tone="success">Оплачено</Badge>
-                  )}
-                </Card>
-              </button>
-            );
-          })}
-        </div>
+          <div className="space-y-2 pb-4">
+            {students
+              .filter((s) => {
+                if (!q.trim()) return true;
+                const needle = q.trim().toLowerCase();
+                return (
+                  s.name.toLowerCase().includes(needle) ||
+                  (s.subject ?? "").toLowerCase().includes(needle) ||
+                  (s.phone ?? "").toLowerCase().includes(needle)
+                );
+              })
+              .map((s) => {
+                const fin = financeByStudent.get(s.id) ?? [];
+                const hasUnpaid = fin.some((f) => !f.is_paid);
+                const today = new Date().toISOString().slice(0, 10);
+                const isOverdue = fin.some((f) => !f.is_paid && f.pay_date && f.pay_date < today);
+                const meta = STUDENT_STATUS_META[s.status];
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setOpenId(s.id)}
+                    className="block w-full text-left"
+                  >
+                    <Card
+                      className={`flex items-center gap-3 p-3 transition-colors active:bg-secondary ${isOverdue ? "ring-1 ring-destructive/60" : ""}`}
+                    >
+                      <Avatar initials={initials(s.name)} />
+                      <div className="min-w-0 flex-1">
+                        <div className="name-italic flex items-center gap-1.5 truncate text-[15px] font-semibold text-foreground">
+                          {s.name}
+                          {isOverdue && (
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0 text-destructive" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Badge tone={meta.tone}>{meta.label}</Badge>
+                          <span className="truncate">
+                            {s.days_per_week} {pluralDays(s.days_per_week)} · {s.subject || "—"}
+                          </span>
+                        </div>
+                      </div>
+                      {fin.length === 0 ? (
+                        <Badge>—</Badge>
+                      ) : hasUnpaid ? (
+                        <Badge tone="danger">Должник</Badge>
+                      ) : (
+                        <Badge tone="success">Оплачено</Badge>
+                      )}
+                    </Card>
+                  </button>
+                );
+              })}
+          </div>
         </>
       )}
 
       {openId && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpenId(null)} />
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setOpenId(null)}
+          />
           <div className="relative z-10 flex h-[92vh] w-full max-w-md flex-col rounded-t-3xl bg-background shadow-2xl sm:h-[88vh] sm:rounded-2xl animate-in slide-in-from-bottom-4">
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-              <h3 className="text-base font-semibold tracking-tight text-foreground">Карточка ученика</h3>
+              <h3 className="text-base font-semibold tracking-tight text-foreground">
+                Карточка ученика
+              </h3>
               <button
                 onClick={() => setOpenId(null)}
                 aria-label="Закрыть"
@@ -279,7 +361,6 @@ function Home() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
@@ -330,7 +411,10 @@ function PaymentsWidget() {
   const in7iso = in7.toISOString().slice(0, 10);
 
   const overdueRows = useMemo(() => {
-    const map = new Map<string, { amount: number; currency: string; days: number; firstId: string }>();
+    const map = new Map<
+      string,
+      { amount: number; currency: string; days: number; firstId: string }
+    >();
     for (const f of finance) {
       if (f.is_paid || !f.pay_date || f.pay_date >= today) continue;
       const days = Math.floor((Date.parse(today) - Date.parse(f.pay_date)) / 86400000);
@@ -339,7 +423,12 @@ function PaymentsWidget() {
         cur.amount += Number(f.amount);
         cur.days = Math.max(cur.days, days);
       } else {
-        map.set(f.student_id, { amount: Number(f.amount), currency: f.currency, days, firstId: f.id });
+        map.set(f.student_id, {
+          amount: Number(f.amount),
+          currency: f.currency,
+          days,
+          firstId: f.id,
+        });
       }
     }
     return Array.from(map.entries())
@@ -355,24 +444,37 @@ function PaymentsWidget() {
 
   const totalUnpaid = overdueRows.reduce((acc, r) => acc + r.amount, 0);
 
-  const markPaid = useMut(async (id: string) => {
-    const { error } = await (await sb()).from("finance").update({ is_paid: true }).eq("id", id);
-    if (error) throw error;
-  }, ["finance"]);
+  const markPaid = useMut(
+    async (id: string) => {
+      const { error } = await (await sb()).from("finance").update({ is_paid: true }).eq("id", id);
+      if (error) throw error;
+    },
+    ["finance"],
+  );
 
   if (overdueRows.length === 0 && upcomingRows.length === 0) return null;
 
   return (
     <>
-      <SectionTitle action={<Link to="/finance" className="text-xs font-medium text-accent">Все →</Link>}>
+      <SectionTitle
+        action={
+          <Link to="/finance" className="text-xs font-medium text-accent">
+            Все →
+          </Link>
+        }
+      >
         Платежи
       </SectionTitle>
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Просрочено всего</div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Просрочено всего
+            </div>
             <div className="mt-1 num text-2xl text-destructive">
-              {overdueRows.length === 0 ? "—" : formatMoney(totalUnpaid, overdueRows[0]?.currency ?? "RUB")}
+              {overdueRows.length === 0
+                ? "—"
+                : formatMoney(totalUnpaid, overdueRows[0]?.currency ?? "RUB")}
             </div>
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
@@ -386,10 +488,15 @@ function PaymentsWidget() {
               const st = studentsById.get(r.studentId);
               if (!st) return null;
               return (
-                <div key={r.studentId} className="flex items-center gap-2 rounded-xl bg-destructive/5 p-2.5">
+                <div
+                  key={r.studentId}
+                  className="flex items-center gap-2 rounded-xl bg-destructive/5 p-2.5"
+                >
                   <Avatar initials={initials(st.name)} />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-semibold text-foreground">{st.name}</div>
+                    <div className="truncate text-[13px] font-semibold text-foreground">
+                      {st.name}
+                    </div>
                     <div className="text-[11px] text-destructive">
                       {formatMoney(r.amount, r.currency)} · {r.days} дн просрочки
                     </div>
@@ -399,7 +506,7 @@ function PaymentsWidget() {
                     onClick={() => {
                       markPaid.mutate(r.firstId, {
                         onSuccess: () => toast.success("Платёж отмечен"),
-                        onError: (e: any) => toast.error(e?.message ?? "Ошибка"),
+                        onError: (error: unknown) => toast.error(getErrorMessage(error)),
                       });
                     }}
                     disabled={markPaid.isPending}
@@ -415,13 +522,18 @@ function PaymentsWidget() {
 
         {upcomingRows.length > 0 && (
           <div className="mt-3">
-            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">Ближайшие 7 дней</div>
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Ближайшие 7 дней
+            </div>
             <div className="mt-2 space-y-1.5">
               {upcomingRows.slice(0, 5).map((f) => {
                 const st = studentsById.get(f.student_id);
                 if (!st) return null;
                 return (
-                  <div key={f.id} className="flex items-center justify-between rounded-xl bg-secondary px-3 py-2">
+                  <div
+                    key={f.id}
+                    className="flex items-center justify-between rounded-xl bg-secondary px-3 py-2"
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       <span className="truncate text-[13px] text-foreground">{st.name}</span>
@@ -447,11 +559,16 @@ function useDashData() {
   const { data: attendance = [] } = useAttendance();
   const { data: homework = [] } = useHomework();
   const getSettingsFn = useServerFn(getSettings);
-  const { data: settings } = useQuery({ queryKey: ["user_settings"], queryFn: () => getSettingsFn({}) });
+  const { data: settings } = useQuery({
+    queryKey: ["user_settings"],
+    queryFn: () => getSettingsFn({}),
+  });
   return { students, finance, schedule, attendance, homework, settings };
 }
 
-function todayDowMon0() { return (new Date().getDay() + 6) % 7; }
+function todayDowMon0() {
+  return (new Date().getDay() + 6) % 7;
+}
 
 function Overview() {
   const { finance, schedule, homework, attendance, settings } = useDashData();
@@ -460,7 +577,11 @@ function Overview() {
     return (localStorage.getItem("home-overview-period") as "today" | "week") || "today";
   });
   useEffect(() => {
-    try { localStorage.setItem("home-overview-period", period); } catch {}
+    try {
+      localStorage.setItem("home-overview-period", period);
+    } catch {
+      // Persisting this preference is optional.
+    }
   }, [period]);
 
   const todayDow = todayDowMon0();
@@ -468,8 +589,11 @@ function Overview() {
   const currency = settings?.default_currency ?? "RUB";
 
   const todayLessons = useMemo(
-    () => schedule.filter((s) => s.day_of_week === todayDow).sort((a, b) => a.start_time.localeCompare(b.start_time)),
-    [schedule, todayDow]
+    () =>
+      schedule
+        .filter((s) => s.day_of_week === todayDow)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time)),
+    [schedule, todayDow],
   );
   const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
   const expectedToday = todayLessons.length * price;
@@ -478,7 +602,10 @@ function Overview() {
     for (const f of finance) if (!f.is_paid) ids.add(f.student_id);
     return ids.size;
   }, [finance]);
-  const hwWaiting = useMemo(() => homework.filter((h) => h.status === "assigned").length, [homework]);
+  const hwWaiting = useMemo(
+    () => homework.filter((h) => h.status === "assigned").length,
+    [homework],
+  );
 
   const weekLessons = schedule.length;
   const expectedWeek = weekLessons * price;
@@ -490,13 +617,18 @@ function Overview() {
     monday.setDate(monday.getDate() - dow);
     const sunday = new Date(monday);
     sunday.setDate(sunday.getDate() + 6);
-    return { mondayIso: monday.toISOString().slice(0, 10), sundayIso: sunday.toISOString().slice(0, 10) };
+    return {
+      mondayIso: monday.toISOString().slice(0, 10),
+      sundayIso: sunday.toISOString().slice(0, 10),
+    };
   }, []);
   const rate = useMemo(() => {
     const weekAtt = attendance.filter((a) => a.date >= mondayIso && a.date <= sundayIso);
     const counted = weekAtt.filter((a) => a.status === "present" || a.status === "absent");
     if (counted.length === 0) return 0;
-    return Math.round((counted.filter((a) => a.status === "present").length / counted.length) * 100);
+    return Math.round(
+      (counted.filter((a) => a.status === "present").length / counted.length) * 100,
+    );
   }, [attendance, mondayIso, sundayIso]);
 
   return (
@@ -519,54 +651,85 @@ function Overview() {
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4">
             <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={todayLessons.length} /></div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков сегодня</div>
-            {timesLine && <div className="mt-1 truncate text-[11px] num text-muted-foreground">{timesLine}</div>}
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={todayLessons.length} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              Уроков сегодня
+            </div>
+            {timesLine && (
+              <div className="mt-1 truncate text-[11px] num text-muted-foreground">{timesLine}</div>
+            )}
           </Card>
           <Card className="p-4">
             <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={expectedToday} format={(n) => formatMoney(n, currency)} /></div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидаемый доход</div>
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={expectedToday} format={(n) => formatMoney(n, currency)} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              Ожидаемый доход
+            </div>
           </Card>
           <Card className="p-4">
             <AlertTriangle className="h-5 w-5 text-destructive" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={studentsUnpaid} /></div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">С неоплаченным</div>
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={studentsUnpaid} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              С неоплаченным
+            </div>
           </Card>
           <Card className="p-4">
             <BookOpen className="h-5 w-5 text-accent" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={hwWaiting} /></div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">ДЗ на проверку</div>
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={hwWaiting} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              ДЗ на проверку
+            </div>
           </Card>
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
           <Card className="p-4">
             <CalendarDays className="h-5 w-5 text-accent" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={weekLessons} /></div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Уроков за неделю</div>
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={weekLessons} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              Уроков за неделю
+            </div>
           </Card>
           <Card className="p-4">
             <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={expectedWeek} format={(n) => formatMoney(n, currency)} /></div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Ожидается доход</div>
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={expectedWeek} format={(n) => formatMoney(n, currency)} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              Ожидается доход
+            </div>
           </Card>
           <Card className="p-4">
             <TrendingUp className="h-5 w-5 text-accent" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={rate} format={(n) => `${n}%`} /></div>
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={rate} format={(n) => `${n}%`} />
+            </div>
             <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">Посещаемость</div>
           </Card>
           <Card className="p-4">
             <BookOpen className="h-5 w-5 text-accent" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground"><CountUp value={hwWaiting} /></div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">ДЗ на проверку</div>
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={hwWaiting} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              ДЗ на проверку
+            </div>
           </Card>
         </div>
       )}
     </>
   );
 }
-
 
 function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
   const { students, schedule } = useDashData();
@@ -585,9 +748,13 @@ function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
     if (todayUpcoming[0]) return { slot: todayUpcoming[0], when: "Сегодня" };
     for (let i = 1; i <= 7; i++) {
       const d = (dow + i) % 7;
-      const list = schedule.filter((s) => s.day_of_week === d).sort((a, b) => a.start_time.localeCompare(b.start_time));
+      const list = schedule
+        .filter((s) => s.day_of_week === d)
+        .sort((a, b) => a.start_time.localeCompare(b.start_time));
       if (list[0]) {
-        const dateName = new Date(Date.now() + i * 86400000).toLocaleDateString("ru-RU", { weekday: "long" });
+        const dateName = new Date(Date.now() + i * 86400000).toLocaleDateString("ru-RU", {
+          weekday: "long",
+        });
         return { slot: list[0], when: i === 1 ? "Завтра" : dateName };
       }
     }
@@ -598,20 +765,21 @@ function ContinueCard({ onOpen }: { onOpen: (sid: string) => void }) {
   const st = studentsById.get(next.slot.student_id);
   if (!st) return null;
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(st.id)}
-      className="mt-3 block w-full text-left"
-    >
+    <button type="button" onClick={() => onOpen(st.id)} className="mt-3 block w-full text-left">
       <Card className="flex items-center gap-3 p-4 transition-colors active:bg-secondary">
         <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/15 text-accent">
           <PlayCircle className="h-6 w-6" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Продолжить — {next.when}</div>
-          <div className="name-italic truncate text-[15px] font-semibold text-foreground">{st.name}</div>
+          <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Продолжить — {next.when}
+          </div>
+          <div className="name-italic truncate text-[15px] font-semibold text-foreground">
+            {st.name}
+          </div>
           <div className="text-[11px] text-muted-foreground num">
-            {next.slot.start_time.slice(0, 5)} · {next.slot.duration_min} мин · {st.subject || "Урок"}
+            {next.slot.start_time.slice(0, 5)} · {next.slot.duration_min} мин ·{" "}
+            {st.subject || "Урок"}
           </div>
         </div>
       </Card>

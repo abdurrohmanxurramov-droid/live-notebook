@@ -51,29 +51,31 @@ export function QuickCreateLessonSheet({
     <Sheet open={open} onClose={onClose} title="Запланировать урок">
       <div className="grid gap-3">
         <div className="stagger-item" style={{ animationDelay: "40ms" }}>
-        <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
-          <option value="">Выберите ученика…</option>
-          {students.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </Select>
+          <Select value={studentId} onChange={(e) => setStudentId(e.target.value)}>
+            <option value="">Выберите ученика…</option>
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="stagger-item" style={{ animationDelay: "95ms" }}>
-          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="stagger-item" style={{ animationDelay: "150ms" }}>
-          <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
           </div>
         </div>
         <div className="stagger-item" style={{ animationDelay: "205ms" }}>
-        <Select value={duration} onChange={(e) => setDuration(Number(e.target.value))}>
-          <option value={30}>30 мин</option>
-          <option value={45}>45 мин</option>
-          <option value={60}>60 мин</option>
-          <option value={90}>90 мин</option>
-          <option value={120}>120 мин</option>
-        </Select>
+          <Select value={duration} onChange={(e) => setDuration(Number(e.target.value))}>
+            <option value={30}>30 мин</option>
+            <option value={45}>45 мин</option>
+            <option value={60}>60 мин</option>
+            <option value={90}>90 мин</option>
+            <option value={120}>120 мин</option>
+          </Select>
         </div>
         <Button
           variant="gold"

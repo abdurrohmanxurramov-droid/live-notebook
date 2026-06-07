@@ -38,13 +38,11 @@ export function ThemeProvider() {
     staleTime: 60_000,
   });
 
-
   const theme: AppTheme = (data as { theme?: AppTheme } | undefined)?.theme ?? "classic";
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
-
 
   if (theme === "bloom") return <BloomBackdrop />;
   return null;

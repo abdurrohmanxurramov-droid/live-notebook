@@ -36,9 +36,7 @@ async function handle() {
     .select("user_id, remind_payments")
     .in("user_id", ownerIds);
   const allowed = new Set(
-    (settings ?? [])
-      .filter((s) => s.remind_payments !== false)
-      .map((s) => s.user_id)
+    (settings ?? []).filter((s) => s.remind_payments !== false).map((s) => s.user_id),
   );
   // owners without a settings row default to allowed
   ownerIds.forEach((id) => {

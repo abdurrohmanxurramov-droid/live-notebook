@@ -12,6 +12,7 @@ const TABLES = [
   "finance",
   "homework",
   "rates",
+  "push_subscriptions",
   "chat_messages",
   "user_settings",
 ] as const;
@@ -28,6 +29,7 @@ const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
   homework:
     "id, owner_id, student_id, assigned_date, due_date, task, status, note, deleted_at, created_at",
   rates: "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at",
+  push_subscriptions: "id, owner_id, endpoint, p256dh, auth, user_agent, created_at",
   chat_messages: "id, user_id, role, content, tool_calls, tool_call_id, name, created_at",
   user_settings:
     "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at",
@@ -70,7 +72,7 @@ function rowsToCsv(rows: Record<string, unknown>[]): string {
     rows.reduce<Set<string>>((acc, r) => {
       Object.keys(r).forEach((k) => acc.add(k));
       return acc;
-    }, new Set<string>())
+    }, new Set<string>()),
   );
   const lines = [headers.join(",")];
   for (const r of rows) {
@@ -119,9 +121,11 @@ export const importBackup = createServerFn({ method: "POST" })
         const row = { ...r } as Record<string, unknown>;
         if ("owner_id" in row) row.owner_id = userId;
         if ("user_id" in row) row.user_id = userId;
+        if (t === "push_subscriptions") delete row.id;
         return row;
       });
-      const conflictCol = t === "user_settings" ? "user_id" : "id";
+      const conflictCol =
+        t === "user_settings" ? "user_id" : t === "push_subscriptions" ? "endpoint" : "id";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.from(t).upsert(fixed as any, { onConflict: conflictCol });
       if (error) throw new Error(`${t}: ${error.message}`);

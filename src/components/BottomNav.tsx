@@ -42,7 +42,7 @@ export function BottomNav() {
   const moreActive = moreTabs.some((t) => t.to === pathname);
   const activeKey: Key = moreActive
     ? "__more__"
-    : (mainTabs.find((t) => t.to === pathname)?.to as Key) ?? "/";
+    : ((mainTabs.find((t) => t.to === pathname)?.to as Key) ?? "/");
 
   // Overdue indicator for Finance tab
   const { data: overdueCount = 0 } = useQuery({
