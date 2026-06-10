@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  
+  Home,
   GraduationCap,
   CalendarCheck,
   Wallet,
@@ -18,7 +18,7 @@ import { Sheet } from "./Sheet";
 import { sb } from "@/lib/sb";
 
 const mainTabs = [
-  
+  { to: "/", label: "Главная", icon: Home },
   { to: "/schedule", label: "Распис.", icon: CalendarDays },
   { to: "/students", label: "Ученики", icon: GraduationCap },
   { to: "/finance", label: "Финансы", icon: Wallet },
