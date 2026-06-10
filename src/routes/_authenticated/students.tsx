@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -36,7 +36,6 @@ import {
   Trash2,
   Phone,
   BookOpen,
-  ChevronRight,
   Pencil,
   AlertCircle,
 } from "lucide-react";
