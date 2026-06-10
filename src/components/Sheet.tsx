@@ -16,11 +16,12 @@ export function Sheet({
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    let frame: number | undefined;
     if (open) {
       setMounted(true);
       document.body.style.overflow = "hidden";
       // next frame to trigger transition
-      requestAnimationFrame(() => setVisible(true));
+      frame = requestAnimationFrame(() => setVisible(true));
     } else {
       setVisible(false);
       document.body.style.overflow = "";
@@ -28,6 +29,7 @@ export function Sheet({
       return () => clearTimeout(t);
     }
     return () => {
+      if (frame !== undefined) cancelAnimationFrame(frame);
       document.body.style.overflow = "";
     };
   }, [open]);
@@ -35,7 +37,7 @@ export function Sheet({
   if (!mounted) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-3">
       <div
         onClick={onClose}
         className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ease-out ${
@@ -44,7 +46,7 @@ export function Sheet({
       />
       <div
         style={{ animation: "none" }}
-        className={`glass-strong relative z-10 w-full max-w-md rounded-t-[28px] p-5 sm:rounded-[28px] [--safe-bottom-offset:1.25rem] safe-bottom
+        className={`glass-strong relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[28px] p-5 sm:max-h-[calc(100dvh-2rem)] sm:rounded-[28px] [--safe-bottom-offset:1.25rem] safe-bottom
           transition-[transform,opacity] duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform
           ${visible ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"}`}
       >
