@@ -349,21 +349,17 @@ function StudentsPage() {
             return (
               <Card key={s.id} className={`p-4 ${overdue ? "ring-1 ring-destructive/60" : ""}`}>
                 <div className="flex items-start gap-3">
-                  <Link
-                    to="/students/$id"
-                    params={{ id: s.id }}
-                    className="flex min-w-0 flex-1 items-start gap-3"
-                  >
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
                     <Avatar initials={initials(s.name)} />
                     <div className="min-w-0 flex-1">
                       <div className="name-italic flex items-center gap-1 truncate text-[15px] font-semibold text-foreground">
-                        {s.name} <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        {s.name}
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {s.subject || "Без предмета"}
                       </div>
                     </div>
-                  </Link>
+                  </div>
 
                   <div className="flex flex-col gap-1">
                     <button
