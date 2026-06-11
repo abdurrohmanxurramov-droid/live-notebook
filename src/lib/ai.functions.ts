@@ -555,7 +555,7 @@ ${slotsStr}`,
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "openai/gpt-5.2",
+          model: "google/gemini-3-flash-preview",
           messages,
           tools,
           tool_choice: "auto",
