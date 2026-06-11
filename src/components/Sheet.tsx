@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 export function Sheet({
@@ -34,9 +35,9 @@ export function Sheet({
     };
   }, [open]);
 
-  if (!mounted) return null;
+  if (!mounted || typeof document === "undefined") return null;
 
-  return (
+  return createPortal(
     <div className="pointer-events-none fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-3">
       <div
         onClick={onClose}
