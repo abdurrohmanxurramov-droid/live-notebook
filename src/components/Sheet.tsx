@@ -46,8 +46,8 @@ export function Sheet({
         }`}
       />
       <div
-        style={{ animation: "none" }}
-        className={`glass-strong relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-[28px] p-5 sm:max-h-[calc(100dvh-2rem)] sm:rounded-[28px] [--safe-bottom-offset:1.25rem] safe-bottom
+        style={{ animation: "none", overflowY: "auto", WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
+        className={`glass-strong relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-md overscroll-contain rounded-t-[28px] p-5 sm:max-h-[calc(100dvh-2rem)] sm:rounded-[28px] [--safe-bottom-offset:1.25rem] safe-bottom
           transition-[transform,opacity] duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform
           ${visible ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"}`}
       >
