@@ -2,9 +2,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  ClientOnly,
   createRootRouteWithContext,
   useRouter,
   useRouterState,
+  useHydrated,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -148,12 +150,14 @@ function ThemeBoot() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const hydrated = useHydrated();
   const hideNav = useRouterState({
     select: (state) =>
       state.location.pathname === "/auth" ||
       state.statusCode >= 400 ||
       state.matches.some((match) => match.status === "error" || match.status === "notFound"),
   });
+  const showNav = hydrated && !hideNav;
 
   useEffect(() => {
     installGlobalHaptics();
@@ -177,11 +181,13 @@ function RootComponent() {
       <ThemeBoot />
       <ThemeProvider />
       <SplashScreen />
-      <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
-        <Outlet />
+      <div className={`mx-auto min-h-screen max-w-2xl safe-top ${showNav ? "pb-24" : ""}`}>
+        <ClientOnly>
+          <Outlet />
+        </ClientOnly>
       </div>
-      {!hideNav && <BottomNav />}
-      <Toaster position="top-center" theme="system" richColors />
+      {showNav && <BottomNav />}
+      {hydrated && <Toaster position="top-center" theme="system" richColors />}
     </QueryClientProvider>
   );
 }
