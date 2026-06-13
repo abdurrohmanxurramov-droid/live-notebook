@@ -72,7 +72,10 @@ function AssistantPage() {
       return (await chat({ data: { userText } })) as { reply: string; actions: ActionLog[] };
     },
     onSuccess: (res) => {
-      setMessages((m) => [...m, { role: "assistant", content: res.reply, actions: res.actions as Action[] }]);
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: res.reply, actions: res.actions as Action[] },
+      ]);
       if (res.actions?.length) qc.invalidateQueries();
     },
     onError: (e: Error) =>

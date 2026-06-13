@@ -9,8 +9,7 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // Fallback: if a build environment does not expose VITE_SUPABASE_* (only the
 // non-prefixed SUPABASE_* server vars), inline them at build time so the
 // browser/SSR Supabase client init doesn't crash with "supabaseUrl is required".
-const SUPABASE_URL =
-  process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
 const SUPABASE_PUBLISHABLE_KEY =
   process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
 const SUPABASE_PROJECT_ID =
