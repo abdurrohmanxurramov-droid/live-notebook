@@ -129,7 +129,9 @@ export const importBackup = createServerFn({ method: "POST" })
       const conflictCol =
         t === "user_settings" ? "user_id" : t === "push_subscriptions" ? "endpoint" : "id";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from as any)(t).upsert(fixed as any, { onConflict: conflictCol });
+      const { error } = await (supabase.from as any)(t).upsert(fixed as any, {
+        onConflict: conflictCol,
+      });
       if (error) throw new Error(`${t}: ${error.message}`);
       counts[t] = fixed.length;
     }
