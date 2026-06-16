@@ -93,13 +93,13 @@ export const Route = createFileRoute("/api/public/hooks/lesson-reminders")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const denied = checkHookSecret(request);
+        const denied = await checkHookSecret(request);
         if (denied) return denied;
         const res = await handle();
         return Response.json(res);
       },
       POST: async ({ request }) => {
-        const denied = checkHookSecret(request);
+        const denied = await checkHookSecret(request);
         if (denied) return denied;
         const res = await handle();
         return Response.json(res);

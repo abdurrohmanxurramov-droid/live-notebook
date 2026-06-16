@@ -467,7 +467,7 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_hook_secret: { Args: never; Returns: string }
     }
     Enums: {
       lesson_status: "planned" | "completed" | "cancelled" | "moved"

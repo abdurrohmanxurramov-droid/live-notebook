@@ -97,12 +97,12 @@ export const Route = createFileRoute("/api/public/hooks/payment-reminders")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const denied = checkHookSecret(request);
+        const denied = await checkHookSecret(request);
         if (denied) return denied;
         return Response.json(await handle());
       },
       POST: async ({ request }) => {
-        const denied = checkHookSecret(request);
+        const denied = await checkHookSecret(request);
         if (denied) return denied;
         return Response.json(await handle());
       },
