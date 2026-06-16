@@ -21,6 +21,37 @@ const chatInputSchema = z.object({
     .max(4000, "Слишком длинное сообщение"),
 });
 
+const updateStudentSchema = z
+  .object({
+    id: z.string().uuid(),
+    name: z.string().trim().min(1).max(100).optional(),
+    subject: z.string().trim().max(100).nullable().optional(),
+    days_per_week: z.number().int().min(1).max(7).optional(),
+    phone: z.string().trim().max(40).nullable().optional(),
+  })
+  .strict();
+
+type StudentUpdatePatch = Pick<
+  Database["public"]["Tables"]["students"]["Update"],
+  "name" | "subject" | "days_per_week" | "phone"
+>;
+
+function buildStudentUpdatePatch(args: unknown): { id: string; patch: StudentUpdatePatch } {
+  const { id, ...allowed } = updateStudentSchema.parse(args);
+  const patch: StudentUpdatePatch = {};
+
+  if (allowed.name !== undefined) patch.name = allowed.name;
+  if (allowed.subject !== undefined) patch.subject = allowed.subject?.trim() || null;
+  if (allowed.days_per_week !== undefined) patch.days_per_week = allowed.days_per_week;
+  if (allowed.phone !== undefined) patch.phone = allowed.phone?.trim() || null;
+
+  if (Object.keys(patch).length === 0) {
+    throw new Error("Нет допустимых полей для обновления ученика");
+  }
+
+  return { id, patch };
+}
+
 type Msg = {
   role: "user" | "assistant" | "system" | "tool";
   content: string;
@@ -79,6 +110,7 @@ const tools = [
           phone: { type: "string" },
         },
         required: ["id"],
+        additionalProperties: false,
       },
     },
   },
@@ -276,10 +308,10 @@ async function execTool(
       return data;
     }
     case "update_student": {
-      const { id, ...rest } = args;
+      const { id, patch } = buildStudentUpdatePatch(args);
       const { data, error } = await supabase
         .from("students")
-        .update(rest)
+        .update(patch)
         .eq("id", id)
         .select()
         .single();
