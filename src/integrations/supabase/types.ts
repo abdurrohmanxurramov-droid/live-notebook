@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      _cron_snapshot: {
+        Row: {
+          command: string | null
+          jobid: number | null
+          jobname: string | null
+          schedule: string | null
+        }
+        Insert: {
+          command?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          schedule?: string | null
+        }
+        Update: {
+          command?: string | null
+          jobid?: number | null
+          jobname?: string | null
+          schedule?: string | null
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           compensated: boolean
