@@ -2,16 +2,44 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Create the browser-only Supabase client. Avoid instantiating the client during
+// SSR / Cloudflare Worker runtime module initialization because the browser
+// client touches `localStorage` and requires build-time VITE_* vars. If the
+// app imports this module on the server (SSR), return a harmless stub so the
+// server-side import does not throw "supabaseUrl is required".
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+const IS_BROWSER = typeof window !== "undefined" && typeof window.document !== "undefined";
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? "") as string;
+const SUPABASE_PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "") as string;
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+let _supabase: ReturnType<typeof createClient> | null = null;
+
+function createBrowserSupabase() {
+  if (_supabase) return _supabase;
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    // Don't throw here during module init on the server; in the browser we want
+    // a clear error so developers notice misconfiguration.
+    console.error(
+      `[Supabase] Missing VITE_SUPABASE_* at build: VITE_SUPABASE_URL=${Boolean(
+        SUPABASE_URL,
+      )} VITE_SUPABASE_PUBLISHABLE_KEY=${Boolean(SUPABASE_PUBLISHABLE_KEY)}`,
+    );
+    throw new Error("Missing VITE_SUPABASE_* environment variables at build time");
+  }
+
+  _supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
+  return _supabase;
+}
+
+// Export a safe value for SSR (an inert stub) and the real client in the
+// browser. Client-only code calls supabase.* inside useEffect or after mount,
+// so returning a stub during SSR prevents the "supabaseUrl is required" crash.
+export const supabase: ReturnType<typeof createClient> | Record<string, unknown> = IS_BROWSER
+  ? createBrowserSupabase()
+  : ({} as Record<string, unknown>);
