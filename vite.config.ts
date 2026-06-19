@@ -6,22 +6,15 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Fallback: if a build environment does not expose VITE_SUPABASE_* (only the
-// non-prefixed SUPABASE_* server vars), inline them at build time so the
-// browser/SSR Supabase client init doesn't crash with "supabaseUrl is required".
-const SUPABASE_URL =
-  process.env.VITE_SUPABASE_URL ??
-  process.env.SUPABASE_URL ??
-  "https://eltunbflazenamwgyvzl.supabase.co";
+// At build time we inject VITE_SUPABASE_* from the environment. Avoid embedding
+// long-lived keys in source. If these are unset at build, the browser client
+// will fail at runtime — that's intentional so misconfiguration is noticed.
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
 const SUPABASE_PUBLISHABLE_KEY =
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.SUPABASE_PUBLISHABLE_KEY ??
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsdHVuYmZsYXplbmFtd2d5dnpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTY0MDMsImV4cCI6MjA5NDU5MjQwM30.1zLCfnuVrnSyhCbHLDVs5E5MA85IZrM6ZqKCQBuxLpI";
+  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
 const SUPABASE_PROJECT_ID =
-  process.env.VITE_SUPABASE_PROJECT_ID ?? process.env.SUPABASE_PROJECT_ID ?? "eltunbflazenamwgyvzl";
+  process.env.VITE_SUPABASE_PROJECT_ID ?? process.env.SUPABASE_PROJECT_ID ?? "";
 
-// Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-// @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
