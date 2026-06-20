@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrustRouteImport } from './routes/trust'
 import { Route as NotesRouteImport } from './routes/notes'
 import { Route as LessonsRouteImport } from './routes/lessons'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -31,6 +32,11 @@ import { Route as ApiPublicHooksPaymentRemindersRouteImport } from './routes/api
 import { Route as ApiPublicHooksLessonRemindersRouteImport } from './routes/api/public/hooks/lesson-reminders'
 import { Route as ApiPublicHooksHomeworkRemindersRouteImport } from './routes/api/public/hooks/homework-reminders'
 
+const TrustRoute = TrustRouteImport.update({
+  id: '/trust',
+  path: '/trust',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const NotesRoute = NotesRouteImport.update({
   id: '/notes',
   path: '/notes',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/lessons': typeof LessonsRoute
   '/notes': typeof NotesRoute
+  '/trust': typeof TrustRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/lessons': typeof LessonsRoute
   '/notes': typeof NotesRoute
+  '/trust': typeof TrustRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/attendance': typeof AuthenticatedAttendanceRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/lessons': typeof LessonsRoute
   '/notes': typeof NotesRoute
+  '/trust': typeof TrustRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
   '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/lessons'
     | '/notes'
+    | '/trust'
     | '/analytics'
     | '/assistant'
     | '/attendance'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/lessons'
     | '/notes'
+    | '/trust'
     | '/analytics'
     | '/assistant'
     | '/attendance'
@@ -260,6 +271,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/lessons'
     | '/notes'
+    | '/trust'
     | '/_authenticated/analytics'
     | '/_authenticated/assistant'
     | '/_authenticated/attendance'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LessonsRoute: typeof LessonsRoute
   NotesRoute: typeof NotesRoute
+  TrustRoute: typeof TrustRoute
   ApiPublicHooksHomeworkRemindersRoute: typeof ApiPublicHooksHomeworkRemindersRoute
   ApiPublicHooksLessonRemindersRoute: typeof ApiPublicHooksLessonRemindersRoute
   ApiPublicHooksPaymentRemindersRoute: typeof ApiPublicHooksPaymentRemindersRoute
@@ -291,6 +304,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/trust': {
+      id: '/trust'
+      path: '/trust'
+      fullPath: '/trust'
+      preLoaderRoute: typeof TrustRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/notes': {
       id: '/notes'
       path: '/notes'
@@ -492,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LessonsRoute: LessonsRoute,
   NotesRoute: NotesRoute,
+  TrustRoute: TrustRoute,
   ApiPublicHooksHomeworkRemindersRoute: ApiPublicHooksHomeworkRemindersRoute,
   ApiPublicHooksLessonRemindersRoute: ApiPublicHooksLessonRemindersRoute,
   ApiPublicHooksPaymentRemindersRoute: ApiPublicHooksPaymentRemindersRoute,
