@@ -4,26 +4,16 @@
 //     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
+//
+// IMPORTANT: Do NOT add a manual `define` block for VITE_SUPABASE_*. The plugin
+// already injects them at build time. A manual `define` reading process.env at
+// vite.config evaluation time will silently override the plugin's injection
+// with empty strings when those vars are not populated in the publish runner,
+// producing a browser bundle with an uninitialized Supabase client and a blank UI.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-
-// At build time we inject VITE_SUPABASE_* from the environment. Avoid embedding
-// long-lived keys in source. If these are unset at build, the browser client
-// will fail at runtime — that's intentional so misconfiguration is noticed.
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL ?? "";
-const SUPABASE_PUBLISHABLE_KEY =
-  process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
-const SUPABASE_PROJECT_ID =
-  process.env.VITE_SUPABASE_PROJECT_ID ?? process.env.SUPABASE_PROJECT_ID ?? "";
 
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
-  },
-  vite: {
-    define: {
-      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(SUPABASE_URL),
-      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(SUPABASE_PUBLISHABLE_KEY),
-      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(SUPABASE_PROJECT_ID),
-    },
   },
 });
