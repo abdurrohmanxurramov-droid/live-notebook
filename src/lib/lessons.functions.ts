@@ -183,11 +183,26 @@ export const deleteLesson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("student_id, scheduled_date")
+      .eq("id", data.id)
+      .single();
+    const { error } = await supabase
       .from("lessons")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (lesson) {
+      await syncAttendanceForLesson(
+        supabase,
+        userId,
+        lesson.student_id,
+        lesson.scheduled_date,
+        "planned",
+      );
+    }
     return { ok: true };
   });
 
