@@ -159,6 +159,23 @@ export const moveLesson = createServerFn({ method: "POST" })
       await supabase.from("lessons").update({ status: orig.status }).eq("id", data.id);
       throw new Error(e3.message);
     }
+
+    // Sync attendance: mark original date as rescheduled, clear new date.
+    const { data: origLesson } = await supabase
+      .from("lessons")
+      .select("scheduled_date")
+      .eq("id", data.id)
+      .single();
+    if (origLesson) {
+      await syncAttendanceForLesson(
+        supabase,
+        userId,
+        orig.student_id,
+        origLesson.scheduled_date,
+        "moved",
+      );
+    }
+    await syncAttendanceForLesson(supabase, userId, orig.student_id, data.new_date, "planned");
     return { ok: true };
   });
 
