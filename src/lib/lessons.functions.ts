@@ -50,13 +50,71 @@ export const setLessonStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => setStatusSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    const { supabase, userId } = context;
     const patch: { status: LessonStatus; notes?: string } = { status: data.status };
     if (data.notes !== undefined) patch.notes = data.notes;
     const { error } = await supabase.from("lessons").update(patch).eq("id", data.id);
     if (error) throw new Error(error.message);
+
+    // Sync attendance row so the student card reflects the lesson status.
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("student_id, scheduled_date")
+      .eq("id", data.id)
+      .single();
+    if (lesson) {
+      await syncAttendanceForLesson(
+        supabase,
+        userId,
+        lesson.student_id,
+        lesson.scheduled_date,
+        data.status,
+      );
+    }
     return { ok: true };
   });
+
+type AttStatus = "present" | "absent" | "excused" | "rescheduled_by_teacher";
+function lessonToAttendance(s: LessonStatus): AttStatus | null {
+  if (s === "completed") return "present";
+  if (s === "cancelled") return "absent";
+  if (s === "moved") return "rescheduled_by_teacher";
+  return null; // planned → remove attendance
+}
+
+async function syncAttendanceForLesson(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+  studentId: string,
+  date: string,
+  status: LessonStatus,
+) {
+  const attStatus = lessonToAttendance(status);
+  const { data: existing } = await supabase
+    .from("attendance")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("date", date)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (attStatus === null) {
+    if (existing) {
+      await supabase
+        .from("attendance")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    }
+    return;
+  }
+  if (existing) {
+    await supabase.from("attendance").update({ status: attStatus }).eq("id", existing.id);
+  } else {
+    await supabase
+      .from("attendance")
+      .insert({ owner_id: userId, student_id: studentId, date, status: attStatus });
+  }
+}
 
 const moveSchema = z.object({
   id: z.string().uuid(),
@@ -101,6 +159,23 @@ export const moveLesson = createServerFn({ method: "POST" })
       await supabase.from("lessons").update({ status: orig.status }).eq("id", data.id);
       throw new Error(e3.message);
     }
+
+    // Sync attendance: mark original date as rescheduled, clear new date.
+    const { data: origLesson } = await supabase
+      .from("lessons")
+      .select("scheduled_date")
+      .eq("id", data.id)
+      .single();
+    if (origLesson) {
+      await syncAttendanceForLesson(
+        supabase,
+        userId,
+        orig.student_id,
+        origLesson.scheduled_date,
+        "moved",
+      );
+    }
+    await syncAttendanceForLesson(supabase, userId, orig.student_id, data.new_date, "planned");
     return { ok: true };
   });
 
@@ -108,11 +183,26 @@ export const deleteLesson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { supabase, userId } = context;
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("student_id, scheduled_date")
+      .eq("id", data.id)
+      .single();
+    const { error } = await supabase
       .from("lessons")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
+    if (lesson) {
+      await syncAttendanceForLesson(
+        supabase,
+        userId,
+        lesson.student_id,
+        lesson.scheduled_date,
+        "planned",
+      );
+    }
     return { ok: true };
   });
 

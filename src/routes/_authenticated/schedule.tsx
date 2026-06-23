@@ -64,6 +64,22 @@ function SchedulePage() {
   const [open, setOpen] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
 
+  const regenOnMount = useServerFn(regenerateLessons);
+  const qcMount = useQueryClient();
+  useEffect(() => {
+    let cancelled = false;
+    regenOnMount()
+      .then(() => {
+        if (!cancelled) qcMount.invalidateQueries({ queryKey: ["lessons"] });
+      })
+      .catch((e) => console.error("regenerateLessons on mount failed", e));
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
   const studentsById = useMemo(() => {
     const m = new Map<string, (typeof students)[number]>();
     students.forEach((s) => m.set(s.id, s));

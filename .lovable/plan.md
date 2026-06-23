@@ -1,68 +1,55 @@
-## Что делаем
+## Диагностический отчёт
 
-В Bloom-теме (`data-theme="bloom"`) добавляем по углам карточек разнообразные декоративные стикеры — сердечки, цветочки, бантики, звёздочки, бабочки. Каждый тип карточки получает свой стикер, чтобы не было однообразия.
+### Какие таблицы используются календарём
+- **Календарь (`Calendar.tsx`)** читает только из таблицы **`lessons`** через server fn `listLessons` (фильтр по диапазону дат). `schedule_slots` календарём напрямую НЕ используется — это шаблон, из которого `regenerateLessons` создаёт реальные `lessons`.
+- **Расписание по дням недели** (нижняя часть `/schedule`) читает **`schedule_slots`**.
+- **Карточка ученика (`StudentRoom.tsx`)** читает только **`attendance`** и `homework`/`finance` — не читает `lessons` вообще.
 
-В Classic-теме ничего не меняется.
+### Почему некоторые ученики не отображаются в календаре
+Если у ученика есть запись в `schedule_slots`, но соответствующие `lessons` ещё не сгенерированы в окне `[-3 мес, +1 мес]`, его в календаре не будет. `regenerateLessons` запускается только при добавлении нового слота (`AddSlotSheet`). Старые слоты, добавленные до этой логики, или вставленные напрямую — не порождают `lessons` автоматически. Также при первом открытии нет авто-вызова `regenerateLessons`.
 
-## Стикеры (SVG inline в CSS)
+### Почему «урок пройден» не засчитывается в карточке ученика
+`setLessonStatus` обновляет только `lessons.status`. Запись в `attendance` НЕ создаётся. А `StudentRoom` считает пройденные уроки исключительно по `attendance` (`countedCount = att.filter(a => a.status==='present' || 'absent')`). Поэтому смена статуса урока в календаре никак не отражается на карточке ученика. Аналогично для `cancelled`/`moved` — `attendance` не обновляется.
 
-Готовим набор из 6 стикеров, все ~26-30px, мягкие тени, лёгкая анимация:
+Дополнительно: `setLessonStatus`/`moveLesson`/`deleteLesson` в `Calendar.tsx` инвалидируют только `["lessons"]`, но не `["attendance"]`, поэтому даже если бы attendance писалась — карточка не перерисовалась бы без рефреша.
 
-- `sticker-heart` — розовое сердечко, пульсация (heart-beat)
-- `sticker-flower` — пятилепестковый цветок, медленное вращение
-- `sticker-bow` — розовый бантик, лёгкое покачивание
-- `sticker-star` — золотая звёздочка, твинкл
-- `sticker-butterfly` — бабочка, машет крыльями (scale Y)
-- `sticker-cherry` — две вишенки, лёгкий свинг
+### Минимальный список файлов к изменению
+1. `src/lib/lessons.functions.ts` — расширить `setLessonStatus`, чтобы upsert-ить запись в `attendance` (по `student_id + date`) на основе нового статуса урока; в `moveLesson` — удалять старую attendance за исходную дату или ставить `rescheduled_by_teacher`; в `deleteLesson` — чистить attendance за эту дату по student_id, если она была создана из урока.
+2. `src/components/calendar/Calendar.tsx` — после `setStatus`/`move`/`del` инвалидировать также `["attendance"]` (и `["schedule"]` на всякий).
+3. `src/routes/_authenticated/schedule.tsx` — в загрузке страницы один раз вызвать `regenerateLessons` (idempotent — он пропускает уже существующие комбинации student/date/time), чтобы старые слоты подтянулись в календарь.
 
-Каждый — отдельная CSS-утилита: `.sticker-heart::after { content: ""; ... background-image: url("data:image/svg+xml,...") }`, активная только при `:root[data-theme="bloom"]`. Позиция — `top: 8px; right: 10px;` поверх карточки, `pointer-events: none`, `z-index: 3`.
+Никаких schema-миграций, никакого редизайна, никаких изменений auth/secrets.
 
-## Где какие стикеры
+### Маппинг статусов lesson → attendance
+| lesson.status | attendance.status |
+|---|---|
+| `completed` | `present` |
+| `cancelled` | `absent` |
+| `moved` | `rescheduled_by_teacher` |
+| `planned` | удалить attendance за эту дату (откат) |
 
-Разносим стикеры по экранам, чтобы соседние карточки не повторялись:
+Upsert по уникальному ключу `(student_id, date)`. Если у пользователя уже стоит ручная attendance с этой парой — перезаписывается статусом из урока (это ожидаемо: календарь — UI отметки).
 
-**Главная (`/`):**
-- Overview карточка → `sticker-flower`
-- Continue карточка (продолжить ученика) → `sticker-heart`
-- Метрики (4 карточки в ряд): `sticker-star`, `sticker-bow`, `sticker-butterfly`, `sticker-cherry`
-- Следующий урок (если есть) → `sticker-heart`
+### Инвалидация кешей
+В `Calendar.tsx` после любой мутации:
+```ts
+qc.invalidateQueries({ queryKey: ["lessons"] });
+qc.invalidateQueries({ queryKey: ["attendance"] });
+```
+Это перерисует и календарь, и `StudentRoom`, и счётчик циклов.
 
-**Ученики (`/students`):**
-- Карточка студента → чередуем по индексу: heart → flower → bow → star → butterfly → cherry → (повтор)
+### Авто-регенерация при заходе на /schedule
+В `SchedulePage` добавить `useEffect` с одноразовым (на маунт) вызовом `regenerateLessons()` через `useServerFn`. После успеха — `qc.invalidateQueries({ queryKey: ["lessons"] })`. Это починит «пустые» вторник/четверг/субботу для существующих слотов.
 
-**Расписание / Календарь:**
-- Карточка дня → `sticker-flower`
-- Карточка урока → `sticker-heart`
+### Acceptance — как проверим
+- Слот вт/чт/сб → виден в календаре после захода на /schedule (благодаря авто-regenerate).
+- «Урок пройден» в календаре → attendance.present появляется → карточка ученика сразу инкрементит счётчик (через инвалидацию).
+- Перенос урока → старая attendance становится `rescheduled_by_teacher`, новая дата без attendance (станет present когда отметят).
+- Отмена → attendance.absent, в карточке не считается как пройденный (т.к. она считает present+absent одинаково «съел» — это уже существующая логика; не трогаем).
+- Hard refresh — состояние сохраняется (всё в БД).
 
-**Финансы / Посещаемость / Домашка / Аналитика:**
-- Заголовочная карточка раздела → `sticker-flower`
-- Карточка-итог → `sticker-star`
-- Карточка-предупреждение (долги, пропуски) → оставляем без стикера (визуальный приоритет)
+### Что НЕ делаем
+- Не трогаем схему БД, RLS, миграции, секреты, service role, дизайн, offline-очередь, edge functions.
 
-**Настройки:**
-- ThemePicker (где выбор Classic/Bloom) → `sticker-bow`
-- Уведомления, Курсы и т.д. → без стикеров (служебные блоки)
-
-## Что не декорируем
-
-- Кнопки, переключатели, инпуты
-- Модалки и шиты (там и так много контента)
-- Пустые состояния и алерты-ошибки
-- Карточки с предупреждениями (долги, пропуски)
-- В тёмном варианте Bloom стикеры остаются, но яркость слегка приглушается (`opacity: 0.75`)
-
-## Файлы
-
-Изменения:
-- `src/styles.css` — 6 новых utility-классов `.sticker-*` с SVG-фонами и keyframes анимаций, активные только под `:root[data-theme="bloom"]`. Существующий `.bloom-corner` остаётся для обратной совместимости.
-- `src/routes/_authenticated/index.tsx` — добавить классы стикеров к Overview, Continue, метрикам.
-- `src/routes/_authenticated/students.tsx` — циклически назначать класс стикера карточкам учеников.
-- `src/routes/_authenticated/schedule.tsx` + `src/components/calendar/Calendar.tsx` — стикеры на карточках уроков и днях.
-- `src/routes/_authenticated/finance.tsx`, `attendance.tsx`, `homework.tsx`, `analytics.tsx` — стикер на главной карточке раздела.
-- `src/components/settings/ThemePicker.tsx` — `sticker-bow` на блоке.
-
-## Performance / доступность
-
-- Все SVG — inline data-URI, ноль сетевых запросов.
-- Анимации отключаются под `prefers-reduced-motion: reduce`.
-- `aria-hidden` (псевдоэлементы по умолчанию недоступны скринридерам — ок).
+### Команды после фикса
+`npm run lint`, `npx tsc --noEmit`, `npm run build`.

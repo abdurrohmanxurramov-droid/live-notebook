@@ -119,6 +119,7 @@ export function Calendar() {
     try {
       await move({ data: { id, new_date: newDate, new_time: newTime } });
       qc.invalidateQueries({ queryKey: ["lessons"] });
+      qc.invalidateQueries({ queryKey: ["attendance"] });
       toast.success("Урок перенесён");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Ошибка переноса"));
@@ -246,6 +247,7 @@ export function Calendar() {
                       try {
                         await setStatus({ data: { id: active.id, status: s } });
                         qc.invalidateQueries({ queryKey: ["lessons"] });
+      qc.invalidateQueries({ queryKey: ["attendance"] });
                         toast.success("Статус обновлён");
                         setActive(null);
                       } catch (error: unknown) {
@@ -263,6 +265,7 @@ export function Calendar() {
                   try {
                     await del({ data: { id: active.id } });
                     qc.invalidateQueries({ queryKey: ["lessons"] });
+      qc.invalidateQueries({ queryKey: ["attendance"] });
                     toast.success("Урок удалён");
                     setActive(null);
                   } catch (error: unknown) {
