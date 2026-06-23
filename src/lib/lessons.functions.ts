@@ -298,7 +298,12 @@ export const regenerateLessons = createServerFn({ method: "POST" })
     // Insert in chunks of 500
     for (let i = 0; i < toInsert.length; i += 500) {
       const chunk = toInsert.slice(i, i + 500);
-      const { error } = await supabase.from("lessons").insert(chunk);
+      const { error } = await supabase
+        .from("lessons")
+        .upsert(chunk, {
+          onConflict: "student_id,scheduled_date,scheduled_time",
+          ignoreDuplicates: true,
+        });
       if (error) throw new Error(error.message);
       inserted += chunk.length;
     }
