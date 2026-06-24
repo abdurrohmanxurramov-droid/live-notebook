@@ -537,6 +537,7 @@ function WeekView({
                     key={l.id}
                     lesson={l}
                     studentName={studentName(l.student_id)}
+                    paused={isPaused(l.student_id)}
                     onClick={() => onLesson(l)}
                     compact
                   />
