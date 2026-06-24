@@ -605,7 +605,7 @@ function MonthView({
                   className={`truncate rounded px-1 text-[9px] font-medium ${toneBg(l.status)}`}
                   title={`${l.scheduled_time.slice(0, 5)} ${studentName(l.student_id)}`}
                 >
-                  {l.scheduled_time.slice(0, 5)} {studentName(l.student_id)}
+                  {studentName(l.student_id)}
                 </div>
               ))}
               {dayLessons.length > 2 && (
@@ -716,9 +716,7 @@ function PositionedBlock({
       style={{ top, height, left: 2, right: 2 }}
       className={`pointer-events-auto absolute cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-[10px] font-semibold shadow-sm active:cursor-grabbing ${toneBg(lesson.status)}`}
     >
-      <div className="truncate">
-        {lesson.scheduled_time.slice(0, 5)} {studentName}
-      </div>
+      <div className="truncate leading-tight">{studentName}</div>
       {!compact && height > 32 && (
         <div className="mt-0.5 truncate text-[9px] opacity-80">
           {STATUS_LABEL[lesson.status]} · {lesson.duration_min} мин
