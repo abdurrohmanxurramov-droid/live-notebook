@@ -558,6 +558,7 @@ function MonthView({
   cursor,
   lessons,
   studentName,
+  isPaused,
   onDrop,
   onSlot,
   onMore,
@@ -567,6 +568,7 @@ function MonthView({
   cursor: Date;
   lessons: Lesson[];
   studentName: (id: string) => string;
+  isPaused: (id: string) => boolean;
   onDrop: (id: string, date: string, time: string) => void;
   onSlot: (date: string) => void;
   onMore: (date: string) => void;
