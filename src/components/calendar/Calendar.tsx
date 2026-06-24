@@ -109,6 +109,11 @@ export function Calendar() {
   const lessons = (data?.lessons ?? []) as Lesson[];
   const { data: students = [] } = useStudents();
   const studentName = (id: string) => students.find((s) => s.id === id)?.name ?? "—";
+  const pausedIds = useMemo(
+    () => new Set(students.filter((s) => s.status === "paused").map((s) => s.id)),
+    [students],
+  );
+  const isPaused = (id: string) => pausedIds.has(id);
 
   const qc = useQueryClient();
   const move = useServerFn(moveLesson);
@@ -189,6 +194,7 @@ export function Calendar() {
               date={iso(cursor)}
               lessons={lessons}
               studentName={studentName}
+              isPaused={isPaused}
               onDrop={handleDrop}
               onSlot={setCreateSlot}
               onLesson={setActive}
@@ -198,6 +204,7 @@ export function Calendar() {
               start={startOfWeek(cursor)}
               lessons={lessons}
               studentName={studentName}
+              isPaused={isPaused}
               onDrop={handleDrop}
               onSlot={setCreateSlot}
               onLesson={setActive}
@@ -208,6 +215,7 @@ export function Calendar() {
               cursor={cursor}
               lessons={lessons}
               studentName={studentName}
+              isPaused={isPaused}
               onDrop={handleDrop}
               onSlot={(d) => setCreateSlot({ date: d, time: "10:00" })}
               onMore={setMoreDay}
@@ -235,30 +243,40 @@ export function Calendar() {
                   {active.duration_min} мин
                 </div>
                 <div className="mt-2">
-                  <Badge tone={STATUS_TONE[active.status]}>{STATUS_LABEL[active.status]}</Badge>
+                  {isPaused(active.student_id) ? (
+                    <Badge tone="neutral">На паузе</Badge>
+                  ) : (
+                    <Badge tone={STATUS_TONE[active.status]}>{STATUS_LABEL[active.status]}</Badge>
+                  )}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {(["planned", "completed", "cancelled"] as LessonStatus[]).map((s) => (
-                  <Button
-                    key={s}
-                    variant={active.status === s ? "gold" : "outline"}
-                    onClick={async () => {
-                      try {
-                        await setStatus({ data: { id: active.id, status: s } });
-                        qc.invalidateQueries({ queryKey: ["lessons"] });
-      qc.invalidateQueries({ queryKey: ["attendance"] });
-                        toast.success("Статус обновлён");
-                        setActive(null);
-                      } catch (error: unknown) {
-                        toast.error(getErrorMessage(error));
-                      }
-                    }}
-                  >
-                    {STATUS_LABEL[s]}
-                  </Button>
-                ))}
-              </div>
+              {isPaused(active.student_id) ? (
+                <div className="rounded-lg border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
+                  Ученик на паузе. Статус урока не учитывается. Доступно только удаление.
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {(["planned", "completed", "cancelled"] as LessonStatus[]).map((s) => (
+                    <Button
+                      key={s}
+                      variant={active.status === s ? "gold" : "outline"}
+                      onClick={async () => {
+                        try {
+                          await setStatus({ data: { id: active.id, status: s } });
+                          qc.invalidateQueries({ queryKey: ["lessons"] });
+                          qc.invalidateQueries({ queryKey: ["attendance"] });
+                          toast.success("Статус обновлён");
+                          setActive(null);
+                        } catch (error: unknown) {
+                          toast.error(getErrorMessage(error));
+                        }
+                      }}
+                    >
+                      {STATUS_LABEL[s]}
+                    </Button>
+                  ))}
+                </div>
+              )}
               <Button
                 variant="danger"
                 onClick={async () => {
@@ -305,7 +323,11 @@ export function Calendar() {
                       {l.scheduled_time.slice(0, 5)} · {l.duration_min} мин
                     </div>
                   </div>
-                  <Badge tone={STATUS_TONE[l.status]}>{STATUS_LABEL[l.status]}</Badge>
+                  {isPaused(l.student_id) ? (
+                    <Badge tone="neutral">На паузе</Badge>
+                  ) : (
+                    <Badge tone={STATUS_TONE[l.status]}>{STATUS_LABEL[l.status]}</Badge>
+                  )}
                 </button>
               ))}
           </div>
@@ -394,6 +416,7 @@ function DayView({
   date,
   lessons,
   studentName,
+  isPaused,
   onDrop,
   onSlot,
   onLesson,
@@ -401,6 +424,7 @@ function DayView({
   date: string;
   lessons: Lesson[];
   studentName: (id: string) => string;
+  isPaused: (id: string) => boolean;
   onDrop: (id: string, date: string, time: string) => void;
   onSlot: (s: { date: string; time: string }) => void;
   onLesson: (l: Lesson) => void;
@@ -428,6 +452,7 @@ function DayView({
             key={l.id}
             lesson={l}
             studentName={studentName(l.student_id)}
+            paused={isPaused(l.student_id)}
             onClick={() => onLesson(l)}
           />
         ))}
@@ -442,6 +467,7 @@ function WeekView({
   start,
   lessons,
   studentName,
+  isPaused,
   onDrop,
   onSlot,
   onLesson,
@@ -449,6 +475,7 @@ function WeekView({
   start: Date;
   lessons: Lesson[];
   studentName: (id: string) => string;
+  isPaused: (id: string) => boolean;
   onDrop: (id: string, date: string, time: string) => void;
   onSlot: (s: { date: string; time: string }) => void;
   onLesson: (l: Lesson) => void;
@@ -514,6 +541,7 @@ function WeekView({
                     key={l.id}
                     lesson={l}
                     studentName={studentName(l.student_id)}
+                    paused={isPaused(l.student_id)}
                     onClick={() => onLesson(l)}
                     compact
                   />
@@ -534,6 +562,7 @@ function MonthView({
   cursor,
   lessons,
   studentName,
+  isPaused,
   onDrop,
   onSlot,
   onMore,
@@ -543,6 +572,7 @@ function MonthView({
   cursor: Date;
   lessons: Lesson[];
   studentName: (id: string) => string;
+  isPaused: (id: string) => boolean;
   onDrop: (id: string, date: string, time: string) => void;
   onSlot: (date: string) => void;
   onMore: (date: string) => void;
@@ -602,7 +632,7 @@ function MonthView({
                     e.stopPropagation();
                     onLesson(l);
                   }}
-                  className={`truncate rounded px-1 text-[9px] font-medium ${toneBg(l.status)}`}
+                  className={`truncate rounded px-1 text-[9px] font-medium ${isPaused(l.student_id) ? pausedBg() : toneBg(l.status)}`}
                   title={`${l.scheduled_time.slice(0, 5)} ${studentName(l.student_id)}`}
                 >
                   {studentName(l.student_id)}
@@ -690,11 +720,13 @@ function SlotCell({
 function PositionedBlock({
   lesson,
   studentName,
+  paused,
   onClick,
   compact,
 }: {
   lesson: Lesson;
   studentName: string;
+  paused?: boolean;
   onClick: () => void;
   compact?: boolean;
 }) {
@@ -714,12 +746,12 @@ function PositionedBlock({
       }}
       onClick={onClick}
       style={{ top, height, left: 2, right: 2 }}
-      className={`pointer-events-auto absolute cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-[10px] font-semibold shadow-sm active:cursor-grabbing ${toneBg(lesson.status)}`}
+      className={`pointer-events-auto absolute cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-[10px] font-semibold shadow-sm active:cursor-grabbing ${paused ? pausedBg() : toneBg(lesson.status)}`}
     >
       <div className="truncate leading-tight">{studentName}</div>
       {!compact && height > 32 && (
         <div className="mt-0.5 truncate text-[9px] opacity-80">
-          {STATUS_LABEL[lesson.status]} · {lesson.duration_min} мин
+          {paused ? "На паузе" : `${STATUS_LABEL[lesson.status]} · ${lesson.duration_min} мин`}
         </div>
       )}
     </div>
@@ -737,6 +769,12 @@ function toneBg(s: LessonStatus) {
     case "moved":
       return "bg-secondary text-foreground border border-border";
   }
+}
+
+function pausedBg() {
+  // Distinct neutral-violet/slate look so paused students are visually separate from
+  // all lesson-status palettes (planned/completed/cancelled/moved).
+  return "bg-[color-mix(in_oklab,var(--muted-foreground)_18%,transparent)] text-muted-foreground border border-dashed border-[color-mix(in_oklab,var(--muted-foreground)_45%,transparent)] italic";
 }
 
 declare global {

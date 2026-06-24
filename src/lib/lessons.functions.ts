@@ -224,6 +224,7 @@ export const regenerateLessons = createServerFn({ method: "POST" })
       { data: slots, error: eSlots },
       { data: existing, error: eEx },
       { data: attendance, error: eAtt },
+      { data: studentRows, error: eStu },
     ] = await Promise.all([
       supabase
         .from("schedule_slots")
@@ -241,10 +242,20 @@ export const regenerateLessons = createServerFn({ method: "POST" })
         .is("deleted_at", null)
         .gte("date", fromStr)
         .lte("date", toStr),
+      supabase
+        .from("students")
+        .select("id, status")
+        .is("deleted_at", null),
     ]);
     if (eSlots) throw new Error(eSlots.message);
     if (eEx) throw new Error(eEx.message);
     if (eAtt) throw new Error(eAtt.message);
+    if (eStu) throw new Error(eStu.message);
+
+    // Only generate lessons for active students. Paused/completed/archived are excluded.
+    const activeStudents = new Set(
+      (studentRows ?? []).filter((s) => s.status === "active").map((s) => s.id),
+    );
 
     const existKey = new Set(
       (existing ?? []).map((l) => `${l.student_id}|${l.scheduled_date}|${l.scheduled_time}`),
@@ -269,6 +280,7 @@ export const regenerateLessons = createServerFn({ method: "POST" })
       const dateStr = isoDate(d);
       for (const s of slots ?? []) {
         if (s.day_of_week !== dow) continue;
+        if (!activeStudents.has(s.student_id)) continue;
         const time = String(s.start_time).length === 5 ? `${s.start_time}:00` : s.start_time;
         const key = `${s.student_id}|${dateStr}|${time}`;
         if (existKey.has(key)) continue;
