@@ -323,7 +323,11 @@ export function Calendar() {
                       {l.scheduled_time.slice(0, 5)} · {l.duration_min} мин
                     </div>
                   </div>
-                  <Badge tone={STATUS_TONE[l.status]}>{STATUS_LABEL[l.status]}</Badge>
+                  {isPaused(l.student_id) ? (
+                    <Badge tone="neutral">На паузе</Badge>
+                  ) : (
+                    <Badge tone={STATUS_TONE[l.status]}>{STATUS_LABEL[l.status]}</Badge>
+                  )}
                 </button>
               ))}
           </div>
