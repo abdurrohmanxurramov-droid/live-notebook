@@ -243,30 +243,40 @@ export function Calendar() {
                   {active.duration_min} мин
                 </div>
                 <div className="mt-2">
-                  <Badge tone={STATUS_TONE[active.status]}>{STATUS_LABEL[active.status]}</Badge>
+                  {isPaused(active.student_id) ? (
+                    <Badge tone="neutral">На паузе</Badge>
+                  ) : (
+                    <Badge tone={STATUS_TONE[active.status]}>{STATUS_LABEL[active.status]}</Badge>
+                  )}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {(["planned", "completed", "cancelled"] as LessonStatus[]).map((s) => (
-                  <Button
-                    key={s}
-                    variant={active.status === s ? "gold" : "outline"}
-                    onClick={async () => {
-                      try {
-                        await setStatus({ data: { id: active.id, status: s } });
-                        qc.invalidateQueries({ queryKey: ["lessons"] });
-      qc.invalidateQueries({ queryKey: ["attendance"] });
-                        toast.success("Статус обновлён");
-                        setActive(null);
-                      } catch (error: unknown) {
-                        toast.error(getErrorMessage(error));
-                      }
-                    }}
-                  >
-                    {STATUS_LABEL[s]}
-                  </Button>
-                ))}
-              </div>
+              {isPaused(active.student_id) ? (
+                <div className="rounded-lg border border-border bg-secondary/40 p-3 text-xs text-muted-foreground">
+                  Ученик на паузе. Статус урока не учитывается. Доступно только удаление.
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {(["planned", "completed", "cancelled"] as LessonStatus[]).map((s) => (
+                    <Button
+                      key={s}
+                      variant={active.status === s ? "gold" : "outline"}
+                      onClick={async () => {
+                        try {
+                          await setStatus({ data: { id: active.id, status: s } });
+                          qc.invalidateQueries({ queryKey: ["lessons"] });
+                          qc.invalidateQueries({ queryKey: ["attendance"] });
+                          toast.success("Статус обновлён");
+                          setActive(null);
+                        } catch (error: unknown) {
+                          toast.error(getErrorMessage(error));
+                        }
+                      }}
+                    >
+                      {STATUS_LABEL[s]}
+                    </Button>
+                  ))}
+                </div>
+              )}
               <Button
                 variant="danger"
                 onClick={async () => {
