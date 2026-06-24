@@ -280,6 +280,7 @@ export const regenerateLessons = createServerFn({ method: "POST" })
       const dateStr = isoDate(d);
       for (const s of slots ?? []) {
         if (s.day_of_week !== dow) continue;
+        if (!activeStudents.has(s.student_id)) continue;
         const time = String(s.start_time).length === 5 ? `${s.start_time}:00` : s.start_time;
         const key = `${s.student_id}|${dateStr}|${time}`;
         if (existKey.has(key)) continue;
