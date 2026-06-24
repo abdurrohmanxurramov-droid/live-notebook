@@ -628,7 +628,7 @@ function MonthView({
                     e.stopPropagation();
                     onLesson(l);
                   }}
-                  className={`truncate rounded px-1 text-[9px] font-medium ${toneBg(l.status)}`}
+                  className={`truncate rounded px-1 text-[9px] font-medium ${isPaused(l.student_id) ? pausedBg() : toneBg(l.status)}`}
                   title={`${l.scheduled_time.slice(0, 5)} ${studentName(l.student_id)}`}
                 >
                   {studentName(l.student_id)}
