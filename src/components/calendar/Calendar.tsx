@@ -716,11 +716,13 @@ function SlotCell({
 function PositionedBlock({
   lesson,
   studentName,
+  paused,
   onClick,
   compact,
 }: {
   lesson: Lesson;
   studentName: string;
+  paused?: boolean;
   onClick: () => void;
   compact?: boolean;
 }) {
@@ -740,12 +742,12 @@ function PositionedBlock({
       }}
       onClick={onClick}
       style={{ top, height, left: 2, right: 2 }}
-      className={`pointer-events-auto absolute cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-[10px] font-semibold shadow-sm active:cursor-grabbing ${toneBg(lesson.status)}`}
+      className={`pointer-events-auto absolute cursor-grab overflow-hidden rounded-md px-1.5 py-1 text-[10px] font-semibold shadow-sm active:cursor-grabbing ${paused ? pausedBg() : toneBg(lesson.status)}`}
     >
       <div className="truncate leading-tight">{studentName}</div>
       {!compact && height > 32 && (
         <div className="mt-0.5 truncate text-[9px] opacity-80">
-          {STATUS_LABEL[lesson.status]} · {lesson.duration_min} мин
+          {paused ? "На паузе" : `${STATUS_LABEL[lesson.status]} · ${lesson.duration_min} мин`}
         </div>
       )}
     </div>
@@ -763,6 +765,12 @@ function toneBg(s: LessonStatus) {
     case "moved":
       return "bg-secondary text-foreground border border-border";
   }
+}
+
+function pausedBg() {
+  // Distinct neutral-violet/slate look so paused students are visually separate from
+  // all lesson-status palettes (planned/completed/cancelled/moved).
+  return "bg-[color-mix(in_oklab,var(--muted-foreground)_18%,transparent)] text-muted-foreground border border-dashed border-[color-mix(in_oklab,var(--muted-foreground)_45%,transparent)] italic";
 }
 
 declare global {
