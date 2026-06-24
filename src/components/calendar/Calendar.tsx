@@ -109,6 +109,11 @@ export function Calendar() {
   const lessons = (data?.lessons ?? []) as Lesson[];
   const { data: students = [] } = useStudents();
   const studentName = (id: string) => students.find((s) => s.id === id)?.name ?? "—";
+  const pausedIds = useMemo(
+    () => new Set(students.filter((s) => s.status === "paused").map((s) => s.id)),
+    [students],
+  );
+  const isPaused = (id: string) => pausedIds.has(id);
 
   const qc = useQueryClient();
   const move = useServerFn(moveLesson);
