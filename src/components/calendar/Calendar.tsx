@@ -463,6 +463,7 @@ function WeekView({
   start,
   lessons,
   studentName,
+  isPaused,
   onDrop,
   onSlot,
   onLesson,
@@ -470,6 +471,7 @@ function WeekView({
   start: Date;
   lessons: Lesson[];
   studentName: (id: string) => string;
+  isPaused: (id: string) => boolean;
   onDrop: (id: string, date: string, time: string) => void;
   onSlot: (s: { date: string; time: string }) => void;
   onLesson: (l: Lesson) => void;
