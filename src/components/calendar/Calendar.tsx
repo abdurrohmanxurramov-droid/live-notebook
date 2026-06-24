@@ -412,6 +412,7 @@ function DayView({
   date,
   lessons,
   studentName,
+  isPaused,
   onDrop,
   onSlot,
   onLesson,
@@ -419,6 +420,7 @@ function DayView({
   date: string;
   lessons: Lesson[];
   studentName: (id: string) => string;
+  isPaused: (id: string) => boolean;
   onDrop: (id: string, date: string, time: string) => void;
   onSlot: (s: { date: string; time: string }) => void;
   onLesson: (l: Lesson) => void;
@@ -446,6 +448,7 @@ function DayView({
             key={l.id}
             lesson={l}
             studentName={studentName(l.student_id)}
+            paused={isPaused(l.student_id)}
             onClick={() => onLesson(l)}
           />
         ))}
