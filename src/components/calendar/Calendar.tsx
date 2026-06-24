@@ -605,7 +605,7 @@ function MonthView({
                   className={`truncate rounded px-1 text-[9px] font-medium ${toneBg(l.status)}`}
                   title={`${l.scheduled_time.slice(0, 5)} ${studentName(l.student_id)}`}
                 >
-                  {l.scheduled_time.slice(0, 5)} {studentName(l.student_id)}
+                  {studentName(l.student_id)}
                 </div>
               ))}
               {dayLessons.length > 2 && (
