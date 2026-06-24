@@ -194,6 +194,7 @@ export function Calendar() {
               date={iso(cursor)}
               lessons={lessons}
               studentName={studentName}
+              isPaused={isPaused}
               onDrop={handleDrop}
               onSlot={setCreateSlot}
               onLesson={setActive}
@@ -203,6 +204,7 @@ export function Calendar() {
               start={startOfWeek(cursor)}
               lessons={lessons}
               studentName={studentName}
+              isPaused={isPaused}
               onDrop={handleDrop}
               onSlot={setCreateSlot}
               onLesson={setActive}
@@ -213,6 +215,7 @@ export function Calendar() {
               cursor={cursor}
               lessons={lessons}
               studentName={studentName}
+              isPaused={isPaused}
               onDrop={handleDrop}
               onSlot={(d) => setCreateSlot({ date: d, time: "10:00" })}
               onMore={setMoreDay}
