@@ -833,14 +833,38 @@ html, body, * {
    jank on iPhone Safari.
    ============================================================ */
 @media (max-width: 820px) {
-  /* Drop half the floating SVGs and kill their drop-shadow + animation */
+  /* Strip heavy filters/animations off all decorative SVGs by default */
   :root[data-theme="bloom"] .bloom-backdrop svg {
     animation: none !important;
     filter: none !important;
-    opacity: 0.5;
+    opacity: 0.55;
   }
-  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(n+8) {
+  /* Hide most floating elements; keep only a few for lightweight motion */
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(n+5) {
     display: none;
+  }
+
+  /* Re-enable lightweight, transform-only motion on a tiny subset (2–4 items).
+     No filter, no blur, no shadow — just translate3d/rotate/opacity. */
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(1),
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(2),
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(3),
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(4) {
+    will-change: transform, opacity;
+    animation: bloom-ios-drift 28s linear infinite !important;
+    opacity: 0.7;
+  }
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(2) {
+    animation-duration: 34s !important;
+    animation-delay: -8s !important;
+  }
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(3) {
+    animation-duration: 40s !important;
+    animation-delay: -16s !important;
+  }
+  :root[data-theme="bloom"] .bloom-backdrop svg:nth-child(4) {
+    animation-duration: 46s !important;
+    animation-delay: -22s !important;
   }
 
   /* Kill the per-card heart-beat animation */
@@ -872,12 +896,19 @@ html, body, * {
   }
 }
 
-/* iOS Safari is the worst offender for backdrop-filter + animated filters.
-   Detect it via the iOS-only -webkit-touch-callout query and apply the
-   same lightening regardless of viewport width (covers iPad bloom too). */
+/* Cheap transform-only keyframe used for iOS/mobile bloom motion.
+   Uses translate3d + rotate + opacity only — no filter/blur/shadow. */
+@keyframes bloom-ios-drift {
+  0%   { transform: translate3d(0, -8vh, 0) rotate(0deg);     opacity: 0; }
+  10%  { opacity: 0.75; }
+  50%  { transform: translate3d(18px, 55vh, 0) rotate(180deg); opacity: 0.8; }
+  90%  { opacity: 0.6; }
+  100% { transform: translate3d(-14px, 115vh, 0) rotate(360deg); opacity: 0; }
+}
+
+/* iOS Safari — same lightweight treatment regardless of viewport (covers iPad). */
 @supports (-webkit-touch-callout: none) {
   :root[data-theme="bloom"] .bloom-backdrop svg {
-    animation: none !important;
     filter: none !important;
   }
   :root[data-theme="bloom"] .bloom-corner::after {
@@ -886,6 +917,13 @@ html, body, * {
   :root[data-theme="bloom"] .glass,
   :root[data-theme="bloom"] .glass-strong {
     backdrop-filter: blur(12px) saturate(150%);
+  }
+}
+
+/* Respect reduced-motion: stop the iOS drift animation too */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="bloom"] .bloom-backdrop svg {
+    animation: none !important;
   }
 }
 
