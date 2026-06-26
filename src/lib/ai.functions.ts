@@ -476,10 +476,15 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => chatInputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY не настроен");
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey)
+      throw new Error(
+        "AI не настроен: добавьте секрет OPENAI_API_KEY в настройках проекта (Secrets).",
+      );
+    const model = process.env.AI_MODEL?.trim() || "gpt-4o-mini";
 
     const { supabase, userId } = context;
+
 
     // 1. Сохраняем сообщение пользователя
     await supabase.from("chat_messages").insert({
