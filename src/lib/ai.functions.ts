@@ -274,16 +274,108 @@ const tools = [
   },
 ];
 
+// ---------- Per-tool argument schemas ----------
+const uuidSchema = z.string().uuid();
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Дата должна быть YYYY-MM-DD");
+const timeSchema = z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, "Время должно быть HH:MM");
+const noteSchema = z.string().trim().max(2000).nullable().optional();
+
+const addStudentSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100),
+    subject: z.string().trim().max(100).nullable().optional(),
+    days_per_week: z.number().int().min(1).max(7).optional(),
+    phone: z.string().trim().max(40).nullable().optional(),
+  })
+  .strict();
+
+const deleteStudentSchema = z.object({ id: uuidSchema }).strict();
+
+const addScheduleSlotSchema = z
+  .object({
+    student_id: uuidSchema,
+    day_of_week: z.number().int().min(0).max(7),
+    start_time: timeSchema,
+    duration_min: z.number().int().min(5).max(600).optional(),
+  })
+  .strict();
+
+const deleteScheduleSlotSchema = z.object({ id: uuidSchema }).strict();
+
+const addLessonSchema = z
+  .object({
+    student_id: uuidSchema,
+    scheduled_date: dateSchema,
+    scheduled_time: timeSchema,
+    duration_min: z.number().int().min(5).max(600).optional(),
+    status: z.enum(["planned", "done", "cancelled", "moved"]).optional(),
+    notes: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict();
+
+const listLessonsSchema = z
+  .object({
+    from: dateSchema.optional(),
+    to: dateSchema.optional(),
+  })
+  .strict();
+
+const updateLessonStatusSchema = z
+  .object({
+    id: uuidSchema,
+    status: z.enum(["planned", "done", "cancelled", "moved"]),
+  })
+  .strict();
+
+const addFinanceSchema = z
+  .object({
+    student_id: uuidSchema,
+    amount: z.number().finite().min(0).max(10_000_000),
+    currency: z.enum(["RUB", "USD", "USDT", "EGP"]).optional(),
+    is_paid: z.boolean().optional(),
+    pay_date: dateSchema.nullable().optional(),
+  })
+  .strict();
+
+const listFinanceSchema = z
+  .object({ limit: z.number().int().min(1).max(500).optional() })
+  .strict();
+
+const markAttendanceSchema = z
+  .object({
+    student_id: uuidSchema,
+    date: dateSchema,
+    status: z.enum(["present", "absent", "excused", "rescheduled_by_teacher"]),
+    note: noteSchema,
+  })
+  .strict();
+
+const addHomeworkSchema = z
+  .object({
+    student_id: uuidSchema,
+    task: z.string().trim().min(1).max(2000),
+    due_date: dateSchema.nullable().optional(),
+    status: z.enum(["assigned", "done", "skipped"]).optional(),
+    note: noteSchema,
+  })
+  .strict();
+
+const listHomeworkSchema = z
+  .object({ limit: z.number().int().min(1).max(500).optional() })
+  .strict();
+
+const emptySchema = z.object({}).strict();
+
 // ---------- Tool executor ----------
 async function execTool(
   name: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  args: any,
+  args: unknown,
   supabase: SupabaseClient<Database>,
   userId: string,
 ) {
   switch (name) {
     case "list_students": {
+      emptySchema.partial().parse(args ?? {});
       const { data, error } = await supabase
         .from("students")
         .select("id, name, subject, days_per_week, phone")
@@ -293,14 +385,15 @@ async function execTool(
       return data;
     }
     case "add_student": {
+      const v = addStudentSchema.parse(args);
       const { data, error } = await supabase
         .from("students")
         .insert({
           owner_id: userId,
-          name: args.name,
-          subject: args.subject ?? null,
-          days_per_week: args.days_per_week ?? 1,
-          phone: args.phone ?? null,
+          name: v.name,
+          subject: v.subject?.trim() || null,
+          days_per_week: v.days_per_week ?? 1,
+          phone: v.phone?.trim() || null,
         })
         .select()
         .single();
@@ -319,26 +412,27 @@ async function execTool(
       return data;
     }
     case "delete_student": {
+      const v = deleteStudentSchema.parse(args);
       const { error } = await supabase
         .from("students")
         .update({ deleted_at: new Date().toISOString() })
-        .eq("id", args.id);
+        .eq("id", v.id);
       if (error) throw error;
       return { ok: true };
     }
     case "add_schedule_slot": {
+      const v = addScheduleSlotSchema.parse(args);
       // 0=Пн..6=Вс. Защитно нормализуем, если модель вернула 7 (Вс в 1-based).
-      let dow = Number(args.day_of_week);
-      if (dow === 7) dow = 6;
+      const dow = v.day_of_week === 7 ? 6 : v.day_of_week;
       if (dow < 0 || dow > 6) throw new Error("day_of_week вне диапазона 0..6");
       const { data, error } = await supabase
         .from("schedule_slots")
         .insert({
           owner_id: userId,
-          student_id: args.student_id,
+          student_id: v.student_id,
           day_of_week: dow,
-          start_time: args.start_time,
-          duration_min: args.duration_min ?? 60,
+          start_time: v.start_time,
+          duration_min: v.duration_min ?? 60,
         })
         .select()
         .single();
@@ -346,6 +440,7 @@ async function execTool(
       return data;
     }
     case "list_schedule": {
+      emptySchema.partial().parse(args ?? {});
       const { data, error } = await supabase
         .from("schedule_slots")
         .select("id, student_id, day_of_week, start_time, duration_min")
@@ -355,24 +450,26 @@ async function execTool(
       return data;
     }
     case "delete_schedule_slot": {
+      const v = deleteScheduleSlotSchema.parse(args);
       const { error } = await supabase
         .from("schedule_slots")
         .update({ deleted_at: new Date().toISOString() })
-        .eq("id", args.id);
+        .eq("id", v.id);
       if (error) throw error;
       return { ok: true };
     }
     case "add_lesson": {
+      const v = addLessonSchema.parse(args);
       const { data, error } = await supabase
         .from("lessons")
         .insert({
           owner_id: userId,
-          student_id: args.student_id,
-          scheduled_date: args.scheduled_date,
-          scheduled_time: args.scheduled_time,
-          duration_min: args.duration_min ?? 60,
-          status: args.status ?? "planned",
-          notes: args.notes ?? null,
+          student_id: v.student_id,
+          scheduled_date: v.scheduled_date,
+          scheduled_time: v.scheduled_time,
+          duration_min: v.duration_min ?? 60,
+          status: v.status ?? "planned",
+          notes: v.notes ?? null,
         })
         .select()
         .single();
@@ -380,36 +477,39 @@ async function execTool(
       return data;
     }
     case "list_lessons": {
+      const v = listLessonsSchema.parse(args ?? {});
       let q = supabase
         .from("lessons")
         .select("id, student_id, scheduled_date, scheduled_time, duration_min, status, notes")
         .is("deleted_at", null);
-      if (args.from) q = q.gte("scheduled_date", args.from);
-      if (args.to) q = q.lte("scheduled_date", args.to);
+      if (v.from) q = q.gte("scheduled_date", v.from);
+      if (v.to) q = q.lte("scheduled_date", v.to);
       const { data, error } = await q.order("scheduled_date").limit(200);
       if (error) throw error;
       return data;
     }
     case "update_lesson_status": {
+      const v = updateLessonStatusSchema.parse(args);
       const { data, error } = await supabase
         .from("lessons")
-        .update({ status: args.status })
-        .eq("id", args.id)
+        .update({ status: v.status })
+        .eq("id", v.id)
         .select()
         .single();
       if (error) throw error;
       return data;
     }
     case "add_finance": {
+      const v = addFinanceSchema.parse(args);
       const { data, error } = await supabase
         .from("finance")
         .insert({
           owner_id: userId,
-          student_id: args.student_id,
-          amount: args.amount,
-          currency: args.currency ?? "RUB",
-          is_paid: args.is_paid ?? false,
-          pay_date: args.pay_date ?? null,
+          student_id: v.student_id,
+          amount: v.amount,
+          currency: v.currency ?? "RUB",
+          is_paid: v.is_paid ?? false,
+          pay_date: v.pay_date ?? null,
         })
         .select()
         .single();
@@ -417,24 +517,26 @@ async function execTool(
       return data;
     }
     case "list_finance": {
+      const v = listFinanceSchema.parse(args ?? {});
       const { data, error } = await supabase
         .from("finance")
         .select("id, student_id, amount, currency, is_paid, pay_date, created_at")
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
-        .limit(args.limit ?? 50);
+        .limit(v.limit ?? 50);
       if (error) throw error;
       return data;
     }
     case "mark_attendance": {
+      const v = markAttendanceSchema.parse(args);
       const { data, error } = await supabase
         .from("attendance")
         .insert({
           owner_id: userId,
-          student_id: args.student_id,
-          date: args.date,
-          status: args.status,
-          note: args.note ?? null,
+          student_id: v.student_id,
+          date: v.date,
+          status: v.status,
+          note: v.note ?? null,
         })
         .select()
         .single();
@@ -442,15 +544,16 @@ async function execTool(
       return data;
     }
     case "add_homework": {
+      const v = addHomeworkSchema.parse(args);
       const { data, error } = await supabase
         .from("homework")
         .insert({
           owner_id: userId,
-          student_id: args.student_id,
-          task: args.task,
-          due_date: args.due_date ?? null,
-          status: args.status ?? "assigned",
-          note: args.note ?? null,
+          student_id: v.student_id,
+          task: v.task,
+          due_date: v.due_date ?? null,
+          status: v.status ?? "assigned",
+          note: v.note ?? null,
         })
         .select()
         .single();
@@ -458,12 +561,13 @@ async function execTool(
       return data;
     }
     case "list_homework": {
+      const v = listHomeworkSchema.parse(args ?? {});
       const { data, error } = await supabase
         .from("homework")
         .select("id, student_id, task, due_date, status, assigned_date")
         .is("deleted_at", null)
         .order("assigned_date", { ascending: false })
-        .limit(args.limit ?? 50);
+        .limit(v.limit ?? 50);
       if (error) throw error;
       return data;
     }
@@ -471,6 +575,7 @@ async function execTool(
       throw new Error(`Неизвестный инструмент: ${name}`);
   }
 }
+
 
 export const chatWithAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
