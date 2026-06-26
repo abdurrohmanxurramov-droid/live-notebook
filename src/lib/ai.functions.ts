@@ -302,13 +302,17 @@ const addScheduleSlotSchema = z
 
 const deleteScheduleSlotSchema = z.object({ id: uuidSchema }).strict();
 
+const lessonStatusSchema = z
+  .enum(["planned", "completed", "done", "cancelled", "moved"])
+  .transform((s) => (s === "done" ? ("completed" as const) : s));
+
 const addLessonSchema = z
   .object({
     student_id: uuidSchema,
     scheduled_date: dateSchema,
     scheduled_time: timeSchema,
     duration_min: z.number().int().min(5).max(600).optional(),
-    status: z.enum(["planned", "done", "cancelled", "moved"]).optional(),
+    status: lessonStatusSchema.optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
   })
   .strict();
@@ -323,9 +327,10 @@ const listLessonsSchema = z
 const updateLessonStatusSchema = z
   .object({
     id: uuidSchema,
-    status: z.enum(["planned", "done", "cancelled", "moved"]),
+    status: lessonStatusSchema,
   })
   .strict();
+
 
 const addFinanceSchema = z
   .object({
