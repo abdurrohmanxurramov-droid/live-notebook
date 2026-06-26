@@ -14,7 +14,7 @@ import {
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { CalendarDays, Plus, Trash2, Clock, Check, X, ArrowRight } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -506,31 +506,31 @@ function UpcomingLessons({
                 </div>
                 {planned && (
                   <div className="mt-3 flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
+                    <button
+                      type="button"
                       data-haptic="success"
                       onClick={() => changeStatus(l.id, "completed")}
+                      className="glass-pill glass-pill-success flex-1"
                     >
-                      <Check className="h-4 w-4" /> Провёл
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
+                      Провёл
+                    </button>
+                    <button
+                      type="button"
                       data-haptic="warning"
                       onClick={() => changeStatus(l.id, "cancelled")}
+                      className="glass-pill glass-pill-danger flex-1"
                     >
-                      <X className="h-4 w-4" /> Отменил
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
+                      Отменил
+                    </button>
+                    <button
+                      type="button"
                       data-haptic="medium"
                       onClick={() => setMoveTarget({ id: l.id, date: l.scheduled_date, time })}
                       disabled={isPast}
+                      className="glass-pill glass-pill-warning flex-1 disabled:opacity-50"
                     >
-                      <ArrowRight className="h-4 w-4" /> Перенёс
-                    </Button>
+                      Перенёс
+                    </button>
                   </div>
                 )}
               </Card>
