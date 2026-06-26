@@ -96,6 +96,184 @@ export const exportCsv = createServerFn({ method: "GET" })
     return out as Record<(typeof CSV_TABLES)[number], string>;
   });
 
+// ---------- Per-table row schemas ----------
+// Strip unknown columns; cap free-text length; constrain numeric/enum values.
+// owner_id / user_id are overwritten with the current user before upsert.
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const isoTime = z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/);
+const isoTimestamp = z.string().max(64);
+const uuid = z.string().uuid();
+const shortText = (max: number) => z.string().max(max).nullable().optional();
+
+const studentRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    name: z.string().trim().min(1).max(100),
+    days_per_week: z.number().int().min(0).max(7).nullable().optional(),
+    subject: shortText(100),
+    phone: shortText(40),
+    status: z.string().max(40).nullable().optional(),
+    deleted_at: isoTimestamp.nullable().optional(),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const scheduleSlotRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    student_id: uuid,
+    day_of_week: z.number().int().min(0).max(7),
+    start_time: isoTime,
+    duration_min: z.number().int().min(5).max(600),
+    deleted_at: isoTimestamp.nullable().optional(),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const lessonRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    student_id: uuid,
+    scheduled_date: isoDate,
+    scheduled_time: isoTime,
+    duration_min: z.number().int().min(5).max(600),
+    status: z.enum(["planned", "completed", "cancelled", "moved"]).optional(),
+    notes: z.string().max(4000).nullable().optional(),
+    source_slot_id: uuid.nullable().optional(),
+    moved_from_id: uuid.nullable().optional(),
+    deleted_at: isoTimestamp.nullable().optional(),
+    created_at: isoTimestamp.optional(),
+    updated_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const lessonsConductedRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    student_id: uuid,
+    lessons_done: z.number().int().min(0).max(1_000_000),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const attendanceRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    student_id: uuid,
+    date: isoDate,
+    status: z.enum(["present", "absent", "excused", "rescheduled_by_teacher"]),
+    note: z.string().max(2000).nullable().optional(),
+    compensated: z.boolean().nullable().optional(),
+    deleted_at: isoTimestamp.nullable().optional(),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const financeRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    student_id: uuid.nullable().optional(),
+    amount: z.number().finite().min(0).max(10_000_000),
+    currency: z.enum(["RUB", "USD", "USDT", "EGP"]),
+    is_paid: z.boolean().optional(),
+    pay_date: isoDate.nullable().optional(),
+    deleted_at: isoTimestamp.nullable().optional(),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const homeworkRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    student_id: uuid,
+    assigned_date: isoDate.nullable().optional(),
+    due_date: isoDate.nullable().optional(),
+    task: z.string().min(1).max(4000),
+    status: z.enum(["assigned", "done", "skipped"]).optional(),
+    note: z.string().max(2000).nullable().optional(),
+    deleted_at: isoTimestamp.nullable().optional(),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const ratesRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    usd_to_rub: z.number().finite().min(0).max(1_000_000),
+    usdt_to_egp: z.number().finite().min(0).max(1_000_000),
+    usd_to_egp: z.number().finite().min(0).max(1_000_000),
+    updated_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const pushSubscriptionRowSchema = z
+  .object({
+    id: uuid.optional(),
+    owner_id: uuid.optional(),
+    endpoint: z.string().url().max(2000),
+    p256dh: z.string().max(500),
+    auth: z.string().max(500),
+    user_agent: z.string().max(500).nullable().optional(),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const chatMessageRowSchema = z
+  .object({
+    id: uuid.optional(),
+    user_id: uuid.optional(),
+    role: z.enum(["user", "assistant", "system", "tool"]),
+    content: z.string().max(20_000).nullable().optional(),
+    tool_calls: z.unknown().nullable().optional(),
+    tool_call_id: z.string().max(200).nullable().optional(),
+    name: z.string().max(200).nullable().optional(),
+    created_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const userSettingsRowSchema = z
+  .object({
+    user_id: uuid.optional(),
+    default_currency: z.enum(["RUB", "USD", "USDT", "EGP"]).optional(),
+    default_lesson_duration: z.number().int().min(5).max(600).optional(),
+    default_lesson_price: z.number().finite().min(0).max(10_000_000).optional(),
+    week_starts_on: z.number().int().min(0).max(6).optional(),
+    remind_before_min: z.number().int().min(0).max(10_000).optional(),
+    locale: z.string().max(16).nullable().optional(),
+    remind_lessons: z.boolean().optional(),
+    remind_payments: z.boolean().optional(),
+    remind_homework: z.boolean().optional(),
+    gender: z.enum(["male", "female"]).nullable().optional(),
+    theme: z.enum(["classic", "bloom"]).optional(),
+    onboarding_completed: z.boolean().optional(),
+    created_at: isoTimestamp.optional(),
+    updated_at: isoTimestamp.optional(),
+  })
+  .strip();
+
+const ROW_SCHEMAS = {
+  students: studentRowSchema,
+  schedule_slots: scheduleSlotRowSchema,
+  lessons: lessonRowSchema,
+  lessons_conducted: lessonsConductedRowSchema,
+  attendance: attendanceRowSchema,
+  finance: financeRowSchema,
+  homework: homeworkRowSchema,
+  rates: ratesRowSchema,
+  push_subscriptions: pushSubscriptionRowSchema,
+  chat_messages: chatMessageRowSchema,
+  user_settings: userSettingsRowSchema,
+} as const satisfies Record<(typeof TABLES)[number], z.ZodTypeAny>;
+
 const importSchema = z.object({
   json: z.object({
     version: z.number(),
@@ -118,14 +296,20 @@ export const importBackup = createServerFn({ method: "POST" })
         counts[t] = 0;
         continue;
       }
-      // Force owner_id / user_id to current user
-      const fixed = rows.map((r) => {
-        const row = { ...r } as Record<string, unknown>;
+      const schema = ROW_SCHEMAS[t];
+      // Validate + strip unknown columns; force owner_id / user_id to current user.
+      const fixed: Record<string, unknown>[] = [];
+      for (let i = 0; i < rows.length; i++) {
+        const parsed = schema.safeParse(rows[i]);
+        if (!parsed.success) {
+          throw new Error(`${t}[${i}]: ${parsed.error.issues[0]?.message ?? "invalid row"}`);
+        }
+        const row = { ...(parsed.data as Record<string, unknown>) };
         if ("owner_id" in row) row.owner_id = userId;
         if ("user_id" in row) row.user_id = userId;
         if (t === "push_subscriptions") delete row.id;
-        return row;
-      });
+        fixed.push(row);
+      }
       const conflictCol =
         t === "user_settings" ? "user_id" : t === "push_subscriptions" ? "endpoint" : "id";
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -137,3 +321,4 @@ export const importBackup = createServerFn({ method: "POST" })
     }
     return { ok: true, counts };
   });
+
