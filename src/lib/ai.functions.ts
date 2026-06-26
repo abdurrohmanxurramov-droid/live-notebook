@@ -476,10 +476,15 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => chatInputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY не настроен");
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey)
+      throw new Error(
+        "AI не настроен: добавьте секрет OPENAI_API_KEY в настройках проекта (Secrets).",
+      );
+    const model = process.env.AI_MODEL?.trim() || "gpt-4o-mini";
 
     const { supabase, userId } = context;
+
 
     // 1. Сохраняем сообщение пользователя
     await supabase.from("chat_messages").insert({
@@ -583,11 +588,11 @@ ${slotsStr}`,
     let finalReply = "";
 
     for (let step = 0; step < MAX_STEPS; step++) {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model,
           messages,
           tools,
           tool_choice: "auto",
@@ -595,12 +600,16 @@ ${slotsStr}`,
       });
 
       if (!res.ok) {
-        if (res.status === 429) throw new Error("Слишком много запросов, попробуйте позже.");
+        if (res.status === 401)
+          throw new Error("Неверный OPENAI_API_KEY. Проверьте секрет в настройках проекта.");
+        if (res.status === 429)
+          throw new Error("Слишком много запросов или закончилась квота OpenAI.");
         if (res.status === 402)
-          throw new Error("Закончились кредиты ИИ. Пополните в Settings → Workspace → Usage.");
+          throw new Error("Закончились средства на счёте OpenAI. Пополните баланс.");
         const t = await res.text().catch(() => "");
         throw new Error(`AI ошибка ${res.status}: ${t.slice(0, 200)}`);
       }
+
 
       const json = await res.json();
       const msg = json.choices?.[0]?.message;
