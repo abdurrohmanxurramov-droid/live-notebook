@@ -41,8 +41,11 @@ export function ThemePicker() {
   async function setGender(g: "male" | "female") {
     setBusy(true);
     try {
-      await save({ data: { gender: g } });
+      const nextTheme: Theme = g === "female" ? "bloom" : "classic";
+      await save({ data: { gender: g, theme: nextTheme } });
+      document.documentElement.setAttribute("data-theme", nextTheme);
       await qc.invalidateQueries({ queryKey: ["user_settings"] });
+      toast.success(nextTheme === "bloom" ? "Тема Bloom включена 🌸" : "Классика возвращена");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Ошибка");
     } finally {
