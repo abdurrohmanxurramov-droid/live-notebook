@@ -944,12 +944,13 @@ html, body, * {
    so the pills feel like part of the glass surface, not stickers.
    ────────────────────────────────────────────────────────────── */
 :root {
-  --pill-success-h: 152;   /* emerald */
-  --pill-success-s: 42%;
-  --pill-warning-h: 38;    /* amber  */
-  --pill-warning-s: 78%;
-  --pill-danger-h:  6;     /* rose   */
-  --pill-danger-s:  62%;
+  /* Refined, non-traffic-light palette.
+     Completed → eucalyptus (calm, affirming, not "lime green")
+     Moved     → muted clay  (warm pause, not "school-bus yellow")
+     Cancelled → dusty plum  (subdued retreat, not "alarm red")  */
+  --pill-success-h: 168;  --pill-success-s: 22%;
+  --pill-warning-h: 22;   --pill-warning-s: 38%;
+  --pill-danger-h:  340;  --pill-danger-s:  22%;
 }
 
 @utility glass-pill {
