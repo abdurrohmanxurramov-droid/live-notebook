@@ -143,17 +143,39 @@ export const moveLesson = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (e2) throw new Error(e2.message);
 
-    // Create new lesson at the new slot
-    const { error: e3 } = await supabase.from("lessons").insert({
-      owner_id: userId,
-      student_id: orig.student_id,
-      scheduled_date: data.new_date,
-      scheduled_time: newTime,
-      duration_min: orig.duration_min,
-      status: "planned",
-      moved_from_id: data.id,
-      source_slot_id: orig.source_slot_id,
-    });
+    // Create new lesson at the new slot — or revive an existing row at that
+    // slot, since (student_id, scheduled_date, scheduled_time) is unique
+    // regardless of status / soft-delete.
+    const { data: existing } = await supabase
+      .from("lessons")
+      .select("id")
+      .eq("student_id", orig.student_id)
+      .eq("scheduled_date", data.new_date)
+      .eq("scheduled_time", newTime)
+      .maybeSingle();
+
+    const e3 = existing
+      ? (await supabase
+          .from("lessons")
+          .update({
+            status: "planned",
+            duration_min: orig.duration_min,
+            moved_from_id: data.id,
+            source_slot_id: orig.source_slot_id,
+            deleted_at: null,
+          })
+          .eq("id", existing.id)).error
+      : (await supabase.from("lessons").insert({
+          owner_id: userId,
+          student_id: orig.student_id,
+          scheduled_date: data.new_date,
+          scheduled_time: newTime,
+          duration_min: orig.duration_min,
+          status: "planned",
+          moved_from_id: data.id,
+          source_slot_id: orig.source_slot_id,
+        })).error;
+
     if (e3) {
       // rollback original
       await supabase.from("lessons").update({ status: orig.status }).eq("id", data.id);
