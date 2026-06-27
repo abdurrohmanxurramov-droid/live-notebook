@@ -516,14 +516,6 @@ function UpcomingLessons({
                     </button>
                     <button
                       type="button"
-                      data-haptic="warning"
-                      onClick={() => changeStatus(l.id, "cancelled")}
-                      className="glass-pill glass-pill-danger flex-1"
-                    >
-                      Отменил
-                    </button>
-                    <button
-                      type="button"
                       data-haptic="medium"
                       onClick={() => setMoveTarget({ id: l.id, date: l.scheduled_date, time })}
                       disabled={isPast}
@@ -531,8 +523,17 @@ function UpcomingLessons({
                     >
                       Перенёс
                     </button>
+                    <button
+                      type="button"
+                      data-haptic="warning"
+                      onClick={() => changeStatus(l.id, "cancelled")}
+                      className="glass-pill glass-pill-danger flex-1"
+                    >
+                      Отменил
+                    </button>
                   </div>
                 )}
+
               </Card>
             );
             return (
