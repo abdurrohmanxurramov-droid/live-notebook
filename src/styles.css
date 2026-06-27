@@ -944,12 +944,13 @@ html, body, * {
    so the pills feel like part of the glass surface, not stickers.
    ────────────────────────────────────────────────────────────── */
 :root {
-  --pill-success-h: 152;   /* emerald */
-  --pill-success-s: 42%;
-  --pill-warning-h: 38;    /* amber  */
-  --pill-warning-s: 78%;
-  --pill-danger-h:  6;     /* rose   */
-  --pill-danger-s:  62%;
+  /* Refined, non-traffic-light palette.
+     Completed → eucalyptus (calm, affirming, not "lime green")
+     Moved     → muted clay  (warm pause, not "school-bus yellow")
+     Cancelled → dusty plum  (subdued retreat, not "alarm red")  */
+  --pill-success-h: 168;  --pill-success-s: 22%;
+  --pill-warning-h: 22;   --pill-warning-s: 38%;
+  --pill-danger-h:  340;  --pill-danger-s:  22%;
 }
 
 @utility glass-pill {
@@ -976,27 +977,27 @@ html, body, * {
 }
 @utility glass-pill { &:active { transform: scale(0.97); } }
 
-/* ── Light mode: soft tinted glass, deep readable ink ─────────── */
+/* ── Light mode: tonal tinted glass, deep ink ─────────────────── */
 @utility glass-pill-success {
   background: linear-gradient(135deg,
-    hsl(var(--pill-success-h) var(--pill-success-s) 88% / 0.85),
-    hsl(var(--pill-success-h) var(--pill-success-s) 78% / 0.55));
-  color: hsl(var(--pill-success-h) 55% 24%);
-  border-color: hsl(var(--pill-success-h) var(--pill-success-s) 60% / 0.40);
+    hsl(var(--pill-success-h) var(--pill-success-s) 92% / 0.85),
+    hsl(var(--pill-success-h) var(--pill-success-s) 84% / 0.55));
+  color: hsl(var(--pill-success-h) 32% 26%);
+  border-color: hsl(var(--pill-success-h) var(--pill-success-s) 55% / 0.32);
 }
 @utility glass-pill-warning {
   background: linear-gradient(135deg,
-    hsl(var(--pill-warning-h) var(--pill-warning-s) 86% / 0.90),
-    hsl(var(--pill-warning-h) var(--pill-warning-s) 76% / 0.55));
-  color: hsl(28 70% 26%);
-  border-color: hsl(var(--pill-warning-h) var(--pill-warning-s) 58% / 0.42);
+    hsl(var(--pill-warning-h) var(--pill-warning-s) 90% / 0.88),
+    hsl(var(--pill-warning-h) var(--pill-warning-s) 82% / 0.55));
+  color: hsl(var(--pill-warning-h) 40% 28%);
+  border-color: hsl(var(--pill-warning-h) var(--pill-warning-s) 55% / 0.34);
 }
 @utility glass-pill-danger {
   background: linear-gradient(135deg,
-    hsl(var(--pill-danger-h) var(--pill-danger-s) 88% / 0.85),
-    hsl(var(--pill-danger-h) var(--pill-danger-s) 78% / 0.55));
-  color: hsl(var(--pill-danger-h) 60% 32%);
-  border-color: hsl(var(--pill-danger-h) var(--pill-danger-s) 60% / 0.42);
+    hsl(var(--pill-danger-h) var(--pill-danger-s) 92% / 0.85),
+    hsl(var(--pill-danger-h) var(--pill-danger-s) 84% / 0.55));
+  color: hsl(var(--pill-danger-h) 30% 32%);
+  border-color: hsl(var(--pill-danger-h) var(--pill-danger-s) 55% / 0.32);
 }
 
 /* ── Dark mode: smoky tint, bright pastel ink ─────────────────── */
