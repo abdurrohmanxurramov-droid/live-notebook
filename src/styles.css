@@ -978,11 +978,12 @@ html, body, * {
 }
 @utility glass-pill-warning {
   background: linear-gradient(135deg,
-    rgba(250, 204, 21, 0.48),
-    rgba(234, 179, 8, 0.22));
-  color: #6a4b00;
-  border-color: rgba(234, 179, 8, 0.55);
+    color-mix(in oklab, var(--accent) 38%, transparent),
+    color-mix(in oklab, var(--accent) 18%, transparent));
+  color: color-mix(in oklab, var(--accent) 85%, #1a1206);
+  border-color: color-mix(in oklab, var(--accent) 45%, transparent);
 }
-.dark .glass-pill-warning { color: #ffe28a; }
+.dark .glass-pill-warning { color: color-mix(in oklab, var(--accent) 30%, #fff1d8); }
 .dark .glass-pill-success { color: color-mix(in oklab, var(--success) 30%, #d8ffe8); }
 .dark .glass-pill-danger { color: color-mix(in oklab, var(--destructive) 30%, #ffd8d8); }
+
