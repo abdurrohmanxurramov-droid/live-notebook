@@ -26,7 +26,7 @@ export type Finance = {
   id: string;
   student_id: string;
   amount: number;
-  currency: "RUB" | "USD" | "EGP";
+  currency: "RUB" | "USD" | "EGP" | "USDT";
   is_paid: boolean;
   pay_date: string | null;
   created_at: string;
