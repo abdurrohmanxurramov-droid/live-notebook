@@ -186,7 +186,7 @@ const homeworkRowSchema = z
     assigned_date: isoDate.nullable().optional(),
     due_date: isoDate.nullable().optional(),
     task: z.string().min(1).max(4000),
-    status: z.enum(["assigned", "done", "skipped"]).optional(),
+    status: z.enum(["assigned", "done", "not_done", "partial"]).optional(),
     note: z.string().max(2000).nullable().optional(),
     deleted_at: isoTimestamp.nullable().optional(),
     created_at: isoTimestamp.optional(),
