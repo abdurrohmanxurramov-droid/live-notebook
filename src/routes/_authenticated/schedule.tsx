@@ -72,7 +72,10 @@ function SchedulePage() {
       .then(() => {
         if (!cancelled) qcMount.invalidateQueries({ queryKey: ["lessons"] });
       })
-      .catch((e) => console.error("regenerateLessons on mount failed", e));
+      .catch((e) => {
+        console.error("regenerateLessons on mount failed", e);
+        toast.error("Не удалось обновить список уроков");
+      });
     return () => {
       cancelled = true;
     };
