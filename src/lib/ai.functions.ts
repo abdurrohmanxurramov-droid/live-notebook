@@ -360,7 +360,7 @@ const addHomeworkSchema = z
     student_id: uuidSchema,
     task: z.string().trim().min(1).max(2000),
     due_date: dateSchema.nullable().optional(),
-    status: z.enum(["assigned", "done", "skipped"]).optional(),
+    status: z.enum(["assigned", "done", "not_done", "partial"]).optional(),
     note: noteSchema,
   })
   .strict();
