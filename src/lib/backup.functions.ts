@@ -253,7 +253,7 @@ const ROW_SCHEMAS = {
   students: studentRowSchema,
   schedule_slots: scheduleSlotRowSchema,
   lessons: lessonRowSchema,
-  lessons_conducted: lessonsConductedRowSchema,
+  
   attendance: attendanceRowSchema,
   finance: financeRowSchema,
   homework: homeworkRowSchema,
