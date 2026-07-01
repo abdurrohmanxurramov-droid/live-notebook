@@ -7,7 +7,6 @@ const TABLES = [
   "students",
   "schedule_slots",
   "lessons",
-  "lessons_conducted",
   "attendance",
   "finance",
   "homework",
