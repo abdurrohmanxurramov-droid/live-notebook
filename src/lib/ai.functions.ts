@@ -360,7 +360,7 @@ const addHomeworkSchema = z
     student_id: uuidSchema,
     task: z.string().trim().min(1).max(2000),
     due_date: dateSchema.nullable().optional(),
-    status: z.enum(["assigned", "done", "skipped"]).optional(),
+    status: z.enum(["assigned", "done", "not_done", "partial"]).optional(),
     note: noteSchema,
   })
   .strict();
@@ -370,6 +370,49 @@ const listHomeworkSchema = z
   .strict();
 
 const emptySchema = z.object({}).strict();
+
+// Keep attendance in sync when the AI toggles lesson status via update_lesson_status.
+type LessonStatusForSync = "planned" | "completed" | "cancelled" | "moved";
+async function syncAttendanceForLessonAi(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  studentId: string,
+  date: string,
+  status: LessonStatusForSync,
+) {
+  const attStatus =
+    status === "completed"
+      ? "present"
+      : status === "cancelled"
+        ? "absent"
+        : status === "moved"
+          ? "rescheduled_by_teacher"
+          : null;
+  const { data: existing } = await supabase
+    .from("attendance")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("date", date)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (attStatus === null) {
+    if (existing) {
+      await supabase
+        .from("attendance")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    }
+    return;
+  }
+  if (existing) {
+    await supabase.from("attendance").update({ status: attStatus }).eq("id", existing.id);
+  } else {
+    await supabase
+      .from("attendance")
+      .insert({ owner_id: userId, student_id: studentId, date, status: attStatus });
+  }
+}
+
 
 // ---------- Tool executor ----------
 async function execTool(
@@ -499,9 +542,17 @@ async function execTool(
         .from("lessons")
         .update({ status: v.status })
         .eq("id", v.id)
-        .select()
+        .select("id, student_id, scheduled_date, status")
         .single();
       if (error) throw error;
+      // Sync attendance so the student card / journal stay consistent.
+      await syncAttendanceForLessonAi(
+        supabase,
+        userId,
+        data.student_id,
+        data.scheduled_date,
+        v.status,
+      );
       return data;
     }
     case "add_finance": {

@@ -31,10 +31,40 @@ export async function getRegistration(): Promise<ServiceWorkerRegistration | nul
   return reg;
 }
 
+function keysEqual(a: ArrayBuffer | null | undefined, b: Uint8Array): boolean {
+  if (!a) return false;
+  const av = new Uint8Array(a);
+  if (av.length !== b.length) return false;
+  for (let i = 0; i < av.length; i++) if (av[i] !== b[i]) return false;
+  return true;
+}
+
+/**
+ * If the browser holds a push subscription created with a different VAPID
+ * public key (e.g. after key rotation), it's dead. Silently unsubscribe so
+ * the UI can prompt the user to enable notifications again.
+ */
+async function healStaleSubscription(reg: ServiceWorkerRegistration) {
+  const sub = await reg.pushManager.getSubscription();
+  if (!sub) return null;
+  const expected = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+  const current = sub.options.applicationServerKey ?? null;
+  if (!keysEqual(current, expected)) {
+    try {
+      await removePushSubscription({ data: { endpoint: sub.endpoint } });
+    } catch {
+      // ignore server-side cleanup errors
+    }
+    await sub.unsubscribe();
+    return null;
+  }
+  return sub;
+}
+
 export async function isSubscribed(): Promise<boolean> {
   const reg = await getRegistration();
   if (!reg) return false;
-  const sub = await reg.pushManager.getSubscription();
+  const sub = await healStaleSubscription(reg);
   return !!sub && Notification.permission === "granted";
 }
 

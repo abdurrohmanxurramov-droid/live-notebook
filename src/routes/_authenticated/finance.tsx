@@ -220,7 +220,7 @@ function RateInput({
 
 function StudentFinanceCard({ studentId, name }: { studentId: string; name: string }) {
   const { data: rates } = useRates();
-  const [currency, setCurrency] = useState<"RUB" | "USD" | "EGP">("RUB");
+  const [currency, setCurrency] = useState<Finance["currency"]>("RUB");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isPaid, setIsPaid] = useState(true);

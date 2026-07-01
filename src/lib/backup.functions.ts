@@ -7,7 +7,6 @@ const TABLES = [
   "students",
   "schedule_slots",
   "lessons",
-  "lessons_conducted",
   "attendance",
   "finance",
   "homework",
@@ -23,7 +22,6 @@ const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
     "id, owner_id, student_id, day_of_week, start_time, duration_min, deleted_at, created_at",
   lessons:
     "id, owner_id, student_id, scheduled_date, scheduled_time, duration_min, status, notes, source_slot_id, moved_from_id, deleted_at, created_at, updated_at",
-  lessons_conducted: "id, owner_id, student_id, lessons_done, created_at",
   attendance: "id, owner_id, student_id, date, status, note, compensated, deleted_at, created_at",
   finance: "id, owner_id, student_id, amount, currency, is_paid, pay_date, deleted_at, created_at",
   homework:
@@ -151,15 +149,6 @@ const lessonRowSchema = z
   })
   .strip();
 
-const lessonsConductedRowSchema = z
-  .object({
-    id: uuid.optional(),
-    owner_id: uuid.optional(),
-    student_id: uuid,
-    lessons_done: z.number().int().min(0).max(1_000_000),
-    created_at: isoTimestamp.optional(),
-  })
-  .strip();
 
 const attendanceRowSchema = z
   .object({
@@ -197,7 +186,7 @@ const homeworkRowSchema = z
     assigned_date: isoDate.nullable().optional(),
     due_date: isoDate.nullable().optional(),
     task: z.string().min(1).max(4000),
-    status: z.enum(["assigned", "done", "skipped"]).optional(),
+    status: z.enum(["assigned", "done", "not_done", "partial"]).optional(),
     note: z.string().max(2000).nullable().optional(),
     deleted_at: isoTimestamp.nullable().optional(),
     created_at: isoTimestamp.optional(),
@@ -264,7 +253,7 @@ const ROW_SCHEMAS = {
   students: studentRowSchema,
   schedule_slots: scheduleSlotRowSchema,
   lessons: lessonRowSchema,
-  lessons_conducted: lessonsConductedRowSchema,
+  
   attendance: attendanceRowSchema,
   finance: financeRowSchema,
   homework: homeworkRowSchema,
