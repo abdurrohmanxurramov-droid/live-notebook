@@ -612,7 +612,7 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: Homework[] }) {
 function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
   const today = new Date().toISOString().slice(0, 10);
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState<"RUB" | "USD" | "EGP">("RUB");
+  const [currency, setCurrency] = useState<Finance["currency"]>("RUB");
   const [date, setDate] = useState(today);
   const [isPaid, setIsPaid] = useState(true);
 
