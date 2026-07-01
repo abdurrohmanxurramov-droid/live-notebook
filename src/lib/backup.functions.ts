@@ -149,15 +149,6 @@ const lessonRowSchema = z
   })
   .strip();
 
-const lessonsConductedRowSchema = z
-  .object({
-    id: uuid.optional(),
-    owner_id: uuid.optional(),
-    student_id: uuid,
-    lessons_done: z.number().int().min(0).max(1_000_000),
-    created_at: isoTimestamp.optional(),
-  })
-  .strip();
 
 const attendanceRowSchema = z
   .object({
