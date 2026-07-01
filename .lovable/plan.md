@@ -1,55 +1,60 @@
-## Диагностический отчёт
+# Аудит LiveNotebook — что работает и что чинить
 
-### Какие таблицы используются календарём
-- **Календарь (`Calendar.tsx`)** читает только из таблицы **`lessons`** через server fn `listLessons` (фильтр по диапазону дат). `schedule_slots` календарём напрямую НЕ используется — это шаблон, из которого `regenerateLessons` создаёт реальные `lessons`.
-- **Расписание по дням недели** (нижняя часть `/schedule`) читает **`schedule_slots`**.
-- **Карточка ученика (`StudentRoom.tsx`)** читает только **`attendance`** и `homework`/`finance` — не читает `lessons` вообще.
+## Что работает
+- **Auth**: `/auth`, Google OAuth, onboarding-gate, sign-out без 401-шторма.
+- **Календарь и уроки**: `listLessons`, `moveLesson` (с revive существующей строки и rollback), `regenerateLessons` (upsert по уникальному индексу), инвалидация `["lessons"]`/`["attendance"]` после мутаций.
+- **Синхронизация посещаемости**: `syncAttendanceForLesson` корректно создаёт/обновляет/soft-удаляет строки при смене статуса урока.
+- **Карточка ученика**: счётчики циклов, шкала «12 уроков», авто-долг при переходе цикла.
+- **AI-ассистент**: серверный `OPENAI_API_KEY`, локализованные 401/429/402, tool-loop до 10 шагов, история в `chat_messages`.
+- **Webhooks**: timing-safe hook-auth, кэш секрета 5 мин, `lesson-reminders` уважает `remind_lessons` и чистит 410/404.
+- **Backup**: `owner_id`/`user_id` жёстко переписываются на текущего пользователя, построчная Zod-валидация.
+- **Sheet**: portal в `document.body`, скролл и body-lock работают.
+- **Темы**: пол ↔ тема (female→bloom, male→classic), sign-out сбрасывает в classic.
+- **SSR**: fallback для Supabase-ключей в `vite.config.ts`, browser-only guard в клиенте.
 
-### Почему некоторые ученики не отображаются в календаре
-Если у ученика есть запись в `schedule_slots`, но соответствующие `lessons` ещё не сгенерированы в окне `[-3 мес, +1 мес]`, его в календаре не будет. `regenerateLessons` запускается только при добавлении нового слота (`AddSlotSheet`). Старые слоты, добавленные до этой логики, или вставленные напрямую — не порождают `lessons` автоматически. Также при первом открытии нет авто-вызова `regenerateLessons`.
+## Что НЕ работает / риски (в порядке приоритета)
 
-### Почему «урок пройден» не засчитывается в карточке ученика
-`setLessonStatus` обновляет только `lessons.status`. Запись в `attendance` НЕ создаётся. А `StudentRoom` считает пройденные уроки исключительно по `attendance` (`countedCount = att.filter(a => a.status==='present' || 'absent')`). Поэтому смена статуса урока в календаре никак не отражается на карточке ученика. Аналогично для `cancelled`/`moved` — `attendance` не обновляется.
+**1. Backup ломается на статусах ДЗ.** `homeworkRowSchema` разрешает только `assigned|done|skipped`, а БД (`db.ts`) хранит `assigned|done|not_done|partial`. Импорт валится.
 
-Дополнительно: `setLessonStatus`/`moveLesson`/`deleteLesson` в `Calendar.tsx` инвалидируют только `["lessons"]`, но не `["attendance"]`, поэтому даже если бы attendance писалась — карточка не перерисовалась бы без рефреша.
+**2. AI не синхронизирует attendance.** `execTool → update_lesson_status` пишет `.update({ status })` напрямую, минуя `syncAttendanceForLesson` — из-за этого журнал расходится с календарём при действиях через ассистента.
 
-### Минимальный список файлов к изменению
-1. `src/lib/lessons.functions.ts` — расширить `setLessonStatus`, чтобы upsert-ить запись в `attendance` (по `student_id + date`) на основе нового статуса урока; в `moveLesson` — удалять старую attendance за исходную дату или ставить `rescheduled_by_teacher`; в `deleteLesson` — чистить attendance за эту дату по student_id, если она была создана из урока.
-2. `src/components/calendar/Calendar.tsx` — после `setStatus`/`move`/`del` инвалидировать также `["attendance"]` (и `["schedule"]` на всякий).
-3. `src/routes/_authenticated/schedule.tsx` — в загрузке страницы один раз вызвать `regenerateLessons` (idempotent — он пропускает уже существующие комбинации student/date/time), чтобы старые слоты подтянулись в календарь.
+**3. AI `add_homework` использует несуществующий статус `skipped`** вместо `not_done|partial`.
 
-Никаких schema-миграций, никакого редизайна, никаких изменений auth/secrets.
+**4. Attendance/Finance inserts без `owner_id`** в `StudentRoom.tsx` (авто-долг и вставка attendance). При RLS INSERT-политике `owner_id = auth.uid()` строка может быть отклонена или уйдёт с NULL.
 
-### Маппинг статусов lesson → attendance
-| lesson.status | attendance.status |
-|---|---|
-| `completed` | `present` |
-| `cancelled` | `absent` |
-| `moved` | `rescheduled_by_teacher` |
-| `planned` | удалить attendance за эту дату (откат) |
+**5. Finance.currency без `USDT`.** В `db.ts` тип `RUB|USD|EGP`, а backup и AI уже принимают `USDT` — типы и рантайм расходятся.
 
-Upsert по уникальному ключу `(student_id, date)`. Если у пользователя уже стоит ручная attendance с этой парой — перезаписывается статусом из урока (это ожидаемо: календарь — UI отметки).
+**6. VAPID: старые push-подписки мёртвые.** После ротации ключей существующие строки не работают до первой отправки (потом авто-чистка 410). Нужен UI-нудж «переподпишитесь».
 
-### Инвалидация кешей
-В `Calendar.tsx` после любой мутации:
-```ts
-qc.invalidateQueries({ queryKey: ["lessons"] });
-qc.invalidateQueries({ queryKey: ["attendance"] });
-```
-Это перерисует и календарь, и `StudentRoom`, и счётчик циклов.
+**7. `regenerateLessons` на `/schedule` падает молча** — только `console.error`, пользователь не видит тост.
 
-### Авто-регенерация при заходе на /schedule
-В `SchedulePage` добавить `useEffect` с одноразовым (на маунт) вызовом `regenerateLessons()` через `useServerFn`. После успеха — `qc.invalidateQueries({ queryKey: ["lessons"] })`. Это починит «пустые» вторник/четверг/субботу для существующих слотов.
+**8. `lessons_conducted` в TABLES бэкапа** — фантомная таблица, экспорт упадёт, если её нет в БД.
 
-### Acceptance — как проверим
-- Слот вт/чт/сб → виден в календаре после захода на /schedule (благодаря авто-regenerate).
-- «Урок пройден» в календаре → attendance.present появляется → карточка ученика сразу инкрементит счётчик (через инвалидацию).
-- Перенос урока → старая attendance становится `rescheduled_by_teacher`, новая дата без attendance (станет present когда отметят).
-- Отмена → attendance.absent, в карточке не считается как пройденный (т.к. она считает present+absent одинаково «съел» — это уже существующая логика; не трогаем).
-- Hard refresh — состояние сохраняется (всё в БД).
+## План исправлений (только код, минимально инвазивно)
 
-### Что НЕ делаем
-- Не трогаем схему БД, RLS, миграции, секреты, service role, дизайн, offline-очередь, edge functions.
+### Шаг 1 — Backup (`src/lib/backup.functions.ts`)
+- В `homeworkRowSchema.status`: заменить `["assigned","done","skipped"]` на `["assigned","done","not_done","partial"]`.
+- Убрать `lessons_conducted` из `TABLES` и `TABLE_SELECTS`, либо обернуть экспорт `try/catch` с `continue` при 42P01.
 
-### Команды после фикса
-`npm run lint`, `npx tsc --noEmit`, `npm run build`.
+### Шаг 2 — AI (`src/lib/ai.functions.ts`)
+- В `update_lesson_status` вместо прямого `.update()` вызывать общий helper: продублировать `syncAttendanceForLesson` из `lessons.functions.ts` (или вынести в `src/lib/lessons.server.ts` и импортировать в обоих местах).
+- В `add_homework` `status`-enum: `["assigned","done","not_done","partial"]`.
+
+### Шаг 3 — StudentRoom (`src/components/StudentRoom.tsx`)
+- В `sup.from("attendance").insert(...)` и в insert `finance` при авто-долге добавить `owner_id: user.id` (взять из `supabase.auth.getUser()` один раз в компоненте).
+
+### Шаг 4 — Тип Finance (`src/lib/db.ts`)
+- `currency: "RUB" | "USD" | "EGP" | "USDT"`.
+
+### Шаг 5 — Schedule autorun (`src/routes/_authenticated/schedule.tsx`)
+- В `.catch` показать `toast.error("Не удалось обновить расписание уроков")` в дополнение к `console.error`.
+
+### Шаг 6 — Push refresh nudge (`src/lib/push.ts` / `settings/UserSettingsSection.tsx`)
+- При загрузке настроек, если `getSubscription()` вернул старую подписку с чужим `applicationServerKey`, автоматически `unsubscribe()` и попросить включить заново тостом.
+
+### Технические заметки
+- Все правки — фронт + серверные функции, миграций БД не требуется.
+- RLS/GRANT не меняем.
+- VAPID секреты уже в порядке, только UI-нудж для устаревших подписок.
+
+Подтвердите план (или скажите, какие шаги пропустить) — и я всё внесу.
