@@ -499,9 +499,17 @@ async function execTool(
         .from("lessons")
         .update({ status: v.status })
         .eq("id", v.id)
-        .select()
+        .select("id, student_id, scheduled_date, status")
         .single();
       if (error) throw error;
+      // Sync attendance so the student card / journal stay consistent.
+      await syncAttendanceForLessonAi(
+        supabase,
+        userId,
+        data.student_id,
+        data.scheduled_date,
+        v.status,
+      );
       return data;
     }
     case "add_finance": {
