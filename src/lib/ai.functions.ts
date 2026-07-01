@@ -371,6 +371,49 @@ const listHomeworkSchema = z
 
 const emptySchema = z.object({}).strict();
 
+// Keep attendance in sync when the AI toggles lesson status via update_lesson_status.
+type LessonStatusForSync = "planned" | "completed" | "cancelled" | "moved";
+async function syncAttendanceForLessonAi(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  studentId: string,
+  date: string,
+  status: LessonStatusForSync,
+) {
+  const attStatus =
+    status === "completed"
+      ? "present"
+      : status === "cancelled"
+        ? "absent"
+        : status === "moved"
+          ? "rescheduled_by_teacher"
+          : null;
+  const { data: existing } = await supabase
+    .from("attendance")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("date", date)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (attStatus === null) {
+    if (existing) {
+      await supabase
+        .from("attendance")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    }
+    return;
+  }
+  if (existing) {
+    await supabase.from("attendance").update({ status: attStatus }).eq("id", existing.id);
+  } else {
+    await supabase
+      .from("attendance")
+      .insert({ owner_id: userId, student_id: studentId, date, status: attStatus });
+  }
+}
+
+
 // ---------- Tool executor ----------
 async function execTool(
   name: string,
