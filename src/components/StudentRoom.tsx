@@ -303,7 +303,10 @@ function AttendanceTab({
       throw new Error(`Лимит уваж. причин (${EXCUSED_LIMIT}) исчерпан`);
     }
     const sup = await sb();
+    const { data: userRes } = await sup.auth.getUser();
+    const uid = userRes.user?.id;
     const { error } = await sup.from("attendance").insert({
+      owner_id: uid,
       student_id: studentId,
       date,
       status,
@@ -318,6 +321,7 @@ function AttendanceTab({
         const price = (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE;
         const currency = settings?.default_currency ?? "RUB";
         const { error: e2 } = await sup.from("finance").insert({
+          owner_id: uid,
           student_id: studentId,
           amount: price,
           currency,
