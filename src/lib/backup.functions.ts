@@ -22,7 +22,6 @@ const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
     "id, owner_id, student_id, day_of_week, start_time, duration_min, deleted_at, created_at",
   lessons:
     "id, owner_id, student_id, scheduled_date, scheduled_time, duration_min, status, notes, source_slot_id, moved_from_id, deleted_at, created_at, updated_at",
-  lessons_conducted: "id, owner_id, student_id, lessons_done, created_at",
   attendance: "id, owner_id, student_id, date, status, note, compensated, deleted_at, created_at",
   finance: "id, owner_id, student_id, amount, currency, is_paid, pay_date, deleted_at, created_at",
   homework:
