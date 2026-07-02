@@ -692,15 +692,6 @@ function Overview() {
             </div>
           </Card>
           <Card className="p-4">
-            <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
-            <div className="mt-3 num text-2xl text-foreground">
-              <CountUp value={expectedWeek} format={(n) => formatMoney(n, currency)} />
-            </div>
-            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
-              Ожидается доход
-            </div>
-          </Card>
-          <Card className="p-4">
             <TrendingUp className="h-5 w-5 text-accent" strokeWidth={2.2} />
             <div className="mt-3 num text-2xl text-foreground">
               <CountUp value={rate} format={(n) => `${n}%`} />
