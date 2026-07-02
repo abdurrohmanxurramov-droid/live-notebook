@@ -585,8 +585,6 @@ function Overview() {
   }, [period]);
 
   const todayDow = todayDowMon0();
-  const price = Number(settings?.default_lesson_price ?? 0);
-  const currency = settings?.default_currency ?? "RUB";
 
   const todayLessons = useMemo(
     () =>
@@ -596,7 +594,6 @@ function Overview() {
     [schedule, todayDow],
   );
   const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
-  const expectedToday = todayLessons.length * price;
   const studentsUnpaid = useMemo(() => {
     const ids = new Set<string>();
     for (const f of finance) if (!f.is_paid) ids.add(f.student_id);
@@ -608,7 +605,6 @@ function Overview() {
   );
 
   const weekLessons = schedule.length;
-  const expectedWeek = weekLessons * price;
   const { mondayIso, sundayIso } = useMemo(() => {
     const now = new Date();
     const dow = todayDowMon0();
