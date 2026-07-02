@@ -665,7 +665,6 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
           >
             <option value="RUB">₽ RUB</option>
             <option value="USD">$ USD</option>
-            <option value="EGP">£ EGP</option>
           </Select>
           <Input
             inputMode="decimal"
