@@ -34,15 +34,7 @@ export function UserSettingsSection() {
   return (
     <Card className="p-4 space-y-3">
       <Row label="Валюта по умолчанию">
-        <Select
-          value={data.default_currency}
-          disabled={busy}
-          onChange={(e) => save({ default_currency: e.target.value })}
-        >
-          <option value="RUB">RUB ₽</option>
-          <option value="USD">USD $</option>
-          <option value="EGP">EGP £</option>
-        </Select>
+        <div className="text-sm text-muted-foreground">₽ RUB (основная)</div>
       </Row>
       <Row label="Длительность урока, мин">
         <Input
