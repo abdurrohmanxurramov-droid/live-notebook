@@ -10,7 +10,7 @@ export const studentSchema = z.object({
 export const paymentSchema = z.object({
   student_id: z.string().uuid(),
   amount: z.number().min(0).max(10_000_000),
-  currency: z.enum(["RUB", "USD"]),
+  currency: z.enum(["RUB", "USD", "EGP"]),
   is_paid: z.boolean(),
   pay_date: z
     .string()

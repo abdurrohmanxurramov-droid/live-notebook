@@ -571,7 +571,7 @@ function todayDowMon0() {
 }
 
 function Overview() {
-  const { finance, schedule, homework, attendance } = useDashData();
+  const { finance, schedule, homework, attendance, settings } = useDashData();
   const [period, setPeriod] = useState<"today" | "week">(() => {
     if (typeof window === "undefined") return "today";
     return (localStorage.getItem("home-overview-period") as "today" | "week") || "today";
@@ -585,6 +585,8 @@ function Overview() {
   }, [period]);
 
   const todayDow = todayDowMon0();
+  const price = Number(settings?.default_lesson_price ?? 0);
+  const currency = settings?.default_currency ?? "RUB";
 
   const todayLessons = useMemo(
     () =>
@@ -594,6 +596,7 @@ function Overview() {
     [schedule, todayDow],
   );
   const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
+  const expectedToday = todayLessons.length * price;
   const studentsUnpaid = useMemo(() => {
     const ids = new Set<string>();
     for (const f of finance) if (!f.is_paid) ids.add(f.student_id);
@@ -605,6 +608,7 @@ function Overview() {
   );
 
   const weekLessons = schedule.length;
+  const expectedWeek = weekLessons * price;
   const { mondayIso, sundayIso } = useMemo(() => {
     const now = new Date();
     const dow = todayDowMon0();
@@ -658,6 +662,15 @@ function Overview() {
             )}
           </Card>
           <Card className="p-4">
+            <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={expectedToday} format={(n) => formatMoney(n, currency)} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              Ожидаемый доход
+            </div>
+          </Card>
+          <Card className="p-4">
             <AlertTriangle className="h-5 w-5 text-destructive" strokeWidth={2.2} />
             <div className="mt-3 num text-2xl text-foreground">
               <CountUp value={studentsUnpaid} />
@@ -685,6 +698,15 @@ function Overview() {
             </div>
             <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
               Уроков за неделю
+            </div>
+          </Card>
+          <Card className="p-4">
+            <Wallet className="h-5 w-5 text-[color:var(--success)]" strokeWidth={2.2} />
+            <div className="mt-3 num text-2xl text-foreground">
+              <CountUp value={expectedWeek} format={(n) => formatMoney(n, currency)} />
+            </div>
+            <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
+              Ожидается доход
             </div>
           </Card>
           <Card className="p-4">
