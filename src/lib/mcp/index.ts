@@ -15,10 +15,10 @@ export default defineMcp({
   title: "LiveNotebook",
   version: "0.1.0",
   instructions:
-    "Tools for LiveNotebook — a teacher CRM. List and update your own students, lessons, homework, and payments. All calls are scoped to the signed-in user via Supabase RLS.",
+    "Tools for LiveNotebook — a teacher CRM. Read-only access to your own students, lessons, homework, and payments. All calls are scoped to the signed-in user via Supabase RLS.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [listStudents, listLessons, listFinance, listHomework, setLessonStatus],
+  tools: [listStudents, listLessons, listFinance, listHomework],
 });
