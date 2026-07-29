@@ -70,6 +70,10 @@ export const setLessonStatus = createServerFn({ method: "POST" })
         lesson.scheduled_date,
         data.status,
       );
+      // Явная отметка урока может закрыть цикл из 12 засчитанных уроков.
+      if (data.status === "completed" || data.status === "cancelled") {
+        await reconcileCycles(supabase, userId, lesson.student_id);
+      }
     }
     return { ok: true };
   });
@@ -155,26 +159,30 @@ export const moveLesson = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const e3 = existing
-      ? (await supabase
-          .from("lessons")
-          .update({
-            status: "planned",
+      ? (
+          await supabase
+            .from("lessons")
+            .update({
+              status: "planned",
+              duration_min: orig.duration_min,
+              moved_from_id: data.id,
+              source_slot_id: orig.source_slot_id,
+              deleted_at: null,
+            })
+            .eq("id", existing.id)
+        ).error
+      : (
+          await supabase.from("lessons").insert({
+            owner_id: userId,
+            student_id: orig.student_id,
+            scheduled_date: data.new_date,
+            scheduled_time: newTime,
             duration_min: orig.duration_min,
+            status: "planned",
             moved_from_id: data.id,
             source_slot_id: orig.source_slot_id,
-            deleted_at: null,
           })
-          .eq("id", existing.id)).error
-      : (await supabase.from("lessons").insert({
-          owner_id: userId,
-          student_id: orig.student_id,
-          scheduled_date: data.new_date,
-          scheduled_time: newTime,
-          duration_min: orig.duration_min,
-          status: "planned",
-          moved_from_id: data.id,
-          source_slot_id: orig.source_slot_id,
-        })).error;
+        ).error;
 
     if (e3) {
       // rollback original
@@ -264,10 +272,7 @@ export const regenerateLessons = createServerFn({ method: "POST" })
         .is("deleted_at", null)
         .gte("date", fromStr)
         .lte("date", toStr),
-      supabase
-        .from("students")
-        .select("id, status")
-        .is("deleted_at", null),
+      supabase.from("students").select("id, status").is("deleted_at", null),
     ]);
     if (eSlots) throw new Error(eSlots.message);
     if (eEx) throw new Error(eEx.message);
@@ -285,7 +290,6 @@ export const regenerateLessons = createServerFn({ method: "POST" })
     const attMap = new Map<string, string>();
     (attendance ?? []).forEach((a) => attMap.set(`${a.student_id}|${a.date}`, a.status));
 
-    const todayIso = isoDate(today);
     type Insert = {
       owner_id: string;
       student_id: string;
@@ -307,14 +311,18 @@ export const regenerateLessons = createServerFn({ method: "POST" })
         const key = `${s.student_id}|${dateStr}|${time}`;
         if (existKey.has(key)) continue;
 
-        let status: LessonStatus;
+        // Статус выводим ТОЛЬКО из явной отметки посещаемости.
+        // Прошедшая дата сама по себе не доказывает, что урок состоялся,
+        // поэтому без attendance урок остаётся "planned".
         const att = attMap.get(`${s.student_id}|${dateStr}`);
-        if (dateStr < todayIso) {
-          if (att === "absent") status = "cancelled";
-          else status = "completed";
-        } else {
-          status = "planned";
-        }
+        const status: LessonStatus =
+          att === "present"
+            ? "completed"
+            : att === "absent"
+              ? "cancelled"
+              : att === "rescheduled_by_teacher"
+                ? "moved"
+                : "planned";
 
         toInsert.push({
           owner_id: userId,
@@ -332,15 +340,82 @@ export const regenerateLessons = createServerFn({ method: "POST" })
     // Insert in chunks of 500
     for (let i = 0; i < toInsert.length; i += 500) {
       const chunk = toInsert.slice(i, i + 500);
-      const { error } = await supabase
-        .from("lessons")
-        .upsert(chunk, {
-          onConflict: "student_id,scheduled_date,scheduled_time",
-          ignoreDuplicates: true,
-        });
+      const { error } = await supabase.from("lessons").upsert(chunk, {
+        onConflict: "student_id,scheduled_date,scheduled_time",
+        ignoreDuplicates: true,
+      });
       if (error) throw new Error(error.message);
       inserted += chunk.length;
     }
 
     return { inserted, window: { from: fromStr, to: toStr } };
   });
+
+// ---------------------------------------------------------------------------
+// Авто-долг за цикл из 12 уроков.
+//
+// Правила:
+//  - засчитываются ТОЛЬКО явные attendance со статусом present или absent;
+//  - одна активная finance-запись = один завершённый цикл из 12 уроков;
+//  - вызов идемпотентен: если finance-записей уже достаточно, ничего не пишем;
+//  - существующие строки не изменяются, платежи не помечаются оплаченными;
+//  - owner_id берётся из authenticated context, а не от клиента.
+// ---------------------------------------------------------------------------
+const LESSONS_PER_CYCLE = 12;
+
+export const reconcileStudentCycles = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ student_id: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    return reconcileCycles(context.supabase, context.userId, data.student_id);
+  });
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function reconcileCycles(supabase: any, userId: string, studentId: string) {
+  {
+    const data = { student_id: studentId };
+    const [{ data: att, error: eAtt }, { data: fin, error: eFin }] = await Promise.all([
+      supabase
+        .from("attendance")
+        .select("date, status")
+        .eq("student_id", data.student_id)
+        .is("deleted_at", null)
+        .in("status", ["present", "absent"])
+        .order("date", { ascending: true }),
+      supabase
+        .from("finance")
+        .select("id")
+        .eq("student_id", data.student_id)
+        .is("deleted_at", null),
+    ]);
+    if (eAtt) throw new Error(eAtt.message);
+    if (eFin) throw new Error(eFin.message);
+
+    const counted = att ?? [];
+    const completedCycles = Math.floor(counted.length / LESSONS_PER_CYCLE);
+    const existingRecords = (fin ?? []).length;
+    if (completedCycles <= existingRecords) return { created: 0, cycles: completedCycles };
+
+    // Создаём ровно один долг за только что завершённый цикл.
+    const { data: settings } = await supabase
+      .from("user_settings")
+      .select("default_lesson_price, default_currency")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const cycleIndex = existingRecords + 1; // номер цикла, который закрываем
+    const payDate = counted[cycleIndex * LESSONS_PER_CYCLE - 1]?.date ?? null;
+
+    const { error } = await supabase.from("finance").insert({
+      owner_id: userId,
+      student_id: data.student_id,
+      amount: (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE,
+      currency: settings?.default_currency ?? "RUB",
+      is_paid: false,
+      pay_date: payDate,
+    });
+    if (error) throw new Error(error.message);
+
+    return { created: 1, cycles: completedCycles };
+  }
+}
