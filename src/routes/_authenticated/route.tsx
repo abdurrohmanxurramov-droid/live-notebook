@@ -65,7 +65,7 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-      throw redirect({ to: "/auth" });
+      throw redirect({ to: "/auth", search: {} });
     }
     // Onboarding gate (only for routes inside _authenticated, except /onboarding itself)
     if (!location.pathname.startsWith("/onboarding")) {

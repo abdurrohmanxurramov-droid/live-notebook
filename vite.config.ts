@@ -10,6 +10,7 @@
 // VITE_SUPABASE_* values, so keep explicit non-empty fallbacks here to prevent
 // a blank hydrated UI on the live site.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/tanstack/vite";
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://eltunbflazenamwgyvzl.supabase.co";
 const supabasePublishableKey =
@@ -24,6 +25,7 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    plugins: [mcpPlugin()],
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(supabasePublishableKey),
