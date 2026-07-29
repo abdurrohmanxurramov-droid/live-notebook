@@ -8,8 +8,8 @@ import { Loader2, LogIn, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  validateSearch: (s: Record<string, unknown>) => ({
-    next: typeof s.next === "string" ? s.next : "",
+  validateSearch: (s: Record<string, unknown>): { next?: string } => ({
+    next: typeof s.next === "string" ? s.next : undefined,
   }),
   component: AuthPage,
 });
@@ -23,7 +23,7 @@ function safeNext(next: string): string {
 function AuthPage() {
   const navigate = useNavigate();
   const { next } = Route.useSearch();
-  const target = safeNext(next);
+  const target = safeNext(next ?? "");
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
