@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
+import { reconcileStudentCycles } from "@/lib/lessons.functions";
 import {
   Card,
   Button,
@@ -299,6 +300,8 @@ function AttendanceTab({
     queryFn: () => withSnapshot("user_settings", "user_settings", () => getSettingsFn({})),
   });
 
+  const reconcileFn = useServerFn(reconcileStudentCycles);
+
   const add = useMut(async () => {
     if (status === "excused" && excusedCount >= EXCUSED_LIMIT) {
       throw new Error(`Лимит уваж. причин (${EXCUSED_LIMIT}) исчерпан`);
@@ -315,23 +318,11 @@ function AttendanceTab({
     });
     if (error) throw error;
 
-    // Авто-долг: если урок засчитан (был/не был) и достигнут предел 12
+    // Авто-долг считается на сервере: идемпотентно, только по явным
+    // отметкам present/absent, один долг на завершённый цикл из 12 уроков.
     if (status === "present" || status === "absent") {
-      const newCount = countedBefore + 1;
-      if (newCount > 0 && newCount % LESSONS_PER_CYCLE === 0) {
-        const price = (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE;
-        const currency = settings?.default_currency ?? "RUB";
-        const { error: e2 } = await sup.from("finance").insert({
-          owner_id: uid,
-          student_id: studentId,
-          amount: price,
-          currency,
-          is_paid: false,
-          pay_date: date,
-        });
-        if (e2) throw e2;
-        toast.success("Цикл 12 уроков завершён — создан новый долг");
-      }
+      const res = await reconcileFn({ data: { student_id: studentId } });
+      if (res?.created) toast.success("Цикл 12 уроков завершён — создан новый долг");
     }
   }, ["attendance", "finance"]);
 
