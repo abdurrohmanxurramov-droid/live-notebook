@@ -352,12 +352,14 @@ export const regenerateLessons = createServerFn({ method: "POST" })
   });
 
 // ---------------------------------------------------------------------------
-// Авто-долг за цикл из 12 уроков.
+// Авто-долг за пакет из 12 уроков.
 //
 // Правила:
-//  - засчитываются ТОЛЬКО явные attendance со статусом present или absent;
-//  - одна активная finance-запись = один завершённый цикл из 12 уроков;
-//  - вызов идемпотентен: если finance-записей уже достаточно, ничего не пишем;
+//  - засчитываются ТОЛЬКО активные attendance со статусом present или absent;
+//  - долг создаётся ровно на границе нового пакета (count % 12 === 0);
+//  - учитываются только finance с entry_type='lesson_cycle'; ручные платежи
+//    не влияют на цикл и не подавляют долг;
+//  - partial unique index защищает от гонки: 23505 = безопасный no-op;
 //  - существующие строки не изменяются, платежи не помечаются оплаченными;
 //  - owner_id берётся из authenticated context, а не от клиента.
 // ---------------------------------------------------------------------------
@@ -372,50 +374,58 @@ export const reconcileStudentCycles = createServerFn({ method: "POST" })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function reconcileCycles(supabase: any, userId: string, studentId: string) {
-  {
-    const data = { student_id: studentId };
-    const [{ data: att, error: eAtt }, { data: fin, error: eFin }] = await Promise.all([
-      supabase
-        .from("attendance")
-        .select("date, status")
-        .eq("student_id", data.student_id)
-        .is("deleted_at", null)
-        .in("status", ["present", "absent"])
-        .order("date", { ascending: true }),
-      supabase
-        .from("finance")
-        .select("id")
-        .eq("student_id", data.student_id)
-        .is("deleted_at", null),
-    ]);
-    if (eAtt) throw new Error(eAtt.message);
-    if (eFin) throw new Error(eFin.message);
+  const { data: att, error: eAtt } = await supabase
+    .from("attendance")
+    .select("date, status")
+    .eq("student_id", studentId)
+    .is("deleted_at", null)
+    .in("status", ["present", "absent"])
+    .order("date", { ascending: true });
+  if (eAtt) throw new Error(eAtt.message);
 
-    const counted = att ?? [];
-    const completedCycles = Math.floor(counted.length / LESSONS_PER_CYCLE);
-    const existingRecords = (fin ?? []).length;
-    if (completedCycles <= existingRecords) return { created: 0, cycles: completedCycles };
+  const counted = att ?? [];
+  const count = counted.length;
+  const cycles = Math.floor(count / LESSONS_PER_CYCLE);
 
-    // Создаём ровно один долг за только что завершённый цикл.
-    const { data: settings } = await supabase
-      .from("user_settings")
-      .select("default_lesson_price, default_currency")
-      .eq("user_id", userId)
-      .maybeSingle();
+  // Долг создаём только в момент точного закрытия пакета.
+  if (count === 0 || count % LESSONS_PER_CYCLE !== 0) return { created: 0, cycles };
 
-    const cycleIndex = existingRecords + 1; // номер цикла, который закрываем
-    const payDate = counted[cycleIndex * LESSONS_PER_CYCLE - 1]?.date ?? null;
+  const cycleNumber = count / LESSONS_PER_CYCLE;
 
-    const { error } = await supabase.from("finance").insert({
-      owner_id: userId,
-      student_id: data.student_id,
-      amount: (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE,
-      currency: settings?.default_currency ?? "RUB",
-      is_paid: false,
-      pay_date: payDate,
-    });
-    if (error) throw new Error(error.message);
+  const { data: existing, error: eFin } = await supabase
+    .from("finance")
+    .select("id")
+    .eq("student_id", studentId)
+    .eq("entry_type", "lesson_cycle")
+    .eq("cycle_number", cycleNumber)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (eFin) throw new Error(eFin.message);
+  if (existing) return { created: 0, cycles };
 
-    return { created: 1, cycles: completedCycles };
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("default_lesson_price, default_currency")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const payDate = counted[count - 1]?.date ?? null;
+
+  const { error } = await supabase.from("finance").insert({
+    owner_id: userId,
+    student_id: studentId,
+    entry_type: "lesson_cycle",
+    cycle_number: cycleNumber,
+    amount: (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE,
+    currency: settings?.default_currency ?? "RUB",
+    is_paid: false,
+    pay_date: payDate,
+  });
+  if (error) {
+    // Параллельный insert уже создал этот пакет — это безопасный no-op.
+    if (error.code === "23505") return { created: 0, cycles };
+    throw new Error(error.message);
   }
+
+  return { created: 1, cycles };
 }

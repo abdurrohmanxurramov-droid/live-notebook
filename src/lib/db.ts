@@ -23,6 +23,7 @@ export const STUDENT_STATUS_META: Record<
   archived: { label: "Архив", tone: "danger" },
 };
 
+export type FinanceEntryType = "manual" | "lesson_cycle";
 export type Finance = {
   id: string;
   student_id: string;
@@ -31,6 +32,8 @@ export type Finance = {
   is_paid: boolean;
   pay_date: string | null;
   created_at: string;
+  entry_type: FinanceEntryType;
+  cycle_number: number | null;
 };
 
 export type AttendanceStatus = "present" | "absent" | "excused" | "rescheduled_by_teacher";
@@ -96,7 +99,9 @@ export function useFinance() {
       withSnapshot("finance", "finance", async () => {
         const { data, error } = await (await sb())
           .from("finance")
-          .select("id, student_id, amount, currency, is_paid, pay_date, created_at")
+          .select(
+            "id, student_id, amount, currency, is_paid, pay_date, created_at, entry_type, cycle_number",
+          )
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
         if (error) throw error;

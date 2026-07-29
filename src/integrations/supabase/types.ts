@@ -103,7 +103,9 @@ export type Database = {
           amount: number
           created_at: string
           currency: string
+          cycle_number: number | null
           deleted_at: string | null
+          entry_type: string
           id: string
           is_paid: boolean
           owner_id: string
@@ -114,7 +116,9 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: string
+          cycle_number?: number | null
           deleted_at?: string | null
+          entry_type?: string
           id?: string
           is_paid?: boolean
           owner_id: string
@@ -125,7 +129,9 @@ export type Database = {
           amount?: number
           created_at?: string
           currency?: string
+          cycle_number?: number | null
           deleted_at?: string | null
+          entry_type?: string
           id?: string
           is_paid?: boolean
           owner_id?: string
