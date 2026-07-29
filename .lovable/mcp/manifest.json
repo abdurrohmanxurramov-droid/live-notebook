@@ -95,46 +95,6 @@
           "properties": {}
         },
         "outputSchema": null
-      },
-      {
-        "name": "set_lesson_status",
-        "title": "Set lesson status",
-        "description": "Update the status of a lesson (planned | completed | cancelled | moved) and optionally add notes.",
-        "annotations": {
-          "readOnlyHint": false,
-          "destructiveHint": false,
-          "idempotentHint": true
-        },
-        "inputSchema": {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "string",
-              "format": "uuid",
-              "description": "Lesson UUID"
-            },
-            "status": {
-              "type": "string",
-              "enum": [
-                "planned",
-                "completed",
-                "cancelled",
-                "moved"
-              ]
-            },
-            "notes": {
-              "type": "string",
-              "maxLength": 1000
-            }
-          },
-          "required": [
-            "id",
-            "status"
-          ],
-          "additionalProperties": false,
-          "$schema": "http://json-schema.org/draft-07/schema#"
-        },
-        "outputSchema": null
       }
     ]
   }
