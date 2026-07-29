@@ -70,6 +70,10 @@ export const setLessonStatus = createServerFn({ method: "POST" })
         lesson.scheduled_date,
         data.status,
       );
+      // Явная отметка урока может закрыть цикл из 12 засчитанных уроков.
+      if (data.status === "completed" || data.status === "cancelled") {
+        await reconcileCycles(supabase, userId, lesson.student_id);
+      }
     }
     return { ok: true };
   });
@@ -366,8 +370,13 @@ export const reconcileStudentCycles = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ student_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    return reconcileCycles(context.supabase, context.userId, data.student_id);
+  });
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function reconcileCycles(supabase: any, userId: string, studentId: string) {
+  {
+    const data = { student_id: studentId };
     const [{ data: att, error: eAtt }, { data: fin, error: eFin }] = await Promise.all([
       supabase
         .from("attendance")
@@ -411,4 +420,5 @@ export const reconcileStudentCycles = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
 
     return { created: 1, cycles: completedCycles };
-  });
+  }
+}
