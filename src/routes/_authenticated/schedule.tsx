@@ -16,6 +16,7 @@ import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@
 import { sb } from "@/lib/sb";
 import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isOnline, withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
 import {
   listLessons,
@@ -68,6 +69,7 @@ function SchedulePage() {
   const qcMount = useQueryClient();
   useEffect(() => {
     let cancelled = false;
+    if (!isOnline()) return;
     regenOnMount()
       .then(() => {
         if (!cancelled) qcMount.invalidateQueries({ queryKey: ["lessons"] });
@@ -438,7 +440,8 @@ function UpcomingLessons({
 
   const { data, isLoading } = useQuery({
     queryKey: ["lessons", from, to],
-    queryFn: () => listFn({ data: { from, to } }),
+    queryFn: () =>
+      withSnapshot("lessons", `lessons:${from}:${to}`, () => listFn({ data: { from, to } })),
   });
 
   const lessons = (data?.lessons ?? []).filter((l) => l.status !== "moved");
