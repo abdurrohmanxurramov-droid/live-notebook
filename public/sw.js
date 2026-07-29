@@ -10,7 +10,9 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     (async () => {
       const cache = await caches.open(SHELL_CACHE);
-      await Promise.allSettled(SHELL_URLS.map((url) => cache.add(new Request(url, { cache: "reload" }))));
+      await Promise.allSettled(
+        SHELL_URLS.map((url) => cache.add(new Request(url, { cache: "reload" }))),
+      );
       await self.skipWaiting();
     })(),
   );
@@ -22,7 +24,12 @@ self.addEventListener("activate", (event) => {
       const names = await caches.keys();
       await Promise.allSettled(
         names
-          .filter((n) => (n.startsWith("ln-shell-") || n.startsWith("ln-assets-")) && n !== SHELL_CACHE && n !== ASSET_CACHE)
+          .filter(
+            (n) =>
+              (n.startsWith("ln-shell-") || n.startsWith("ln-assets-")) &&
+              n !== SHELL_CACHE &&
+              n !== ASSET_CACHE,
+          )
           .map((n) => caches.delete(n)),
       );
       await self.clients.claim();
@@ -76,7 +83,10 @@ self.addEventListener("fetch", (event) => {
           return (
             (await cache.match(request, { ignoreSearch: true })) ||
             (await cache.match(OFFLINE_URL)) ||
-            new Response("Офлайн", { status: 503, headers: { "content-type": "text/plain; charset=utf-8" } })
+            new Response("Офлайн", {
+              status: 503,
+              headers: { "content-type": "text/plain; charset=utf-8" },
+            })
           );
         }
       })(),
