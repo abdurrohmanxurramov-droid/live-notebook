@@ -285,7 +285,7 @@ export const regenerateLessons = createServerFn({ method: "POST" })
     const attMap = new Map<string, string>();
     (attendance ?? []).forEach((a) => attMap.set(`${a.student_id}|${a.date}`, a.status));
 
-    const todayIso = isoDate(today);
+    
     type Insert = {
       owner_id: string;
       student_id: string;
