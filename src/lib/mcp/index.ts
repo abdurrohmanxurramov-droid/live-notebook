@@ -3,6 +3,7 @@ import listStudents from "./tools/list-students";
 import listLessons from "./tools/list-lessons";
 import listFinance from "./tools/list-finance";
 import listHomework from "./tools/list-homework";
+import setLessonStatus from "./tools/set-lesson-status";
 
 
 // Direct Supabase auth issuer required (RFC 8414). VITE_SUPABASE_PROJECT_ID
@@ -15,10 +16,10 @@ export default defineMcp({
   title: "LiveNotebook",
   version: "0.1.0",
   instructions:
-    "Tools for LiveNotebook — a teacher CRM. Read-only access to your own students, lessons, homework, and payments. All calls are scoped to the signed-in user via Supabase RLS.",
+    "Tools for LiveNotebook — a teacher CRM. Read your own students, lessons, homework, and payments, and update a single lesson's status. All calls are scoped to the signed-in user via Supabase RLS.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
   }),
-  tools: [listStudents, listLessons, listFinance, listHomework],
+  tools: [listStudents, listLessons, listFinance, listHomework, setLessonStatus],
 });
