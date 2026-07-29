@@ -307,14 +307,19 @@ export const regenerateLessons = createServerFn({ method: "POST" })
         const key = `${s.student_id}|${dateStr}|${time}`;
         if (existKey.has(key)) continue;
 
-        let status: LessonStatus;
+        // Статус выводим ТОЛЬКО из явной отметки посещаемости.
+        // Прошедшая дата сама по себе не доказывает, что урок состоялся,
+        // поэтому без attendance урок остаётся "planned".
         const att = attMap.get(`${s.student_id}|${dateStr}`);
-        if (dateStr < todayIso) {
-          if (att === "absent") status = "cancelled";
-          else status = "completed";
-        } else {
-          status = "planned";
-        }
+        const status: LessonStatus =
+          att === "present"
+            ? "completed"
+            : att === "absent"
+              ? "cancelled"
+              : att === "rescheduled_by_teacher"
+                ? "moved"
+                : "planned";
+
 
         toInsert.push({
           owner_id: userId,
