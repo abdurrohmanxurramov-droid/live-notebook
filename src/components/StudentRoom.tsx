@@ -89,8 +89,10 @@ export function StudentRoom({ id }: { id: string }) {
   const countedCount = att.filter((a) => a.status === "present" || a.status === "absent").length;
   const cyclesCompleted = Math.floor(countedCount / LESSONS_PER_CYCLE);
   const progress = countedCount % LESSONS_PER_CYCLE;
-  const paidCount = fin.filter((f) => f.is_paid).length;
-  const unpaidCount = fin.filter((f) => !f.is_paid).length;
+  // Показатели цикла считаем только по авто-пакетам, ручные платежи их не искажают.
+  const cycleFin = fin.filter((f) => f.entry_type === "lesson_cycle");
+  const paidCount = cycleFin.filter((f) => f.is_paid).length;
+  const unpaidCount = cycleFin.filter((f) => !f.is_paid).length;
   const needsPayment = unpaidCount > 0;
 
   // Уваж. причины — отдельная шкала
@@ -709,6 +711,8 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
                     {Number(f.amount).toLocaleString("ru-RU")} {sym}
                   </div>
                   <div className="text-xs text-muted-foreground">
+                    {f.entry_type === "lesson_cycle" ? `Пакет №${f.cycle_number}` : "Ручная запись"}
+                    {" · "}
                     {f.pay_date ? new Date(f.pay_date).toLocaleDateString("ru-RU") : "—"}
                   </div>
                 </div>

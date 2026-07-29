@@ -340,6 +340,8 @@ function PaymentRow({ f, name }: { f: Finance; name: string }) {
       <div className="min-w-0 flex-1">
         <div className="name-italic truncate text-[14px] font-semibold">{name}</div>
         <div className="text-xs text-muted-foreground">
+          {f.entry_type === "lesson_cycle" ? `Пакет №${f.cycle_number}` : "Ручная запись"}
+          {" · "}
           {f.pay_date ? new Date(f.pay_date).toLocaleDateString("ru-RU") : "—"}
         </div>
       </div>
