@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { isOnline, withSnapshot } from "@/lib/offline";
+import { withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight } from "lucide-react";
