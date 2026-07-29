@@ -77,6 +77,7 @@ self.addEventListener("fetch", (event) => {
           const fresh = await fetch(request);
           const cache = await caches.open(SHELL_CACHE);
           cache.put(OFFLINE_URL, fresh.clone()).catch(() => {});
+          cache.put(new Request(url.pathname), fresh.clone()).catch(() => {});
           return fresh;
         } catch {
           const cache = await caches.open(SHELL_CACHE);
