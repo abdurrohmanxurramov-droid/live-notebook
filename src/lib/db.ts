@@ -99,7 +99,9 @@ export function useFinance() {
       withSnapshot("finance", "finance", async () => {
         const { data, error } = await (await sb())
           .from("finance")
-          .select("id, student_id, amount, currency, is_paid, pay_date, created_at, entry_type, cycle_number")
+          .select(
+            "id, student_id, amount, currency, is_paid, pay_date, created_at, entry_type, cycle_number",
+          )
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
         if (error) throw error;
