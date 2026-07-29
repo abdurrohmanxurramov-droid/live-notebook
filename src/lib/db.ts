@@ -1,4 +1,5 @@
 import { sb } from "@/lib/sb";
+import { assertOnlineForMutation, withSnapshot } from "@/lib/offline";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type StudentStatus = "active" | "paused" | "completed" | "archived";
@@ -75,77 +76,82 @@ export type Rates = {
 export function useStudents() {
   return useQuery({
     queryKey: ["students"],
-    queryFn: async () => {
-      const { data, error } = await (await sb())
-        .from("students")
-        .select("id, name, days_per_week, subject, phone, created_at, status")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Student[];
-    },
+    queryFn: () =>
+      withSnapshot("students", "students", async () => {
+        const { data, error } = await (await sb())
+          .from("students")
+          .select("id, name, days_per_week, subject, phone, created_at, status")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return (data ?? []) as Student[];
+      }),
   });
 }
 
 export function useFinance() {
   return useQuery({
     queryKey: ["finance"],
-    queryFn: async () => {
-      const { data, error } = await (await sb())
-        .from("finance")
-        .select("id, student_id, amount, currency, is_paid, pay_date, created_at")
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Finance[];
-    },
+    queryFn: () =>
+      withSnapshot("finance", "finance", async () => {
+        const { data, error } = await (await sb())
+          .from("finance")
+          .select("id, student_id, amount, currency, is_paid, pay_date, created_at")
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return (data ?? []) as Finance[];
+      }),
   });
 }
 
 export function useAttendance() {
   return useQuery({
     queryKey: ["attendance"],
-    queryFn: async () => {
-      const { data, error } = await (await sb())
-        .from("attendance")
-        .select("id, student_id, date, status, note, compensated, created_at")
-        .is("deleted_at", null)
-        .order("date", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Attendance[];
-    },
+    queryFn: () =>
+      withSnapshot("attendance", "attendance", async () => {
+        const { data, error } = await (await sb())
+          .from("attendance")
+          .select("id, student_id, date, status, note, compensated, created_at")
+          .is("deleted_at", null)
+          .order("date", { ascending: false });
+        if (error) throw error;
+        return (data ?? []) as Attendance[];
+      }),
   });
 }
 
 export function useSchedule() {
   return useQuery({
     queryKey: ["schedule"],
-    queryFn: async () => {
-      const { data, error } = await (await sb())
-        .from("schedule_slots")
-        .select("id, student_id, day_of_week, start_time, duration_min, created_at")
-        .is("deleted_at", null)
-        .order("day_of_week", { ascending: true })
-        .order("start_time", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as ScheduleSlot[];
-    },
+    queryFn: () =>
+      withSnapshot("schedule_slots", "schedule", async () => {
+        const { data, error } = await (await sb())
+          .from("schedule_slots")
+          .select("id, student_id, day_of_week, start_time, duration_min, created_at")
+          .is("deleted_at", null)
+          .order("day_of_week", { ascending: true })
+          .order("start_time", { ascending: true });
+        if (error) throw error;
+        return (data ?? []) as ScheduleSlot[];
+      }),
   });
 }
 
 export function useHomework() {
   return useQuery({
     queryKey: ["homework"],
-    queryFn: async () => {
-      const { data, error } = await (await sb())
-        .from("homework")
-        .select("id, student_id, assigned_date, due_date, task, status, note, created_at")
-        .is("deleted_at", null)
-        .order("assigned_date", { ascending: false })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Homework[];
-    },
+    queryFn: () =>
+      withSnapshot("homework", "homework", async () => {
+        const { data, error } = await (await sb())
+          .from("homework")
+          .select("id, student_id, assigned_date, due_date, task, status, note, created_at")
+          .is("deleted_at", null)
+          .order("assigned_date", { ascending: false })
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        return (data ?? []) as Homework[];
+      }),
   });
 }
 
@@ -181,7 +187,10 @@ export function useInvalidate() {
 export function useMut<T>(fn: (input: T) => Promise<unknown>, keys: string[]) {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: fn,
+    mutationFn: (input: T) => {
+      assertOnlineForMutation();
+      return fn(input);
+    },
     onSuccess: () => invalidate(keys),
   });
 }
