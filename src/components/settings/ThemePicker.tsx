@@ -1,4 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ export function ThemePicker() {
 
   const { data } = useQuery({
     queryKey: ["user_settings"],
-    queryFn: () => fetchSettings(),
+    queryFn: () => withSnapshot("user_settings", "user_settings", () => fetchSettings()),
     staleTime: 60_000,
   });
 

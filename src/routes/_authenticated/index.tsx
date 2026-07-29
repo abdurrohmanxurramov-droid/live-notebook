@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Card, SectionTitle, Avatar, Badge, Empty, Button } from "@/components/ui-bits";
@@ -561,7 +562,7 @@ function useDashData() {
   const getSettingsFn = useServerFn(getSettings);
   const { data: settings } = useQuery({
     queryKey: ["user_settings"],
-    queryFn: () => getSettingsFn({}),
+    queryFn: () => withSnapshot("user_settings", "user_settings", () => getSettingsFn({})),
   });
   return { students, finance, schedule, attendance, homework, settings };
 }

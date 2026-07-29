@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Card,
@@ -295,7 +296,7 @@ function AttendanceTab({
   const getSettingsFn = useServerFn(getSettings);
   const { data: settings } = useQuery({
     queryKey: ["user_settings"],
-    queryFn: () => getSettingsFn({}),
+    queryFn: () => withSnapshot("user_settings", "user_settings", () => getSettingsFn({})),
   });
 
   const add = useMut(async () => {
