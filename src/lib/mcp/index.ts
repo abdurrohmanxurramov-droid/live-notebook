@@ -3,6 +3,7 @@ import listStudents from "./tools/list-students";
 import listLessons from "./tools/list-lessons";
 import listFinance from "./tools/list-finance";
 import listHomework from "./tools/list-homework";
+import setLessonStatus from "./tools/set-lesson-status";
 
 
 // Direct Supabase auth issuer required (RFC 8414). VITE_SUPABASE_PROJECT_ID
