@@ -294,11 +294,8 @@ function AttendanceTab({
   const [status, setStatus] = useState<AttendanceStatus>("present");
   const [note, setNote] = useState("");
 
-  const getSettingsFn = useServerFn(getSettings);
-  const { data: settings } = useQuery({
-    queryKey: ["user_settings"],
-    queryFn: () => withSnapshot("user_settings", "user_settings", () => getSettingsFn({})),
-  });
+
+
 
   const reconcileFn = useServerFn(reconcileStudentCycles);
 
