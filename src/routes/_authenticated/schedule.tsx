@@ -84,7 +84,6 @@ function SchedulePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-
   const studentsById = useMemo(() => {
     const m = new Map<string, (typeof students)[number]>();
     students.forEach((s) => m.set(s.id, s));
@@ -539,7 +538,6 @@ function UpcomingLessons({
                     </button>
                   </div>
                 )}
-
               </Card>
             );
             return (

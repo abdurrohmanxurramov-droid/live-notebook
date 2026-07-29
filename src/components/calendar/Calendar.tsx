@@ -105,7 +105,8 @@ export function Calendar() {
   const list = useServerFn(listLessons);
   const { data, isLoading } = useQuery({
     queryKey: ["lessons", from, to],
-    queryFn: () => withSnapshot("lessons", `lessons:${from}:${to}`, () => list({ data: { from, to } })),
+    queryFn: () =>
+      withSnapshot("lessons", `lessons:${from}:${to}`, () => list({ data: { from, to } })),
   });
   const lessons = (data?.lessons ?? []) as Lesson[];
   const { data: students = [] } = useStudents();
@@ -284,7 +285,7 @@ export function Calendar() {
                   try {
                     await del({ data: { id: active.id } });
                     qc.invalidateQueries({ queryKey: ["lessons"] });
-      qc.invalidateQueries({ queryKey: ["attendance"] });
+                    qc.invalidateQueries({ queryKey: ["attendance"] });
                     toast.success("Урок удалён");
                     setActive(null);
                   } catch (error: unknown) {

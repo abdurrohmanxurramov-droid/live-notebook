@@ -17,6 +17,8 @@ import { SplashScreen } from "../components/SplashScreen";
 import { supabase } from "@/integrations/supabase/client";
 import { installGlobalHaptics } from "@/lib/haptics";
 import { ThemeProvider } from "../components/ThemeProvider";
+import { OfflineIndicator } from "../components/OfflineIndicator";
+import { registerAppServiceWorker } from "@/lib/register-sw";
 
 function NotFoundComponent() {
   return (
@@ -157,6 +159,7 @@ function RootComponent() {
 
   useEffect(() => {
     installGlobalHaptics();
+    registerAppServiceWorker();
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
@@ -177,6 +180,7 @@ function RootComponent() {
       <ThemeBoot />
       <ThemeProvider />
       <SplashScreen />
+      <OfflineIndicator />
       <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
         <Outlet />
       </div>

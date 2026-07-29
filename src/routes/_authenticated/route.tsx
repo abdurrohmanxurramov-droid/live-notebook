@@ -63,10 +63,24 @@ function AuthNotFound() {
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) {
+    // Offline-safe gate: trust the locally stored session so a network failure
+    // never signs a previously logged-in user out.
+    const { data: sessionData } = await supabase.auth.getSession();
+    let user = sessionData.session?.user ?? null;
+    if (typeof navigator === "undefined" || navigator.onLine !== false) {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (!error && data.user) user = data.user;
+        else if (error && !user) throw redirect({ to: "/auth", search: {} });
+      } catch (e) {
+        if (e && typeof e === "object" && "to" in (e as Record<string, unknown>)) throw e;
+        // network failure — keep the stored session
+      }
+    }
+    if (!user) {
       throw redirect({ to: "/auth", search: {} });
     }
+    const data = { user };
     // Onboarding gate (only for routes inside _authenticated, except /onboarding itself)
     if (!location.pathname.startsWith("/onboarding")) {
       try {
