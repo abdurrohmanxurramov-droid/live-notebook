@@ -159,26 +159,30 @@ export const moveLesson = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const e3 = existing
-      ? (await supabase
-          .from("lessons")
-          .update({
-            status: "planned",
+      ? (
+          await supabase
+            .from("lessons")
+            .update({
+              status: "planned",
+              duration_min: orig.duration_min,
+              moved_from_id: data.id,
+              source_slot_id: orig.source_slot_id,
+              deleted_at: null,
+            })
+            .eq("id", existing.id)
+        ).error
+      : (
+          await supabase.from("lessons").insert({
+            owner_id: userId,
+            student_id: orig.student_id,
+            scheduled_date: data.new_date,
+            scheduled_time: newTime,
             duration_min: orig.duration_min,
+            status: "planned",
             moved_from_id: data.id,
             source_slot_id: orig.source_slot_id,
-            deleted_at: null,
           })
-          .eq("id", existing.id)).error
-      : (await supabase.from("lessons").insert({
-          owner_id: userId,
-          student_id: orig.student_id,
-          scheduled_date: data.new_date,
-          scheduled_time: newTime,
-          duration_min: orig.duration_min,
-          status: "planned",
-          moved_from_id: data.id,
-          source_slot_id: orig.source_slot_id,
-        })).error;
+        ).error;
 
     if (e3) {
       // rollback original
@@ -268,10 +272,7 @@ export const regenerateLessons = createServerFn({ method: "POST" })
         .is("deleted_at", null)
         .gte("date", fromStr)
         .lte("date", toStr),
-      supabase
-        .from("students")
-        .select("id, status")
-        .is("deleted_at", null),
+      supabase.from("students").select("id, status").is("deleted_at", null),
     ]);
     if (eSlots) throw new Error(eSlots.message);
     if (eEx) throw new Error(eEx.message);
@@ -289,7 +290,6 @@ export const regenerateLessons = createServerFn({ method: "POST" })
     const attMap = new Map<string, string>();
     (attendance ?? []).forEach((a) => attMap.set(`${a.student_id}|${a.date}`, a.status));
 
-    
     type Insert = {
       owner_id: string;
       student_id: string;
@@ -324,7 +324,6 @@ export const regenerateLessons = createServerFn({ method: "POST" })
                 ? "moved"
                 : "planned";
 
-
         toInsert.push({
           owner_id: userId,
           student_id: s.student_id,
@@ -341,12 +340,10 @@ export const regenerateLessons = createServerFn({ method: "POST" })
     // Insert in chunks of 500
     for (let i = 0; i < toInsert.length; i += 500) {
       const chunk = toInsert.slice(i, i + 500);
-      const { error } = await supabase
-        .from("lessons")
-        .upsert(chunk, {
-          onConflict: "student_id,scheduled_date,scheduled_time",
-          ignoreDuplicates: true,
-        });
+      const { error } = await supabase.from("lessons").upsert(chunk, {
+        onConflict: "student_id,scheduled_date,scheduled_time",
+        ignoreDuplicates: true,
+      });
       if (error) throw new Error(error.message);
       inserted += chunk.length;
     }

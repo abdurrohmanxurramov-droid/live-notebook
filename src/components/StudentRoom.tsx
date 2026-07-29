@@ -294,9 +294,6 @@ function AttendanceTab({
   const [status, setStatus] = useState<AttendanceStatus>("present");
   const [note, setNote] = useState("");
 
-
-
-
   const reconcileFn = useServerFn(reconcileStudentCycles);
 
   const add = useMut(async () => {
