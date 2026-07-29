@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Card, Button, Input, Select, ListSkeleton } from "@/components/ui-bits";
@@ -12,7 +13,7 @@ export function UserSettingsSection() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["user_settings"],
-    queryFn: () => getFn({}),
+    queryFn: () => withSnapshot("user_settings", "user_settings", () => getFn({})),
   });
   const [busy, setBusy] = useState(false);
 
