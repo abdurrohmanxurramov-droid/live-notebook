@@ -42,7 +42,7 @@ function SettingsPage() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/auth", replace: true, search: {} });
   }
 
   useEffect(() => {
