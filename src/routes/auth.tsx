@@ -8,11 +8,22 @@ import { Loader2, LogIn, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : "",
+  }),
   component: AuthPage,
 });
 
+function safeNext(next: string): string {
+  // Only allow same-origin relative paths.
+  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/";
+  return next;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
+  const { next } = Route.useSearch();
+  const target = safeNext(next);
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,16 +31,20 @@ function AuthPage() {
   const loading = submitting !== null;
 
   useEffect(() => {
+    const go = () => {
+      if (target.startsWith("/")) window.location.replace(target);
+      else navigate({ to: "/", replace: true });
+    };
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session) navigate({ to: "/", replace: true });
+      if (session) go();
     });
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/", replace: true });
+      if (data.user) go();
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, target]);
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
