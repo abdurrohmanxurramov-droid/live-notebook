@@ -102,7 +102,7 @@
         "description": "Update the status of one existing lesson owned by the signed-in teacher. Allowed values: planned, completed, cancelled, moved.",
         "annotations": {
           "readOnlyHint": false,
-          "destructiveHint": false,
+          "destructiveHint": true,
           "idempotentHint": true,
           "openWorldHint": false
         },

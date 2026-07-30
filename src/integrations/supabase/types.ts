@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_rate_limits: {
+        Row: {
+          request_count: number
+          scope: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          request_count?: number
+          scope: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          request_count?: number
+          scope?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           compensated: boolean
@@ -50,18 +71,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "attendance_student_fk"
-            columns: ["student_id"]
+            foreignKeyName: "attendance_student_owner_fk"
+            columns: ["student_id", "owner_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "owner_id"]
           },
         ]
       }
@@ -140,18 +154,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "finance_student_fk"
-            columns: ["student_id"]
+            foreignKeyName: "finance_student_owner_fk"
+            columns: ["student_id", "owner_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "finance_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "owner_id"]
           },
         ]
       }
@@ -194,13 +201,31 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "homework_student_fk"
-            columns: ["student_id"]
+            foreignKeyName: "homework_student_owner_fk"
+            columns: ["student_id", "owner_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "owner_id"]
           },
         ]
+      }
+      hook_executions: {
+        Row: {
+          created_at: string
+          hook_name: string
+          window_key: string
+        }
+        Insert: {
+          created_at?: string
+          hook_name: string
+          window_key: string
+        }
+        Update: {
+          created_at?: string
+          hook_name?: string
+          window_key?: string
+        }
+        Relationships: []
       }
       lessons: {
         Row: {
@@ -250,18 +275,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lessons_moved_from_id_fkey"
-            columns: ["moved_from_id"]
+            foreignKeyName: "lessons_moved_from_owner_fk"
+            columns: ["moved_from_id", "owner_id", "student_id"]
             isOneToOne: false
             referencedRelation: "lessons"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "owner_id", "student_id"]
           },
           {
-            foreignKeyName: "lessons_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "lessons_source_slot_owner_fk"
+            columns: ["source_slot_id", "owner_id", "student_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_slots"
+            referencedColumns: ["id", "owner_id", "student_id"]
+          },
+          {
+            foreignKeyName: "lessons_student_owner_fk"
+            columns: ["student_id", "owner_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "owner_id"]
           },
         ]
       }
@@ -355,11 +387,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "schedule_slots_student_fk"
-            columns: ["student_id"]
+            foreignKeyName: "schedule_slots_student_owner_fk"
+            columns: ["student_id", "owner_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "owner_id"]
           },
         ]
       }
@@ -463,11 +495,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lessons_student_id_fkey"
-            columns: ["student_id"]
+            foreignKeyName: "lessons_student_owner_fk"
+            columns: ["student_id", "owner_id"]
             isOneToOne: false
             referencedRelation: "students"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "owner_id"]
           },
         ]
       }
@@ -477,15 +509,12 @@ export type Database = {
         Args: { p_hook_name: string; p_window_key: string }
         Returns: boolean
       }
-      consume_app_rate_limit: {
-        Args: { p_scope: string }
-        Returns: boolean
-      }
+      consume_app_rate_limit: { Args: { p_scope: string }; Returns: boolean }
       get_hook_secret: { Args: never; Returns: string }
       set_lesson_status_with_attendance: {
         Args: {
           p_lesson_id: string
-          p_notes: string | null
+          p_notes: string
           p_status: Database["public"]["Enums"]["lesson_status"]
           p_update_notes: boolean
         }
