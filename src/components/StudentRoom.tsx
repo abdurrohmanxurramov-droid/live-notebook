@@ -50,7 +50,9 @@ import {
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
-import { CURRENCIES, formatMoney } from "@/lib/currency";
+import { CURRENCIES, formatMoney, normalizeCurrency } from "@/lib/currency";
+import { AmountPresets } from "@/components/AmountPresets";
+import { readPaymentMemory, rememberPayment } from "@/lib/package-price";
 import { useDefaultCurrency } from "@/lib/use-settings";
 
 const LESSONS_PER_CYCLE = 12;
@@ -241,7 +243,14 @@ export function StudentRoom({ id }: { id: string }) {
         />
       )}
       {tab === "hw" && <HomeworkTab studentId={id} hw={hw} />}
-      {tab === "fin" && <FinanceTab studentId={id} fin={fin} />}
+      {tab === "fin" && (
+        <FinanceTab
+          studentId={id}
+          fin={fin}
+          lessonPrice={student.lesson_price}
+          lessonCurrency={student.lesson_currency}
+        />
+      )}
       {tab === "timeline" && <TimelineTab att={att} hw={hw} fin={fin} />}
     </div>
   );
@@ -603,11 +612,24 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: Homework[] }) {
   );
 }
 
-function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
+function FinanceTab({
+  studentId,
+  fin,
+  lessonPrice,
+  lessonCurrency,
+}: {
+  studentId: string;
+  fin: Finance[];
+  lessonPrice: number | null;
+  lessonCurrency: string | null;
+}) {
   const today = new Date().toISOString().slice(0, 10);
-  const [amount, setAmount] = useState("");
+  const memory = useMemo(() => readPaymentMemory(studentId), [studentId]);
+  const [amount, setAmount] = useState(memory?.amount ?? "");
   const defaultCurrency = useDefaultCurrency();
-  const [currency, setCurrency] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<string | null>(
+    memory?.currency ?? (lessonCurrency ? normalizeCurrency(lessonCurrency) : null),
+  );
   const activeCurrency = currency ?? defaultCurrency;
   const [date, setDate] = useState(today);
   const [isPaid, setIsPaid] = useState(true);
@@ -623,6 +645,7 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
       pay_date: date,
     });
     if (error) throw error;
+    rememberPayment(studentId, amount, activeCurrency);
   }, ["finance"]);
 
   const toggle = useMut(
@@ -666,6 +689,12 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
             className="col-span-2"
           />
         </div>
+        <AmountPresets
+          lessonPrice={lessonPrice}
+          currency={activeCurrency}
+          value={amount}
+          onPick={setAmount}
+        />
         <Input
           type="date"
           value={date}
