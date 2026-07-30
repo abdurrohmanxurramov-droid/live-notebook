@@ -109,21 +109,39 @@ function FinancePage() {
 
 export function RatesCard() {
   const { data: rates } = useRates();
+  const displayCurrency = useDefaultCurrency();
   const [usdRub, setUsdRub] = useState("");
   const [usdtEgp, setUsdtEgp] = useState("");
   const [usdEgp, setUsdEgp] = useState("");
+  const [fetchedMap, setFetchedMap] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const currentMap = useMemo(() => rateMapOf(rates), [rates]);
 
   const save = useMut(async () => {
     if (!rates) return;
+    const nextRub = Number(usdRub || rates.usd_to_rub);
+    const nextUsdtEgp = Number(usdtEgp || rates.usdt_to_egp);
+    const nextUsdEgp = Number(usdEgp || rates.usd_to_egp);
+    const nextMap: Record<string, number> = {
+      ...currentMap,
+      ...(fetchedMap ?? {}),
+      RUB: nextRub,
+      EGP: nextUsdEgp,
+      USD: 1,
+      USDT: 1,
+    };
     const { error } = await (
       await sb()
     )
       .from("rates")
       .update({
-        usd_to_rub: Number(usdRub || rates.usd_to_rub),
-        usdt_to_egp: Number(usdtEgp || rates.usdt_to_egp),
-        usd_to_egp: Number(usdEgp || rates.usd_to_egp),
+        usd_to_rub: nextRub,
+        usdt_to_egp: nextUsdtEgp,
+        usd_to_egp: nextUsdEgp,
+        base_currency: "USD",
+        rates_map: nextMap,
+        rates_fetched_at: fetchedMap ? new Date().toISOString() : rates.rates_fetched_at,
         updated_at: new Date().toISOString(),
       })
       .eq("id", rates.id);
@@ -135,19 +153,23 @@ export function RatesCard() {
     try {
       const res = await fetch("https://open.er-api.com/v6/latest/USD");
       const j = await res.json();
-      const rub = j?.rates?.RUB;
-      const egp = j?.rates?.EGP;
-      if (!rub || !egp) throw new Error("Нет данных курса");
-      setUsdRub(String(Math.round(rub * 100) / 100));
-      setUsdEgp(String(Math.round(egp * 100) / 100));
-      if (!usdtEgp) setUsdtEgp(String(Math.round(egp * 100) / 100));
-      toast.success("Курс обновлён");
+      const map = buildRateMap(j?.rates);
+      if (Object.keys(map).length <= 2) throw new Error("Нет данных курса");
+      setFetchedMap(map);
+      if (map.RUB) setUsdRub(String(Math.round(map.RUB * 100) / 100));
+      if (map.EGP) {
+        setUsdEgp(String(Math.round(map.EGP * 100) / 100));
+        if (!usdtEgp) setUsdtEgp(String(Math.round(map.EGP * 100) / 100));
+      }
+      toast.success(`Курсы обновлены (${Object.keys(map).length} валют)`);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Не удалось получить курс"));
     } finally {
       setLoading(false);
     }
   }
+
+  const knownCount = Object.keys(fetchedMap ?? currentMap).length;
 
   return (
     <Card className="mt-4 p-4">
@@ -157,6 +179,9 @@ export function RatesCard() {
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Обновить
         </Button>
+      </div>
+      <div className="mb-3 text-xs text-muted-foreground">
+        База USD · доступно курсов: {knownCount} · валюта отображения: {displayCurrency}
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <RateInput
@@ -195,6 +220,7 @@ export function RatesCard() {
     </Card>
   );
 }
+
 
 function RateInput({
   label,
