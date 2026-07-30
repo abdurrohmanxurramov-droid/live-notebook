@@ -405,6 +405,20 @@ async function reconcileCycles(supabase: any, userId: string, studentId: string)
     .eq("user_id", userId)
     .maybeSingle();
 
+  // Персональная цена ученика приоритетнее общей цены из настроек.
+  const { data: student } = await supabase
+    .from("students")
+    .select("lesson_price, lesson_currency")
+    .eq("id", studentId)
+    .maybeSingle();
+
+  const ownPrice = student?.lesson_price;
+  const hasOwnPrice = ownPrice !== null && ownPrice !== undefined && Number.isFinite(Number(ownPrice));
+  const unitPrice = hasOwnPrice ? Number(ownPrice) : (settings?.default_lesson_price ?? 0);
+  const cycleCurrency = hasOwnPrice
+    ? (student?.lesson_currency ?? settings?.default_currency ?? "RUB")
+    : (settings?.default_currency ?? "RUB");
+
   const payDate = counted[count - 1]?.date ?? null;
 
   const { error } = await supabase.from("finance").insert({
@@ -412,8 +426,8 @@ async function reconcileCycles(supabase: any, userId: string, studentId: string)
     student_id: studentId,
     entry_type: "lesson_cycle",
     cycle_number: cycleNumber,
-    amount: (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE,
-    currency: settings?.default_currency ?? "RUB",
+    amount: unitPrice * LESSONS_PER_CYCLE,
+    currency: cycleCurrency,
     is_paid: false,
     pay_date: payDate,
   });
