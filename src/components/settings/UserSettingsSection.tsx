@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Card, Button, Input, Select, ListSkeleton } from "@/components/ui-bits";
 import { Switch } from "@/components/ui/switch";
 import { getSettings, updateSettings } from "@/lib/settings.functions";
+import { CURRENCIES } from "@/lib/currency";
 
 export function UserSettingsSection() {
   const getFn = useServerFn(getSettings);
@@ -40,9 +41,11 @@ export function UserSettingsSection() {
           disabled={busy}
           onChange={(e) => save({ default_currency: e.target.value })}
         >
-          <option value="RUB">RUB ₽</option>
-          <option value="USD">USD $</option>
-          <option value="EGP">EGP £</option>
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.code} — {c.name}
+            </option>
+          ))}
         </Select>
       </Row>
       <Row label="Длительность урока, мин">
