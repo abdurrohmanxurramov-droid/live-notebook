@@ -308,25 +308,7 @@ export function formatMoney(amount: number, currency: string, locale = "ru-RU"):
   const value = Number.isFinite(amount) ? amount : 0;
   if (/^[A-Z]{3}$/.test(code)) {
     try {
-      // Без maximumFractionDigits: Intl сам применяет minor units валюты
-      // (0 для JPY, 2 для USD, 3 для KWD).
-      return new Intl.NumberFormat(locale, { style: "currency", currency: code }).format(value);
-    } catch {
-      /* неизвестный ISO-код — падаем на общий формат ниже */
-    }
-  }
-  return `${value.toLocaleString(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })} ${code || ""}`.trim();
-}
-
-/** Денежный формат без копеек/центов — для кнопок быстрых сумм. */
-export function formatMoneyCompact(amount: number, currency: string, locale = "ru-RU"): string {
-  const code = typeof currency === "string" ? currency.trim().toUpperCase() : "";
-  const value = Number.isFinite(amount) ? amount : 0;
-  if (/^[A-Z]{3}$/.test(code)) {
-    try {
+      // Всегда показываем целые единицы без копеек/центов.
       return new Intl.NumberFormat(locale, {
         style: "currency",
         currency: code,
