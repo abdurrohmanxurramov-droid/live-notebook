@@ -648,6 +648,19 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 ..." />
           </Field>
         </div>
+        <div className="stagger-item" style={{ animationDelay: "315ms" }}>
+          <Field label={`Цена урока, ${defaultCurrency} (необязательно)`}>
+            <Input
+              type="number"
+              min={0}
+              step={50}
+              inputMode="decimal"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="Например, 1000"
+            />
+          </Field>
+        </div>
       </div>
 
       <div className="mt-8 flex gap-3 pb-2">
