@@ -237,7 +237,10 @@ export function RatesCard() {
           </div>
         )}
         {effectiveRows.map((row, i) => (
-          <div key={`${row.code}-${i}`} className="grid grid-cols-[auto_6.5rem_1fr_auto] items-center gap-2">
+          <div
+            key={`${row.code}-${i}`}
+            className="grid grid-cols-[auto_6.5rem_1fr_auto] items-center gap-2"
+          >
             <span className="text-xs text-muted-foreground">1 USD =</span>
             <Select
               value={row.code}
