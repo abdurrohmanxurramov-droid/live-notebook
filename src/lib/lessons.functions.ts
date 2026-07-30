@@ -53,7 +53,8 @@ export const setLessonStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: updated, error } = await supabase.rpc("set_lesson_status_with_attendance", {
       p_lesson_id: data.id,
-      p_notes: data.notes ?? null,
+      // ignored by the RPC when p_update_notes is false
+      p_notes: data.notes ?? "",
       p_status: data.status,
       p_update_notes: data.notes !== undefined,
     });
