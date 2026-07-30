@@ -26,7 +26,13 @@ import {
   type Student,
   type StudentStatus,
 } from "@/lib/db";
-import { convert, describeUnconverted, formatMoney, normalizeCurrency } from "@/lib/currency";
+import {
+  CURRENCIES,
+  convert,
+  describeUnconverted,
+  formatMoney,
+  normalizeCurrency,
+} from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
@@ -496,18 +502,28 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
   const [customDays, setCustomDays] = useState("2");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
-  const [price, setPrice] = useState("");
+  const [pkg, setPkg] = useState("");
+  const [currency, setCurrency] = useState("RUB");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const defaultCurrency = useDefaultCurrency();
   const regenFn = useServerFn(regenerateLessons);
 
+  // Память: последняя использованная цена пакета и валюта
+  useEffect(() => {
+    if (!open) return;
+    const mem = readPackageMemory();
+    setPkg(mem?.pkg ?? "");
+    setCurrency(normalizeCurrency(mem?.currency ?? defaultCurrency, defaultCurrency));
+  }, [open, defaultCurrency]);
+
   const add = useMut(async () => {
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
-    const priceValue =
-      price.trim() === "" ? null : Math.max(0, Math.min(10_000_000, Number(price) || 0));
+    const priceValue = perLessonFromPackage(pkg);
+    const currencyValue = normalizeCurrency(currency, defaultCurrency);
+    if (priceValue !== null) rememberPackagePrice(pkg, currencyValue);
 
     const sup = await sb();
     const { data: created, error } = await sup
@@ -518,7 +534,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
         subject: subject.trim() || null,
         phone: phone.trim() || null,
         lesson_price: priceValue,
-        lesson_currency: priceValue === null ? null : defaultCurrency,
+        lesson_currency: priceValue === null ? null : currencyValue,
       })
       .select("id")
       .single();
@@ -649,39 +665,14 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
           </Field>
         </div>
         <div className="stagger-item" style={{ animationDelay: "315ms" }}>
-          <Field label={`Цена урока, ${defaultCurrency} (необязательно)`}>
-            <Input
-              type="number"
-              min={0}
-              step={50}
-              inputMode="decimal"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Например, 1000"
-            />
-          </Field>
+          <PackagePriceFields
+            pkg={pkg}
+            setPkg={setPkg}
+            currency={currency}
+            setCurrency={setCurrency}
+          />
         </div>
-        <div className="stagger-item" style={{ animationDelay: "340ms" }}>
-          <Field label={`Цена пакета из 12 уроков, ${defaultCurrency}`}>
-            <Input
-              type="number"
-              min={0}
-              step={100}
-              inputMode="decimal"
-              value={price.trim() === "" ? "" : String(Math.round(Number(price) * 12 * 100) / 100)}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw.trim() === "") {
-                  setPrice("");
-                  return;
-                }
-                const per = Math.round(((Number(raw) || 0) / 12) * 100) / 100;
-                setPrice(String(per));
-              }}
-              placeholder="Например, 12000"
-            />
-          </Field>
-        </div>
+
 
       </div>
 
@@ -702,7 +693,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
               setCustomDays("2");
               setSubject("");
               setPhone("");
-              setPrice("");
+              // цена пакета остаётся запомненной для следующего ученика
               setTime("16:00");
               setDuration("60");
               onClose();
@@ -727,11 +718,111 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+const PACKAGE_SIZE = 12;
+const PACKAGE_PRESETS = [2500, 4000, 5000];
+const PKG_MEMORY_KEY = "ln:last-package-price";
+
+function perLessonFromPackage(pkg: string): number | null {
+  if (pkg.trim() === "") return null;
+  const total = Math.max(0, Math.min(10_000_000, Number(pkg) || 0));
+  return Math.round((total / PACKAGE_SIZE) * 100) / 100;
+}
+
+function rememberPackagePrice(pkg: string, currency: string) {
+  try {
+    localStorage.setItem(PKG_MEMORY_KEY, JSON.stringify({ pkg, currency }));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readPackageMemory(): { pkg: string; currency: string } | null {
+  try {
+    const raw = localStorage.getItem(PKG_MEMORY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { pkg?: string; currency?: string };
+    if (!parsed?.pkg) return null;
+    return { pkg: String(parsed.pkg), currency: normalizeCurrency(parsed.currency) };
+  } catch {
+    return null;
+  }
+}
+
+function PackagePriceFields({
+  pkg,
+  setPkg,
+  currency,
+  setCurrency,
+}: {
+  pkg: string;
+  setPkg: (v: string) => void;
+  currency: string;
+  setCurrency: (v: string) => void;
+}) {
+  const perLesson = perLessonFromPackage(pkg);
+  return (
+    <div className="space-y-2">
+      <Field label={`Цена пакета из ${PACKAGE_SIZE} уроков`}>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <Input
+            type="number"
+            min={0}
+            step={100}
+            inputMode="decimal"
+            value={pkg}
+            onChange={(e) => setPkg(e.target.value)}
+            placeholder="Например, 4000"
+          />
+          <Select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="w-28"
+            aria-label="Валюта"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </Field>
+      <div className="flex flex-wrap gap-2">
+        {PACKAGE_PRESETS.map((preset) => {
+          const active = Number(pkg) === preset;
+          return (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setPkg(String(preset))}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
+                active
+                  ? "border-accent/60 bg-accent/15 text-foreground"
+                  : "border-white/60 bg-white/50 text-muted-foreground dark:border-white/10 dark:bg-white/5"
+              }`}
+            >
+              {preset.toLocaleString("ru-RU")} {currency}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        {perLesson === null
+          ? "Пусто — цена берётся из настроек"
+          : `≈ ${formatMoney(perLesson, currency)} за урок`}
+      </p>
+    </div>
+  );
+}
+
+
+
 function EditStudentSheet({ student, onClose }: { student: Student | null; onClose: () => void }) {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
-  const [price, setPrice] = useState("");
+  const [pkg, setPkg] = useState("");
+  const [currency, setCurrency] = useState("RUB");
   const [pattern, setPattern] = useState<Pattern>("custom");
   const [customDays, setCustomDays] = useState("2");
   const [time, setTime] = useState("16:00");
@@ -746,7 +837,12 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     setName(student.name);
     setSubject(student.subject ?? "");
     setPhone(student.phone ?? "");
-    setPrice(student.lesson_price == null ? "" : String(student.lesson_price));
+    setPkg(
+      student.lesson_price == null
+        ? ""
+        : String(Math.round(student.lesson_price * PACKAGE_SIZE * 100) / 100),
+    );
+    setCurrency(normalizeCurrency(student.lesson_currency ?? defaultCurrency, defaultCurrency));
     setCustomDays(String(student.days_per_week));
 
     (async () => {
@@ -777,8 +873,9 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
-    const priceValue =
-      price.trim() === "" ? null : Math.max(0, Math.min(10_000_000, Number(price) || 0));
+    const priceValue = perLessonFromPackage(pkg);
+    const currencyValue = normalizeCurrency(currency, defaultCurrency);
+    if (priceValue !== null) rememberPackagePrice(pkg, currencyValue);
 
     const sup = await sb();
     const { error: upErr } = await sup
@@ -789,10 +886,10 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         subject: subject.trim() || null,
         phone: phone.trim() || null,
         lesson_price: priceValue,
-        lesson_currency:
-          priceValue === null ? null : (student.lesson_currency ?? defaultCurrency),
+        lesson_currency: priceValue === null ? null : currencyValue,
       })
       .eq("id", student.id);
+
     if (upErr) throw upErr;
 
     if (pattern !== "custom") {
@@ -927,40 +1024,13 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
                 placeholder="+7 ..."
               />
             </Field>
-            <Field
-              label={`Цена урока, ${student?.lesson_currency ?? defaultCurrency} (пусто — из настроек)`}
-            >
-              <Input
-                type="number"
-                min={0}
-                step={50}
-                inputMode="decimal"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="Например, 1000"
-              />
-            </Field>
-            <Field
-              label={`Цена пакета из 12 уроков, ${student?.lesson_currency ?? defaultCurrency}`}
-            >
-              <Input
-                type="number"
-                min={0}
-                step={100}
-                inputMode="decimal"
-                value={price.trim() === "" ? "" : String(Math.round(Number(price) * 12 * 100) / 100)}
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (raw.trim() === "") {
-                    setPrice("");
-                    return;
-                  }
-                  const per = Math.round(((Number(raw) || 0) / 12) * 100) / 100;
-                  setPrice(String(per));
-                }}
-                placeholder="Например, 12000"
-              />
-            </Field>
+            <PackagePriceFields
+              pkg={pkg}
+              setPkg={setPkg}
+              currency={currency}
+              setCurrency={setCurrency}
+            />
+
 
           </div>
 
