@@ -502,18 +502,28 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
   const [customDays, setCustomDays] = useState("2");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
-  const [price, setPrice] = useState("");
+  const [pkg, setPkg] = useState("");
+  const [currency, setCurrency] = useState("RUB");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const defaultCurrency = useDefaultCurrency();
   const regenFn = useServerFn(regenerateLessons);
 
+  // Память: последняя использованная цена пакета и валюта
+  useEffect(() => {
+    if (!open) return;
+    const mem = readPackageMemory();
+    setPkg(mem?.pkg ?? "");
+    setCurrency(normalizeCurrency(mem?.currency ?? defaultCurrency, defaultCurrency));
+  }, [open, defaultCurrency]);
+
   const add = useMut(async () => {
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
-    const priceValue =
-      price.trim() === "" ? null : Math.max(0, Math.min(10_000_000, Number(price) || 0));
+    const priceValue = perLessonFromPackage(pkg);
+    const currencyValue = normalizeCurrency(currency, defaultCurrency);
+    if (priceValue !== null) rememberPackagePrice(pkg, currencyValue);
 
     const sup = await sb();
     const { data: created, error } = await sup
@@ -524,7 +534,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
         subject: subject.trim() || null,
         phone: phone.trim() || null,
         lesson_price: priceValue,
-        lesson_currency: priceValue === null ? null : defaultCurrency,
+        lesson_currency: priceValue === null ? null : currencyValue,
       })
       .select("id")
       .single();
