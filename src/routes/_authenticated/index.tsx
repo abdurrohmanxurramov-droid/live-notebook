@@ -630,7 +630,8 @@ function todayDowMon0() {
 }
 
 function Overview() {
-  const { finance, schedule, homework, attendance, settings } = useDashData();
+  const { students, finance, schedule, homework, attendance, settings } = useDashData();
+  const { data: rates } = useRates();
   const [period, setPeriod] = useState<"today" | "week">(() => {
     if (typeof window === "undefined") return "today";
     return (localStorage.getItem("home-overview-period") as "today" | "week") || "today";
@@ -645,7 +646,22 @@ function Overview() {
 
   const todayDow = todayDowMon0();
   const price = Number(settings?.default_lesson_price ?? 0);
-  const currency = settings?.default_currency ?? "RUB";
+  const currency = normalizeCurrency(settings?.default_currency, "RUB");
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+
+  // Цена урока конкретного ученика (с конвертацией), иначе — из настроек.
+  const priceOf = useMemo(() => {
+    const byId = new Map(students.map((s) => [s.id, s]));
+    return (studentId: string) => {
+      const st = byId.get(studentId);
+      const own = st?.lesson_price;
+      if (own === null || own === undefined || !Number.isFinite(Number(own))) return price;
+      const from = normalizeCurrency(st?.lesson_currency ?? currency, currency);
+      if (from === currency) return Number(own);
+      const res = convert(Number(own), from, currency, rateMap);
+      return res.ok ? res.value : 0;
+    };
+  }, [students, price, currency, rateMap]);
 
   const todayLessons = useMemo(
     () =>
@@ -655,7 +671,7 @@ function Overview() {
     [schedule, todayDow],
   );
   const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
-  const expectedToday = todayLessons.length * price;
+  const expectedToday = todayLessons.reduce((sum, s) => sum + priceOf(s.student_id), 0);
   const studentsUnpaid = useMemo(() => {
     const ids = new Set<string>();
     for (const f of finance) if (!f.is_paid) ids.add(f.student_id);
@@ -667,7 +683,7 @@ function Overview() {
   );
 
   const weekLessons = schedule.length;
-  const expectedWeek = weekLessons * price;
+  const expectedWeek = schedule.reduce((sum, s) => sum + priceOf(s.student_id), 0);
   const { mondayIso, sundayIso } = useMemo(() => {
     const now = new Date();
     const dow = todayDowMon0();
