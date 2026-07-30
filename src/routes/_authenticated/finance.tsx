@@ -310,12 +310,19 @@ function StudentFinanceCard({
 }) {
   const { data: rates } = useRates();
   const defaultCurrency = useDefaultCurrency();
-  const memory = useMemo(() => readPaymentMemory(studentId), [studentId]);
   const [currency, setCurrency] = useState<string | null>(
-    memory?.currency ?? (lessonCurrency ? normalizeCurrency(lessonCurrency) : null),
+    lessonCurrency ? normalizeCurrency(lessonCurrency) : null,
   );
   const activeCurrency = currency ?? defaultCurrency;
-  const [amount, setAmount] = useState(memory?.amount ?? "");
+  const [amount, setAmount] = useState("");
+
+  // localStorage недоступен во время SSR — читаем память после монтирования.
+  useEffect(() => {
+    const memory = readPaymentMemory(studentId);
+    if (!memory) return;
+    setAmount((prev) => (prev === "" ? memory.amount : prev));
+    setCurrency((prev) => prev ?? normalizeCurrency(memory.currency));
+  }, [studentId]);
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isPaid, setIsPaid] = useState(true);
 
