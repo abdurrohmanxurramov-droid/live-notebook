@@ -660,7 +660,20 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+7 ..." />
           </Field>
         </div>
+        <div className="stagger-item" style={{ animationDelay: "315ms" }}>
+          <Field label={`Цена урока, ${normalizeCurrency(defaultCurrency, "RUB")} (необязательно)`}>
+            <Input
+              type="number"
+              min={0}
+              inputMode="decimal"
+              value={lessonPrice}
+              onChange={(e) => setLessonPrice(e.target.value)}
+              placeholder="Оставьте пустым — цена из настроек"
+            />
+          </Field>
+        </div>
       </div>
+
 
       <div className="mt-8 flex gap-3 pb-2">
         <Button variant="outline" className="flex-1" onClick={onClose}>
