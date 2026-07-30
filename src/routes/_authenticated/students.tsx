@@ -737,7 +737,8 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
-  const [price, setPrice] = useState("");
+  const [pkg, setPkg] = useState("");
+  const [currency, setCurrency] = useState("RUB");
   const [pattern, setPattern] = useState<Pattern>("custom");
   const [customDays, setCustomDays] = useState("2");
   const [time, setTime] = useState("16:00");
