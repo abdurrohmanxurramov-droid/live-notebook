@@ -418,6 +418,7 @@ function PaymentsWidget() {
   in7.setDate(in7.getDate() + 7);
   const in7iso = in7.toISOString().slice(0, 10);
 
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
   const overdueRows = useMemo(() => {
     const map = new Map<
       string,
@@ -450,7 +451,11 @@ function PaymentsWidget() {
       .sort((a, b) => (a.pay_date ?? "").localeCompare(b.pay_date ?? ""));
   }, [finance, today, in7iso]);
 
-  const totalUnpaid = overdueRows.reduce((acc, r) => acc + r.amount, 0);
+  const overdueTotals = sumConverted(
+    overdueRows.map((r) => ({ amount: r.amount, currency: r.currency })),
+    displayCurrency,
+    rateMap,
+  );
 
   const markPaid = useMut(
     async (id: string) => {
@@ -482,7 +487,7 @@ function PaymentsWidget() {
             <div className="mt-1 num text-2xl text-destructive">
               {overdueRows.length === 0
                 ? "—"
-                : formatMoney(totalUnpaid, overdueRows[0]?.currency ?? "RUB")}
+                : formatMoney(overdueTotals.total, displayCurrency)}
             </div>
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
