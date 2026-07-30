@@ -33,6 +33,8 @@ type ServerEntry = {
 };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
+// Leave bounded serialization overhead above the 5 MB logical backup limit.
+const MAX_REQUEST_BODY_BYTES = 8_000_000;
 
 const WORKER_ENV_KEYS = [
   "SUPABASE_URL",
@@ -43,6 +45,8 @@ const WORKER_ENV_KEYS = [
   "LOVABLE_API_KEY",
   "VAPID_PRIVATE_KEY",
   "VAPID_SUBJECT",
+  "OPENAI_API_KEY",
+  "AI_MODEL",
 ] as const;
 
 function installWorkerEnv(env: unknown) {
@@ -70,6 +74,43 @@ function brandedErrorResponse(): Response {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
+}
+
+function payloadTooLargeResponse(): Response {
+  return Response.json({ error: "Request body is too large" }, { status: 413 });
+}
+
+async function limitRequestBody(request: Request): Promise<Request | Response> {
+  if (request.method === "GET" || request.method === "HEAD" || !request.body) {
+    return request;
+  }
+
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BODY_BYTES) {
+    return payloadTooLargeResponse();
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > MAX_REQUEST_BODY_BYTES) {
+      await reader.cancel();
+      return payloadTooLargeResponse();
+    }
+    chunks.push(value);
+  }
+
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new Request(request, { body });
 }
 
 function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boolean {
@@ -113,16 +154,79 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+const CSP_ENFORCED = [
+  "base-uri 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev",
+].join("; ");
+
+const CSP_REPORT_ONLY = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self' https://eltunbflazenamwgyvzl.supabase.co wss://eltunbflazenamwgyvzl.supabase.co https://open.er-api.com https://*.lovable.dev",
+  "frame-ancestors 'self' https://lovable.dev https://*.lovable.dev",
+].join("; ");
+
+function isPrivateResponsePath(pathname: string): boolean {
+  return (
+    pathname === "/auth" ||
+    pathname.startsWith("/_serverFn") ||
+    pathname.startsWith("/api/public/hooks/") ||
+    pathname === "/mcp" ||
+    pathname.startsWith("/.mcp/") ||
+    pathname.startsWith("/.lovable/")
+  );
+}
+
+function withSecurityHeaders(request: Request, response: Response): Response {
+  const headers = new Headers(response.headers);
+  headers.set("Content-Security-Policy", CSP_ENFORCED);
+  headers.set("Content-Security-Policy-Report-Only", CSP_REPORT_ONLY);
+  headers.set("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  headers.set("X-Content-Type-Options", "nosniff");
+
+  const url = new URL(request.url);
+  if (url.protocol === "https:") {
+    headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  if (
+    isPrivateResponsePath(url.pathname) ||
+    request.headers.has("authorization") ||
+    headers.has("set-cookie")
+  ) {
+    headers.set("Cache-Control", "private, no-store, max-age=0");
+    headers.set("Pragma", "no-cache");
+    headers.append("Vary", "Authorization, Cookie");
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       installWorkerEnv(env);
+      const boundedRequest = await limitRequestBody(request);
+      if (boundedRequest instanceof Response) {
+        return withSecurityHeaders(request, boundedRequest);
+      }
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const response = await handler.fetch(boundedRequest, env, ctx);
+      return withSecurityHeaders(boundedRequest, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
-      return brandedErrorResponse();
+      return withSecurityHeaders(request, brandedErrorResponse());
     }
   },
 };

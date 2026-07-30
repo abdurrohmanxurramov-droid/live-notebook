@@ -51,29 +51,24 @@ export const setLessonStatus = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => setStatusSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const patch: { status: LessonStatus; notes?: string } = { status: data.status };
-    if (data.notes !== undefined) patch.notes = data.notes;
-    const { error } = await supabase.from("lessons").update(patch).eq("id", data.id);
-    if (error) throw new Error(error.message);
+    const { data: updated, error } = await supabase.rpc("set_lesson_status_with_attendance", {
+      p_lesson_id: data.id,
+      p_notes: data.notes ?? null,
+      p_status: data.status,
+      p_update_notes: data.notes !== undefined,
+    });
+    if (error) {
+      console.error("[set-lesson-status]", error.code);
+      throw new Error("Не удалось обновить урок.");
+    }
+    const lesson = z.object({ student_id: z.string().uuid() }).passthrough().safeParse(updated);
+    if (!lesson.success) {
+      throw new Error("Урок не найден или недоступен.");
+    }
 
-    // Sync attendance row so the student card reflects the lesson status.
-    const { data: lesson } = await supabase
-      .from("lessons")
-      .select("student_id, scheduled_date")
-      .eq("id", data.id)
-      .single();
-    if (lesson) {
-      await syncAttendanceForLesson(
-        supabase,
-        userId,
-        lesson.student_id,
-        lesson.scheduled_date,
-        data.status,
-      );
-      // Явная отметка урока может закрыть цикл из 12 засчитанных уроков.
-      if (data.status === "completed" || data.status === "cancelled") {
-        await reconcileCycles(supabase, userId, lesson.student_id);
-      }
+    // Явная отметка урока может закрыть цикл из 12 засчитанных уроков.
+    if (data.status === "completed" || data.status === "cancelled") {
+      await reconcileCycles(supabase, userId, lesson.data.student_id);
     }
     return { ok: true };
   });

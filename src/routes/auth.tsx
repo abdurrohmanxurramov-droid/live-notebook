@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Card, Button, Input } from "@/components/ui-bits";
 import { Loader2, LogIn, Mail } from "lucide-react";
+import { getSafeUiErrorMessage } from "@/lib/utils";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -15,9 +16,20 @@ export const Route = createFileRoute("/auth")({
 });
 
 function safeNext(next: string): string {
-  // Only allow same-origin relative paths.
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return "/";
-  return next;
+  // Backslashes can be normalized into authority separators by URL parsers.
+  const hasControlCharacter = Array.from(next).some((character) => {
+    const code = character.charCodeAt(0);
+    return code <= 31 || code === 127;
+  });
+  if (!next || next.includes("\\") || hasControlCharacter) return "/";
+  try {
+    const origin = window.location.origin;
+    const resolved = new URL(next, origin);
+    if (resolved.origin !== origin || !resolved.pathname.startsWith("/")) return "/";
+    return `${resolved.pathname}${resolved.search}${resolved.hash}`;
+  } catch {
+    return "/";
+  }
 }
 
 function AuthPage() {
@@ -98,7 +110,7 @@ function AuthPage() {
       });
       if (result.error) throw result.error;
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Ошибка входа через Google");
+      toast.error(getSafeUiErrorMessage(err, "Ошибка входа через Google"));
     } finally {
       setSubmitting(null);
     }

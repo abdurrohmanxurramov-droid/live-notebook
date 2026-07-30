@@ -9,8 +9,8 @@ export const studentSchema = z.object({
 
 export const paymentSchema = z.object({
   student_id: z.string().uuid(),
-  amount: z.number().min(0).max(10_000_000),
-  currency: z.enum(["RUB", "USD", "EGP"]),
+  amount: z.number().finite().min(0).max(10_000_000),
+  currency: z.enum(["RUB", "USD", "USDT", "EGP"]),
   is_paid: z.boolean(),
   pay_date: z
     .string()
@@ -33,9 +33,9 @@ export const homeworkSchema = z.object({
 });
 
 export const userSettingsSchema = z.object({
-  default_currency: z.enum(["RUB", "USD", "EGP"]),
+  default_currency: z.enum(["RUB", "USD", "USDT", "EGP"]),
   default_lesson_duration: z.number().int().min(15).max(240),
-  default_lesson_price: z.number().min(0).max(10_000_000),
+  default_lesson_price: z.number().finite().min(0).max(10_000_000),
   week_starts_on: z.number().int().min(0).max(6),
   remind_before_min: z.number().int().min(5).max(1440),
   locale: z.enum(["ru", "en"]),

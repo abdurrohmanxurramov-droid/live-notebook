@@ -55,16 +55,3 @@ export async function sendPushTo(sub: PushSubRow, payload: PushPayload) {
     return { ok: false as const, error: err.message ?? "push failed", status: err.statusCode };
   }
 }
-
-export async function broadcast(payload: PushPayload) {
-  const { data: subs, error } = await supabaseAdmin
-    .from("push_subscriptions")
-    .select("endpoint, p256dh, auth");
-  if (error) throw new Error(error.message);
-  const results = await Promise.all((subs ?? []).map((s) => sendPushTo(s, payload)));
-  return {
-    total: results.length,
-    sent: results.filter((r) => r.ok).length,
-    failed: results.filter((r) => !r.ok).length,
-  };
-}

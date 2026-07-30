@@ -23,7 +23,10 @@ export default defineTool({
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(200);
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("[mcp-list-finance]", error.code);
+      return { content: [{ type: "text", text: "Не удалось загрузить данные." }], isError: true };
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
       structuredContent: { finance: data ?? [] },

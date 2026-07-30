@@ -5,7 +5,6 @@ import listFinance from "./tools/list-finance";
 import listHomework from "./tools/list-homework";
 import setLessonStatus from "./tools/set-lesson-status";
 
-
 // Direct Supabase auth issuer required (RFC 8414). VITE_SUPABASE_PROJECT_ID
 // is inlined at build time via vite.config.ts. Fallback keeps the issuer
 // well-formed for manifest-extract eval; the published build uses the real ref.

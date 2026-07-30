@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendPushTo, type PushPayload } from "@/lib/push.server";
-import { checkHookSecret } from "@/lib/hook-auth";
+import { checkHookSecret, claimHookExecution, rejectUnsupportedHookMethod } from "@/lib/hook-auth";
 
 // Daily payment reminders. Notifies owners about unpaid finance records
 // whose pay_date is today or in the past (overdue) and skips owners
@@ -30,11 +30,24 @@ async function handle() {
     return { ok: true, matched: 0, sent: 0, today };
   }
 
-  const ownerIds = Array.from(new Set(items.map((i) => i.owner_id)));
-  const { data: settings } = await supabaseAdmin
+  const studentIds = Array.from(new Set(items.map((i) => i.student_id)));
+  const { data: students, error: studentsError } = await supabaseAdmin
+    .from("students")
+    .select("id, owner_id")
+    .is("deleted_at", null)
+    .in("id", studentIds);
+  if (studentsError) throw new Error(studentsError.message);
+  const byStudent = new Map((students ?? []).map((s) => [`${s.owner_id}:${s.id}`, s]));
+  const validItems = items.filter((item) => byStudent.has(`${item.owner_id}:${item.student_id}`));
+  if (validItems.length === 0) {
+    return { ok: true, matched: 0, sent: 0, today };
+  }
+  const ownerIds = Array.from(new Set(validItems.map((i) => i.owner_id)));
+  const { data: settings, error: settingsError } = await supabaseAdmin
     .from("user_settings")
     .select("user_id, remind_payments")
     .in("user_id", ownerIds);
+  if (settingsError) throw new Error(settingsError.message);
   const allowed = new Set(
     (settings ?? []).filter((s) => s.remind_payments !== false).map((s) => s.user_id),
   );
@@ -43,28 +56,22 @@ async function handle() {
     if (!(settings ?? []).some((s) => s.user_id === id)) allowed.add(id);
   });
 
-  const studentIds = Array.from(new Set(items.map((i) => i.student_id)));
-  const { data: students } = await supabaseAdmin
-    .from("students")
-    .select("id, name")
-    .in("id", studentIds);
-  const byStudent = new Map((students ?? []).map((s) => [s.id, s]));
-
   // Aggregate per owner: count + total unpaid by currency
   const byOwner = new Map<string, typeof items>();
-  for (const it of items) {
+  for (const it of validItems) {
     if (!allowed.has(it.owner_id)) continue;
     const arr = byOwner.get(it.owner_id) ?? [];
     arr.push(it);
     byOwner.set(it.owner_id, arr);
   }
 
-  if (byOwner.size === 0) return { ok: true, matched: items.length, sent: 0, today };
+  if (byOwner.size === 0) return { ok: true, matched: validItems.length, sent: 0, today };
 
-  const { data: subs } = await supabaseAdmin
+  const { data: subs, error: subscriptionsError } = await supabaseAdmin
     .from("push_subscriptions")
     .select("endpoint, p256dh, auth, owner_id")
     .in("owner_id", Array.from(byOwner.keys()));
+  if (subscriptionsError) throw new Error(subscriptionsError.message);
   const subsByOwner = new Map<string, NonNullable<typeof subs>>();
   (subs ?? []).forEach((s) => {
     const arr = subsByOwner.get(s.owner_id) ?? [];
@@ -72,16 +79,16 @@ async function handle() {
     subsByOwner.set(s.owner_id, arr);
   });
 
+  if (!(await claimHookExecution("payment-reminders", today))) {
+    return { ok: true, duplicate: true, sent: 0 };
+  }
+
   let sent = 0;
   for (const [ownerId, ownerItems] of byOwner) {
     const count = ownerItems.length;
-    const firstName = byStudent.get(ownerItems[0].student_id)?.name ?? "ученик";
     const payload: PushPayload = {
       title: `Неоплаченные счета: ${count}`,
-      body:
-        count === 1
-          ? `${firstName} — есть просроченная оплата`
-          : `${firstName} и ещё ${count - 1} — проверьте оплаты`,
+      body: "Откройте LiveNotebook, чтобы проверить оплаты.",
       url: "/finance",
       tag: `payments-${today}`,
     };
@@ -90,22 +97,23 @@ async function handle() {
     sent += results.filter((r) => r.ok).length;
   }
 
-  return { ok: true, matched: items.length, sent };
+  return { ok: true, matched: validItems.length, sent };
 }
 
 export const Route = createFileRoute("/api/public/hooks/payment-reminders")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        const denied = await checkHookSecret(request);
-        if (denied) return denied;
-        return Response.json(await handle());
-      },
       POST: async ({ request }) => {
         const denied = await checkHookSecret(request);
         if (denied) return denied;
-        return Response.json(await handle());
+        try {
+          return Response.json(await handle());
+        } catch (error) {
+          console.error("[payment-reminders]", error);
+          return Response.json({ error: "Reminder hook failed" }, { status: 500 });
+        }
       },
+      ANY: rejectUnsupportedHookMethod,
     },
   },
 });

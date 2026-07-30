@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Card, Button, SectionTitle } from "@/components/ui-bits";
 import { RatesCard } from "./finance";
@@ -20,11 +20,11 @@ import { UserSettingsSection } from "@/components/settings/UserSettingsSection";
 import { TrashSection } from "@/components/settings/TrashSection";
 import { BackupSection } from "@/components/settings/BackupSection";
 import { ThemePicker } from "@/components/settings/ThemePicker";
+import { signOutSafely } from "@/lib/logout";
 
 export const Route = createFileRoute("/_authenticated/settings")({ component: SettingsPage });
 
 function SettingsPage() {
-  const navigate = useNavigate();
   const [dark, setDark] = useState(false);
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -41,8 +41,8 @@ function SettingsPage() {
   }, []);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true, search: {} });
+    await signOutSafely();
+    window.location.replace("/auth");
   }
 
   useEffect(() => {

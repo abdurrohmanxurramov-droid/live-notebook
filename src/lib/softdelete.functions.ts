@@ -17,7 +17,10 @@ export const softDelete = createServerFn({ method: "POST" })
       .from(data.table)
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[soft-delete]", data.table, error.code);
+      throw new Error("Не удалось переместить запись в корзину.");
+    }
     return { ok: true };
   });
 
@@ -30,7 +33,10 @@ export const restoreItem = createServerFn({ method: "POST" })
       .from(data.table)
       .update({ deleted_at: null })
       .eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[restore-item]", data.table, error.code);
+      throw new Error("Не удалось восстановить запись.");
+    }
     return { ok: true };
   });
 
@@ -39,7 +45,10 @@ export const hardDelete = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => targetSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase.from(data.table).delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[hard-delete]", data.table, error.code);
+      throw new Error("Не удалось удалить запись.");
+    }
     return { ok: true };
   });
 
@@ -48,19 +57,15 @@ export const softDeleteStudent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const now = new Date().toISOString();
-    const { error: e1 } = await supabase
-      .from("students")
-      .update({ deleted_at: now })
-      .eq("id", data.id);
-    if (e1) throw new Error(`students: ${e1.message}`);
-    for (const t of ["schedule_slots", "lessons", "attendance", "finance", "homework"] as const) {
-      const { error } = await supabase
-        .from(t)
-        .update({ deleted_at: now })
-        .eq("student_id", data.id);
-      if (error) throw new Error(`${t}: ${error.message}`);
+    const { data: updated, error } = await supabase.rpc("set_student_deleted_state", {
+      p_deleted: true,
+      p_student_id: data.id,
+    });
+    if (error) {
+      console.error("[soft-delete-student]", error.code);
+      throw new Error("Не удалось переместить ученика в корзину.");
     }
+    if (!updated) throw new Error("Ученик не найден или недоступен.");
     return { ok: true };
   });
 
@@ -69,18 +74,15 @@ export const restoreStudent = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error: e1 } = await supabase
-      .from("students")
-      .update({ deleted_at: null })
-      .eq("id", data.id);
-    if (e1) throw new Error(`students: ${e1.message}`);
-    for (const t of ["schedule_slots", "lessons", "attendance", "finance", "homework"] as const) {
-      const { error } = await supabase
-        .from(t)
-        .update({ deleted_at: null })
-        .eq("student_id", data.id);
-      if (error) throw new Error(`${t}: ${error.message}`);
+    const { data: updated, error } = await supabase.rpc("set_student_deleted_state", {
+      p_deleted: false,
+      p_student_id: data.id,
+    });
+    if (error) {
+      console.error("[restore-student]", error.code);
+      throw new Error("Не удалось восстановить ученика.");
     }
+    if (!updated) throw new Error("Ученик не найден или недоступен.");
     return { ok: true };
   });
 
@@ -107,7 +109,10 @@ export const listTrash = createServerFn({ method: "GET" })
         .not("deleted_at", "is", null)
         .order("deleted_at", { ascending: false })
         .limit(200);
-      if (error) throw new Error(`${t}: ${error.message}`);
+      if (error) {
+        console.error("[trash-list]", t, error.code);
+        throw new Error("Не удалось загрузить корзину.");
+      }
       out[t] = (data ?? []) as unknown as TrashRow[];
     }
     return out;

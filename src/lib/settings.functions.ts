@@ -26,14 +26,20 @@ export const getSettings = createServerFn({ method: "GET" })
       .select(SETTINGS_SELECT)
       .eq("user_id", userId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[settings-read]", error.code);
+      throw new Error("Не удалось загрузить настройки.");
+    }
     if (data) return data;
     const { data: created, error: e2 } = await supabase
       .from("user_settings")
       .insert({ user_id: userId, ...DEFAULTS })
       .select(SETTINGS_SELECT)
       .single();
-    if (e2) throw new Error(e2.message);
+    if (e2) {
+      console.error("[settings-create]", e2.code);
+      throw new Error("Не удалось создать настройки.");
+    }
     return created;
   });
 
@@ -47,6 +53,9 @@ export const updateSettings = createServerFn({ method: "POST" })
       .upsert({ user_id: userId, ...DEFAULTS, ...data }, { onConflict: "user_id" })
       .select(SETTINGS_SELECT)
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error("[settings-update]", error.code);
+      throw new Error("Не удалось сохранить настройки.");
+    }
     return updated;
   });
