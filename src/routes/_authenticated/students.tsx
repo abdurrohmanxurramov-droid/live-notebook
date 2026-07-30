@@ -721,12 +721,14 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
+  const [lessonPrice, setLessonPrice] = useState("");
   const [pattern, setPattern] = useState<Pattern>("custom");
   const [customDays, setCustomDays] = useState("2");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const regenFn = useServerFn(regenerateLessons);
+  const defaultCurrency = useDefaultCurrency();
 
   // Заполнить данные при открытии
   useEffect(() => {
@@ -734,6 +736,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     setName(student.name);
     setSubject(student.subject ?? "");
     setPhone(student.phone ?? "");
+    setLessonPrice(student.lesson_price === null ? "" : String(student.lesson_price));
     setCustomDays(String(student.days_per_week));
 
     (async () => {
@@ -764,6 +767,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
+    const priceValue = parseLessonPrice(lessonPrice);
 
     const sup = await sb();
     const { error: upErr } = await sup
@@ -773,6 +777,11 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         days_per_week: daysCount,
         subject: subject.trim() || null,
         phone: phone.trim() || null,
+        lesson_price: priceValue,
+        lesson_currency:
+          priceValue === null
+            ? null
+            : normalizeCurrency(student.lesson_currency ?? defaultCurrency, "RUB"),
       })
       .eq("id", student.id);
     if (upErr) throw upErr;
