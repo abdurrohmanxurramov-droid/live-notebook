@@ -1,5 +1,5 @@
 // Service worker for Живой Блокнот — Web Push notifications + offline app shell (read-only).
-const VERSION = "v3";
+const VERSION = "v4";
 const SHELL_CACHE = `ln-shell-${VERSION}`;
 const ASSET_CACHE = `ln-assets-${VERSION}`;
 const OFFLINE_URL = "/";
@@ -57,6 +57,24 @@ function isHashedAsset(url) {
   );
 }
 
+function isPublicFont(url) {
+  return (
+    (url.hostname === "fonts.googleapis.com" && url.pathname.startsWith("/css2")) ||
+    (url.hostname === "fonts.gstatic.com" && /\.woff2?$/.test(url.pathname))
+  );
+}
+
+function canCacheShellResponse(response) {
+  const contentType = response.headers.get("content-type") ?? "";
+  const cacheControl = response.headers.get("cache-control") ?? "";
+  return (
+    response.ok &&
+    !response.redirected &&
+    contentType.includes("text/html") &&
+    !/(?:no-store|private)/i.test(cacheControl)
+  );
+}
+
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
@@ -75,9 +93,10 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         try {
           const fresh = await fetch(request);
-          const cache = await caches.open(SHELL_CACHE);
-          cache.put(OFFLINE_URL, fresh.clone()).catch(() => {});
-          cache.put(new Request(url.pathname), fresh.clone()).catch(() => {});
+          if (canCacheShellResponse(fresh)) {
+            const cache = await caches.open(SHELL_CACHE);
+            cache.put(OFFLINE_URL, fresh.clone()).catch(() => {});
+          }
           return fresh;
         } catch {
           const cache = await caches.open(SHELL_CACHE);
@@ -90,6 +109,23 @@ self.addEventListener("fetch", (event) => {
             })
           );
         }
+      })(),
+    );
+    return;
+  }
+
+  // Only the two explicit public font origins are eligible for cross-origin caching.
+  if (isPublicFont(url)) {
+    event.respondWith(
+      (async () => {
+        const cache = await caches.open(ASSET_CACHE);
+        const hit = await cache.match(request);
+        if (hit) return hit;
+        const fresh = await fetch(request);
+        if (fresh.ok || fresh.type === "opaque") {
+          cache.put(request, fresh.clone()).catch(() => {});
+        }
+        return fresh;
       })(),
     );
     return;
@@ -150,7 +186,18 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
+  let url = "/";
+  try {
+    const candidate = new URL(
+      (event.notification.data && event.notification.data.url) || "/",
+      self.location.origin,
+    );
+    if (candidate.origin === self.location.origin) {
+      url = `${candidate.pathname}${candidate.search}${candidate.hash}`;
+    }
+  } catch {
+    url = "/";
+  }
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
       for (const c of clients) {

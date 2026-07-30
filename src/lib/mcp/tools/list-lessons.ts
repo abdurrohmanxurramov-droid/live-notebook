@@ -14,8 +14,14 @@ export default defineTool({
   title: "List lessons",
   description: "List lessons in a date range (YYYY-MM-DD) for the signed-in teacher.",
   inputSchema: {
-    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Start date, YYYY-MM-DD"),
-    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("End date, YYYY-MM-DD"),
+    from: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .describe("Start date, YYYY-MM-DD"),
+    to: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .describe("End date, YYYY-MM-DD"),
   },
   annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
   handler: async ({ from, to }, ctx) => {
@@ -29,7 +35,10 @@ export default defineTool({
       .lte("scheduled_date", to)
       .order("scheduled_date", { ascending: true })
       .order("scheduled_time", { ascending: true });
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("[mcp-list-lessons]", error.code);
+      return { content: [{ type: "text", text: "Не удалось загрузить данные." }], isError: true };
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
       structuredContent: { lessons: data ?? [] },

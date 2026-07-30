@@ -37,6 +37,8 @@ class OfflineDb extends Dexie {
 }
 
 let _db: OfflineDb | null = null;
+let snapshotGeneration = 0;
+
 function db(): OfflineDb | null {
   if (typeof indexedDB === "undefined") return null;
   if (!_db) _db = new OfflineDb();
@@ -64,12 +66,17 @@ export function isNetworkError(err: unknown): boolean {
   return /failed to fetch|network|networkerror|load failed|fetch failed|offline|timeout/i.test(msg);
 }
 
-export async function saveSnapshot(kind: SnapshotKind, key: string, data: unknown) {
+async function saveSnapshotForUser(
+  userId: string,
+  generation: number,
+  kind: SnapshotKind,
+  key: string,
+  data: unknown,
+) {
   const database = db();
-  if (!database) return;
-  const userId = await currentUserId();
-  if (!userId) return;
+  if (!database || generation !== snapshotGeneration) return;
   try {
+    if (generation !== snapshotGeneration) return;
     await database.snapshots.put({
       id: `${userId}::${key}`,
       userId,
@@ -81,6 +88,12 @@ export async function saveSnapshot(kind: SnapshotKind, key: string, data: unknow
   } catch {
     // storage full / private mode — snapshots are best effort
   }
+}
+
+export async function saveSnapshot(kind: SnapshotKind, key: string, data: unknown) {
+  const userId = await currentUserId();
+  if (!userId) return;
+  await saveSnapshotForUser(userId, snapshotGeneration, kind, key, data);
 }
 
 export async function readSnapshot<T>(key: string): Promise<T | undefined> {
@@ -109,6 +122,21 @@ export async function hasAnySnapshot(): Promise<boolean> {
 }
 
 /**
+ * Remove private offline data on logout. The generation guard also cancels
+ * pending snapshot writes that started before the logout event.
+ */
+export async function clearOfflineSnapshots(): Promise<void> {
+  snapshotGeneration += 1;
+  const database = db();
+  if (!database) return;
+  try {
+    await database.snapshots.clear();
+  } catch {
+    // IndexedDB may be unavailable in private mode.
+  }
+}
+
+/**
  * Run an online query; cache its result as a snapshot. On network failure,
  * fall back to the last snapshot instead of throwing.
  */
@@ -118,9 +146,15 @@ export async function withSnapshot<T>(
   run: () => Promise<T>,
 ): Promise<T> {
   if (isOnline()) {
+    // Bind the request and its result to one user. Looking up the user only
+    // after the request creates a cross-account race on shared devices.
+    const userId = await currentUserId();
+    const generation = snapshotGeneration;
     try {
       const result = await run();
-      void saveSnapshot(kind, key, result);
+      if (userId) {
+        void saveSnapshotForUser(userId, generation, kind, key, result);
+      }
       return result;
     } catch (err) {
       if (!isNetworkError(err)) throw err;

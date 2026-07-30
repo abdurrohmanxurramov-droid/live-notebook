@@ -13,3 +13,16 @@ export function getErrorMessage(error: unknown, fallback = "Ошибка") {
   }
   return fallback;
 }
+
+export function getSafeUiErrorMessage(error: unknown, fallback = "Что-то пошло не так") {
+  const message = getErrorMessage(error, fallback).trim();
+  if (!message || message.length > 300) return fallback;
+  if (
+    /(?:postgres|postgrest|sqlstate|stack trace|relation |column |constraint|schema |service[_ -]?role|private[_ -]?key|access[_ -]?token|refresh[_ -]?token|jwt|bearer|vault|rpc )/i.test(
+      message,
+    )
+  ) {
+    return fallback;
+  }
+  return message;
+}

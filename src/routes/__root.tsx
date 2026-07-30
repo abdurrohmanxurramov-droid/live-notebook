@@ -19,6 +19,9 @@ import { installGlobalHaptics } from "@/lib/haptics";
 import { ThemeProvider } from "../components/ThemeProvider";
 import { OfflineIndicator } from "../components/OfflineIndicator";
 import { registerAppServiceWorker } from "@/lib/register-sw";
+import { clearOfflineSnapshots } from "@/lib/offline";
+import { healPushSubscriptionForCurrentUser, unsubscribePushLocally } from "@/lib/push";
+import { getSafeUiErrorMessage } from "@/lib/utils";
 
 function NotFoundComponent() {
   return (
@@ -38,9 +41,8 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
-  const message = error?.message ?? "Неизвестная ошибка";
+  const message = getSafeUiErrorMessage(error, "Не удалось загрузить страницу");
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -162,14 +164,26 @@ function RootComponent() {
     registerAppServiceWorker();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        event !== "INITIAL_SESSION" &&
+        event !== "SIGNED_IN" &&
+        event !== "SIGNED_OUT" &&
+        event !== "USER_UPDATED"
+      ) {
+        return;
+      }
       router.invalidate();
       if (event === "SIGNED_OUT") {
         queryClient.cancelQueries();
         queryClient.clear();
+        void clearOfflineSnapshots();
+        void unsubscribePushLocally();
       } else {
         queryClient.invalidateQueries();
+        if (session?.user) {
+          window.setTimeout(() => void healPushSubscriptionForCurrentUser(session.user.id), 0);
+        }
       }
     });
     return () => subscription.unsubscribe();

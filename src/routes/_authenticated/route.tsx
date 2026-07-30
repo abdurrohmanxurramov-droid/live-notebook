@@ -2,11 +2,13 @@ import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/re
 import { supabase } from "@/integrations/supabase/client";
 import { QuickActionsFab } from "@/components/QuickActionsFab";
 import { TopClock } from "@/components/TopClock";
+import { hasAnySnapshot, isNetworkError, OFFLINE_TEXT } from "@/lib/offline";
+import { getSafeUiErrorMessage } from "@/lib/utils";
+import { signOutSafely } from "@/lib/logout";
 
 function AuthErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
-  const message = error?.message ?? "Неизвестная ошибка";
+  const message = getSafeUiErrorMessage(error, "Не удалось загрузить раздел");
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -30,7 +32,7 @@ function AuthErrorComponent({ error, reset }: { error: Error; reset: () => void 
           </Link>
           <button
             onClick={async () => {
-              await supabase.auth.signOut();
+              await signOutSafely();
               window.location.href = "/auth";
             }}
             className="rounded-xl border border-border px-4 py-2 text-sm text-foreground"
@@ -67,11 +69,14 @@ export const Route = createFileRoute("/_authenticated")({
     // never signs a previously logged-in user out.
     const { data: sessionData } = await supabase.auth.getSession();
     let user = sessionData.session?.user ?? null;
-    if (typeof navigator === "undefined" || navigator.onLine !== false) {
+    const offline = typeof navigator !== "undefined" && navigator.onLine === false;
+    if (!offline) {
       try {
         const { data, error } = await supabase.auth.getUser();
         if (!error && data.user) user = data.user;
-        else if (error && !user) throw redirect({ to: "/auth", search: {} });
+        else if (error && (!user || !isNetworkError(error))) {
+          throw redirect({ to: "/auth", search: {} });
+        }
       } catch (e) {
         if (e && typeof e === "object" && "to" in (e as Record<string, unknown>)) throw e;
         // network failure — keep the stored session
@@ -79,6 +84,9 @@ export const Route = createFileRoute("/_authenticated")({
     }
     if (!user) {
       throw redirect({ to: "/auth", search: {} });
+    }
+    if (offline && !(await hasAnySnapshot())) {
+      throw new Error(OFFLINE_TEXT.offlineNoCache);
     }
     const data = { user };
     // Onboarding gate (only for routes inside _authenticated, except /onboarding itself)

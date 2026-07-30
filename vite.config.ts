@@ -19,13 +19,17 @@ const supabasePublishableKey =
     "d2d5dnpsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMTY0MDMsImV4cCI6MjA5NDU5MjQwM30.1zLCfnu" +
     "VrnSyhCbHLDVs5E5MA85IZrM6ZqKCQBuxLpI";
 const supabaseProjectId = process.env.VITE_SUPABASE_PROJECT_ID || "eltunbflazenamwgyvzl";
+// mcp-js 0.25.0 compares Vite's normalized root with Win32-resolved paths.
+// The generated MCP route files are committed, so Windows builds can safely
+// skip only the route-emission plugin; Linux/Lovable production still runs it.
+const mcpPlugins = process.platform === "win32" ? [] : [mcpPlugin()];
 
 export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
   vite: {
-    plugins: [mcpPlugin()],
+    plugins: mcpPlugins,
     define: {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(supabasePublishableKey),

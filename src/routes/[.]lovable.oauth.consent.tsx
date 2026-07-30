@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, Button } from "@/components/ui-bits";
 import { Loader2, ShieldCheck, X } from "lucide-react";
+import { getSafeUiErrorMessage } from "@/lib/utils";
 
 type AuthorizationDetails = {
   client?: { name?: string; client_name?: string; redirect_uri?: string };
@@ -55,7 +56,7 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
   errorComponent: ({ error }) => (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-5">
       <Card className="p-5 text-sm text-muted-foreground">
-        Не удалось загрузить запрос авторизации: {String((error as Error)?.message ?? error)}
+        {getSafeUiErrorMessage(error, "Не удалось загрузить запрос авторизации.")}
       </Card>
     </div>
   ),
@@ -81,7 +82,7 @@ function Consent() {
       : await oauth().denyAuthorization(authorization_id);
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(getSafeUiErrorMessage(error, "Не удалось обработать запрос доступа."));
       return;
     }
     const target = data?.redirect_url ?? data?.redirect_to;
@@ -104,22 +105,18 @@ function Consent() {
         <h1 className="text-xl font-semibold text-foreground">
           Разрешить {clientName} доступ к LiveNotebook?
         </h1>
-        {email && (
-          <p className="mt-1 text-xs text-muted-foreground">Вы вошли как {email}</p>
-        )}
+        {email && <p className="mt-1 text-xs text-muted-foreground">Вы вошли как {email}</p>}
       </div>
 
       <Card className="space-y-3 p-5 text-sm">
         <p className="text-foreground">
-          {clientName} сможет вызывать инструменты LiveNotebook от вашего имени — читать и
-          изменять только ваших учеников, уроки, ДЗ и финансы.
+          {clientName} сможет вызывать инструменты LiveNotebook от вашего имени — читать и изменять
+          только ваших учеников, уроки, ДЗ и финансы.
         </p>
         <ul className="space-y-1 text-xs text-muted-foreground">
           <li>• Просмотр учеников, уроков, ДЗ и оплат</li>
           <li>• Изменение статуса урока</li>
-          {scopes.length > 0 && (
-            <li>• Запрошенные scope: {scopes.join(", ")}</li>
-          )}
+          {scopes.length > 0 && <li>• Запрошенные scope: {scopes.join(", ")}</li>}
         </ul>
         <p className="text-xs text-muted-foreground">
           Это не обходит правила доступа: политики базы данных по-прежнему ограничивают доступ
@@ -131,13 +128,12 @@ function Consent() {
           </p>
         )}
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="gold"
-            className="flex-1"
-            onClick={() => decide(true)}
-            disabled={busy}
-          >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          <Button variant="gold" className="flex-1" onClick={() => decide(true)} disabled={busy}>
+            {busy ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ShieldCheck className="h-4 w-4" />
+            )}
             Разрешить
           </Button>
           <Button

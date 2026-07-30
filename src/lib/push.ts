@@ -1,9 +1,14 @@
 // Client-side Web Push helpers
-import { savePushSubscription, removePushSubscription } from "./push.functions";
+import {
+  ownsPushSubscription,
+  removePushSubscription,
+  savePushSubscription,
+} from "./push.functions";
 
 // VAPID public key (safe to expose; private key lives in server secret)
 export const VAPID_PUBLIC_KEY =
   "BBfliNs2fnILCFvMEGcitzDTcSCVl3dW2FKkljPQX_Al6j1NHg2v5ZrblLaI-rv3EJtB2j_pWozTLQPV4i_WvHc";
+const PUSH_OWNER_STORAGE_KEY = "live-notebook:push-owner";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -44,9 +49,23 @@ function keysEqual(a: ArrayBuffer | null | undefined, b: Uint8Array): boolean {
  * public key (e.g. after key rotation), it's dead. Silently unsubscribe so
  * the UI can prompt the user to enable notifications again.
  */
-async function healStaleSubscription(reg: ServiceWorkerRegistration) {
+async function unsubscribeLocally(sub: PushSubscription) {
+  await sub.unsubscribe();
+  localStorage.removeItem(PUSH_OWNER_STORAGE_KEY);
+}
+
+async function healStaleSubscription(
+  reg: ServiceWorkerRegistration,
+  currentUserId?: string,
+  strictOwnership = false,
+) {
   const sub = await reg.pushManager.getSubscription();
   if (!sub) return null;
+  const storedOwnerId = localStorage.getItem(PUSH_OWNER_STORAGE_KEY);
+  if (currentUserId && storedOwnerId && storedOwnerId !== currentUserId) {
+    await unsubscribeLocally(sub);
+    return null;
+  }
   const expected = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
   const current = sub.options.applicationServerKey ?? null;
   if (!keysEqual(current, expected)) {
@@ -55,10 +74,32 @@ async function healStaleSubscription(reg: ServiceWorkerRegistration) {
     } catch {
       // ignore server-side cleanup errors
     }
-    await sub.unsubscribe();
+    await unsubscribeLocally(sub);
     return null;
   }
+  try {
+    const ownedByCurrentUser = await ownsPushSubscription({
+      data: { endpoint: sub.endpoint },
+    });
+    if (!ownedByCurrentUser) {
+      await unsubscribeLocally(sub);
+      return null;
+    }
+    if (currentUserId) localStorage.setItem(PUSH_OWNER_STORAGE_KEY, currentUserId);
+  } catch {
+    // During an auth transition, an unknown owner must fail closed. For an
+    // already-bound current user, a temporary network failure can keep push.
+    if (strictOwnership && storedOwnerId !== currentUserId) {
+      await unsubscribeLocally(sub);
+      return null;
+    }
+  }
   return sub;
+}
+
+export async function healPushSubscriptionForCurrentUser(currentUserId: string): Promise<void> {
+  const reg = await getRegistration();
+  if (reg) await healStaleSubscription(reg, currentUserId, true);
 }
 
 export async function isSubscribed(): Promise<boolean> {
@@ -87,7 +128,7 @@ export async function subscribePush(): Promise<boolean> {
   if (perm !== "granted") throw new Error("Разрешение не получено");
   const reg = await getRegistration();
   if (!reg) throw new Error("Не удалось зарегистрировать service worker");
-  let sub = await reg.pushManager.getSubscription();
+  let sub = await healStaleSubscription(reg);
   if (!sub) {
     sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -95,7 +136,7 @@ export async function subscribePush(): Promise<boolean> {
     });
   }
   const json = sub.toJSON();
-  await savePushSubscription({
+  const saved = await savePushSubscription({
     data: {
       endpoint: sub.endpoint,
       p256dh: json.keys?.p256dh ?? "",
@@ -103,15 +144,30 @@ export async function subscribePush(): Promise<boolean> {
       user_agent: navigator.userAgent,
     },
   });
+  localStorage.setItem(PUSH_OWNER_STORAGE_KEY, saved.ownerId);
   return true;
 }
 
 export async function unsubscribePush(): Promise<void> {
-  const reg = await getRegistration();
+  if (!pushSupported()) return;
+  const reg = await navigator.serviceWorker.getRegistration("/");
   if (!reg) return;
   const sub = await reg.pushManager.getSubscription();
   if (sub) {
-    await removePushSubscription({ data: { endpoint: sub.endpoint } });
-    await sub.unsubscribe();
+    try {
+      await removePushSubscription({ data: { endpoint: sub.endpoint } });
+    } finally {
+      await unsubscribeLocally(sub);
+    }
+  } else {
+    localStorage.removeItem(PUSH_OWNER_STORAGE_KEY);
   }
+}
+
+export async function unsubscribePushLocally(): Promise<void> {
+  if (!pushSupported()) return;
+  const reg = await navigator.serviceWorker.getRegistration("/");
+  const sub = await reg?.pushManager.getSubscription();
+  if (sub) await unsubscribeLocally(sub);
+  else localStorage.removeItem(PUSH_OWNER_STORAGE_KEY);
 }

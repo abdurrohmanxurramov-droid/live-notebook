@@ -22,7 +22,10 @@ export default defineTool({
       .select("id, name, subject, days_per_week, status, phone, created_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
-    if (error) return { content: [{ type: "text", text: error.message }], isError: true };
+    if (error) {
+      console.error("[mcp-list-students]", error.code);
+      return { content: [{ type: "text", text: "Не удалось загрузить данные." }], isError: true };
+    }
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
       structuredContent: { students: data ?? [] },

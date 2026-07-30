@@ -12,6 +12,9 @@ import type { Database } from "./types";
 const IS_BROWSER = typeof window !== "undefined" && typeof window.document !== "undefined";
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL ?? "") as string;
 const SUPABASE_PUBLISHABLE_KEY = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "") as string;
+export const SUPABASE_AUTH_STORAGE_KEY = SUPABASE_URL
+  ? `sb-${new URL(SUPABASE_URL).hostname.split(".")[0]}-auth-token`
+  : "sb-missing-project-auth-token";
 
 let _supabase: SupabaseClient<Database> | null = null;
 
@@ -29,6 +32,7 @@ function createBrowserSupabase(): SupabaseClient<Database> {
   _supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
       storage: localStorage,
+      storageKey: SUPABASE_AUTH_STORAGE_KEY,
       persistSession: true,
       autoRefreshToken: true,
     },
