@@ -498,14 +498,17 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
   const [customDays, setCustomDays] = useState("2");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
+  const [lessonPrice, setLessonPrice] = useState("");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const regenFn = useServerFn(regenerateLessons);
+  const defaultCurrency = useDefaultCurrency();
 
   const add = useMut(async () => {
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
+    const priceValue = parseLessonPrice(lessonPrice);
 
     const sup = await sb();
     const { data: created, error } = await sup
@@ -515,6 +518,8 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
         days_per_week: daysCount,
         subject: subject.trim() || null,
         phone: phone.trim() || null,
+        lesson_price: priceValue,
+        lesson_currency: priceValue === null ? null : normalizeCurrency(defaultCurrency, "RUB"),
       })
       .select("id")
       .single();
