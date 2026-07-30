@@ -46,7 +46,11 @@ function AnalyticsPage() {
 
   // Доход по месяцам (последние N месяцев)
   const incomeData = useMemo(() => {
-    if (!rates) return { buckets: [] as { key: string; label: string; rub: number }[], unconverted: {} as Record<string, number> };
+    if (!rates)
+      return {
+        buckets: [] as { key: string; label: string; rub: number }[],
+        unconverted: {} as Record<string, number>,
+      };
     const now = new Date();
     const buckets: { key: string; label: string; rub: number }[] = [];
     for (let i = range - 1; i >= 0; i--) {

@@ -207,9 +207,7 @@ function Home() {
               <Icon className={`h-5 w-5 ${toneClasses[m.tone]}`} strokeWidth={2.2} />
               <div className="mt-3 num text-2xl text-foreground">{m.value}</div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">{m.label}</div>
-              {m.note && (
-                <div className="mt-0.5 text-[10px] text-muted-foreground">{m.note}</div>
-              )}
+              {m.note && <div className="mt-0.5 text-[10px] text-muted-foreground">{m.note}</div>}
             </Card>
           );
         })}
@@ -498,7 +496,6 @@ function PaymentsWidget() {
       .sort((a, b) => (a.pay_date ?? "").localeCompare(b.pay_date ?? ""));
   }, [finance, today, in7iso]);
 
-
   const markPaid = useMut(
     async (id: string) => {
       const { error } = await (await sb()).from("finance").update({ is_paid: true }).eq("id", id);
@@ -562,7 +559,6 @@ function PaymentsWidget() {
                         : ""}{" "}
                       · {r.days} дн просрочки
                     </div>
-
                   </div>
                   <Button
                     variant="outline"

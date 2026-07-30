@@ -235,7 +235,6 @@ export function buildRateMap(raw: unknown): RateMap {
   return map;
 }
 
-
 export type ConvertResult =
   | { ok: true; value: number }
   | { ok: false; reason: "missing_rate" | "invalid_amount" };
@@ -298,10 +297,7 @@ export function sumConverted(
 }
 
 /** Текстовое представление несконвертированного остатка для UI. */
-export function describeUnconverted(
-  unconverted: Record<string, number>,
-  locale = "ru-RU",
-): string {
+export function describeUnconverted(unconverted: Record<string, number>, locale = "ru-RU"): string {
   return Object.entries(unconverted)
     .map(([code, amount]) => formatMoney(amount, code, locale))
     .join(" + ");
@@ -324,7 +320,6 @@ export function formatMoney(amount: number, currency: string, locale = "ru-RU"):
     maximumFractionDigits: 2,
   })} ${code || ""}`.trim();
 }
-
 
 /** Карта курсов, восстановленная из legacy-колонок таблицы rates. */
 export function legacyMapFromRates(
