@@ -132,14 +132,21 @@ function StudentsPage() {
   // Overdue map: student_id -> { amount, days }
   const today = new Date().toISOString().slice(0, 10);
   const overdueByStudent = useMemo(() => {
-    const m = new Map<string, { amount: number; days: number; hasUnknownRate: boolean }>();
+    const m = new Map<
+      string,
+      { amount: number; days: number; unconverted: Record<string, number> }
+    >();
     for (const f of finance) {
       if (f.is_paid || !f.pay_date || f.pay_date >= today) continue;
       const days = Math.floor((Date.parse(today) - Date.parse(f.pay_date)) / 86400000);
-      const cur = m.get(f.student_id) ?? { amount: 0, days: 0, hasUnknownRate: false };
+      const cur = m.get(f.student_id) ?? { amount: 0, days: 0, unconverted: {} };
       const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
       if (res.ok) cur.amount += res.value;
-      else cur.hasUnknownRate = true;
+      else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        cur.unconverted[code] = (cur.unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
       cur.days = Math.max(cur.days, days);
       m.set(f.student_id, cur);
     }
