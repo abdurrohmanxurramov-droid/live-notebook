@@ -940,6 +940,28 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
                 placeholder="Например, 1000"
               />
             </Field>
+            <Field
+              label={`Цена пакета из 12 уроков, ${student?.lesson_currency ?? defaultCurrency}`}
+            >
+              <Input
+                type="number"
+                min={0}
+                step={100}
+                inputMode="decimal"
+                value={price.trim() === "" ? "" : String(Math.round(Number(price) * 12 * 100) / 100)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw.trim() === "") {
+                    setPrice("");
+                    return;
+                  }
+                  const per = Math.round(((Number(raw) || 0) / 12) * 100) / 100;
+                  setPrice(String(per));
+                }}
+                placeholder="Например, 12000"
+              />
+            </Field>
+
           </div>
 
           <div className="mt-8 flex gap-3 pb-2">
