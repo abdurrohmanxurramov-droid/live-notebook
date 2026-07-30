@@ -114,9 +114,6 @@ async function limitRequestBody(request: Request): Promise<Request | Response> {
     method: request.method,
     headers: request.headers,
     body,
-    redirect: request.redirect,
-    referrer: request.referrer,
-    signal: request.signal,
   });
 }
 
