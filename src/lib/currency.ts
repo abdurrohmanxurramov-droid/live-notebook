@@ -161,13 +161,33 @@ export const CURRENCIES: ReadonlyArray<{ code: string; name: string }> = [
   { code: "SHP", name: "Фунт Святой Елены" },
   { code: "KMF", name: "Коморский франк" },
   { code: "MRU", name: "Мавританская угия" },
-  { code: "TVD", name: "Доллар Тувалу" },
+  { code: "KPW", name: "Северокорейская вона" },
+  { code: "CUC", name: "Кубинское конвертируемое песо" },
+  { code: "SVC", name: "Сальвадорский колон" },
   { code: "ZWG", name: "Зимбабвийское золото" },
+  { code: "XDR", name: "СДР (МВФ)" },
+  { code: "XSU", name: "Сукре" },
+  { code: "XUA", name: "Расчётная единица АфБР" },
+  { code: "XAU", name: "Золото (тройская унция)" },
+  { code: "XAG", name: "Серебро (тройская унция)" },
+  { code: "XPT", name: "Платина (тройская унция)" },
+  { code: "XPD", name: "Палладий (тройская унция)" },
+  { code: "CLF", name: "Условная расчётная единица Чили" },
+  { code: "BOV", name: "Боливийский мвдол" },
+  { code: "CHE", name: "WIR евро" },
+  { code: "CHW", name: "WIR франк" },
+  { code: "COU", name: "Единица реальной стоимости (Колумбия)" },
+  { code: "MXV", name: "Мексиканская инвестиционная единица" },
+  { code: "USN", name: "Доллар США (следующий день)" },
+  { code: "UYI", name: "Уругвайское песо (индексируемое)" },
+  { code: "UYW", name: "Уругвайская номинальная единица" },
+  { code: "XXX", name: "Без валюты" },
 ];
 
 const CURRENCY_SET = new Set(CURRENCIES.map((c) => c.code));
 
-export const CURRENCY_CODE_RE = /^[A-Z]{3,4}$/;
+/** Валидны только ISO 4217 (3 буквы) и совместимый USDT. */
+export const CURRENCY_CODE_RE = /^([A-Z]{3}|USDT)$/;
 
 export function isSupportedCurrency(code: unknown): code is string {
   return typeof code === "string" && CURRENCY_SET.has(code.toUpperCase());
@@ -190,16 +210,24 @@ export const currencyCodeSchema = z
 
 export type RateMap = Record<string, number>;
 
-/** Оставляет только конечные положительные курсы, гарантирует USD=1 и USDT=1. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * Оставляет только конечные положительные числовые курсы (без коэрсинга строк),
+ * гарантирует USD=1 и USDT=1.
+ */
 export function buildRateMap(raw: unknown): RateMap {
   const map: RateMap = { USD: 1, USDT: 1 };
-  if (raw && typeof raw === "object") {
-    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-      const code = typeof key === "string" ? key.toUpperCase() : "";
-      const num = typeof value === "number" ? value : Number(value);
-      if (!CURRENCY_CODE_RE.test(code)) continue;
-      if (!Number.isFinite(num) || num <= 0) continue;
-      map[code] = num;
+  if (isPlainObject(raw)) {
+    for (const [key, value] of Object.entries(raw)) {
+      const code = key.toUpperCase();
+      if (!CURRENCY_CODE_RE.test(code) || !CURRENCY_SET.has(code)) continue;
+      if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) continue;
+      map[code] = value;
     }
   }
   map.USD = 1;
@@ -232,7 +260,9 @@ export function convert(
     return { ok: false, reason: "missing_rate" };
   if (!Number.isFinite(rateTo as number) || (rateTo as number) <= 0)
     return { ok: false, reason: "missing_rate" };
-  return { ok: true, value: (amount / (rateFrom as number)) * (rateTo as number) };
+  const value = (amount / (rateFrom as number)) * (rateTo as number);
+  if (!Number.isFinite(value)) return { ok: false, reason: "invalid_amount" };
+  return { ok: true, value };
 }
 
 export type SumConvertedResult = {
@@ -267,11 +297,10 @@ export function sumConverted(
 }
 
 /** Текстовое представление несконвертированного остатка для UI. */
-export function describeUnconverted(unconverted: Record<string, number>): string {
-  const parts = Object.entries(unconverted).map(
-    ([code, amount]) => `${Math.round(amount).toLocaleString("ru-RU")} ${code}`,
-  );
-  return parts.join(" + ");
+export function describeUnconverted(unconverted: Record<string, number>, locale = "ru-RU"): string {
+  return Object.entries(unconverted)
+    .map(([code, amount]) => formatMoney(amount, code, locale))
+    .join(" + ");
 }
 
 export function formatMoney(amount: number, currency: string, locale = "ru-RU"): string {
@@ -279,17 +308,17 @@ export function formatMoney(amount: number, currency: string, locale = "ru-RU"):
   const value = Number.isFinite(amount) ? amount : 0;
   if (/^[A-Z]{3}$/.test(code)) {
     try {
-      return new Intl.NumberFormat(locale, {
-        style: "currency",
-        currency: code,
-        maximumFractionDigits: Math.abs(value) >= 1000 ? 0 : 2,
-      }).format(value);
+      // Без maximumFractionDigits: Intl сам применяет minor units валюты
+      // (0 для JPY, 2 для USD, 3 для KWD).
+      return new Intl.NumberFormat(locale, { style: "currency", currency: code }).format(value);
     } catch {
       /* неизвестный ISO-код — падаем на общий формат ниже */
     }
   }
-  const digits = Math.abs(value) >= 1000 ? 0 : 2;
-  return `${value.toLocaleString(locale, { maximumFractionDigits: digits })} ${code || ""}`.trim();
+  return `${value.toLocaleString(locale, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })} ${code || ""}`.trim();
 }
 
 /** Карта курсов, восстановленная из legacy-колонок таблицы rates. */

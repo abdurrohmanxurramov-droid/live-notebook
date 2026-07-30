@@ -110,7 +110,7 @@ SELECT 'finance.amount_currency_blocking', count(*)
 FROM public.finance
 WHERE (amount < 0 AND deleted_at IS NULL)
    OR amount > 120000000
-   OR currency NOT IN ('RUB', 'USD', 'USDT', 'EGP')
+   OR currency !~ '^([A-Z]{3}|USDT)$'
 
 UNION ALL
 SELECT 'attendance.status', count(*)
@@ -130,9 +130,15 @@ WHERE usd_to_rub NOT BETWEEN 0.000001 AND 1000000
    OR usd_to_egp NOT BETWEEN 0.000001 AND 1000000
 
 UNION ALL
+SELECT 'rates.currency_map', count(*)
+FROM public.rates
+WHERE base_currency <> 'USD'
+   OR jsonb_typeof(rates_map) <> 'object'
+
+UNION ALL
 SELECT 'user_settings.values', count(*)
 FROM public.user_settings
-WHERE default_currency NOT IN ('RUB', 'USD', 'USDT', 'EGP')
+WHERE default_currency !~ '^([A-Z]{3}|USDT)$'
    OR default_lesson_duration NOT BETWEEN 5 AND 600
    OR default_lesson_price NOT BETWEEN 0 AND 10000000
    OR week_starts_on NOT BETWEEN 0 AND 6

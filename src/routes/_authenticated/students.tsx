@@ -26,7 +26,7 @@ import {
   type Student,
   type StudentStatus,
 } from "@/lib/db";
-import { convert, formatMoney } from "@/lib/currency";
+import { convert, describeUnconverted, formatMoney, normalizeCurrency } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
@@ -132,14 +132,21 @@ function StudentsPage() {
   // Overdue map: student_id -> { amount, days }
   const today = new Date().toISOString().slice(0, 10);
   const overdueByStudent = useMemo(() => {
-    const m = new Map<string, { amount: number; days: number; hasUnknownRate: boolean }>();
+    const m = new Map<
+      string,
+      { amount: number; days: number; unconverted: Record<string, number> }
+    >();
     for (const f of finance) {
       if (f.is_paid || !f.pay_date || f.pay_date >= today) continue;
       const days = Math.floor((Date.parse(today) - Date.parse(f.pay_date)) / 86400000);
-      const cur = m.get(f.student_id) ?? { amount: 0, days: 0, hasUnknownRate: false };
+      const cur = m.get(f.student_id) ?? { amount: 0, days: 0, unconverted: {} };
       const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
       if (res.ok) cur.amount += res.value;
-      else cur.hasUnknownRate = true;
+      else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        cur.unconverted[code] = (cur.unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
       cur.days = Math.max(cur.days, days);
       m.set(f.student_id, cur);
     }
@@ -423,7 +430,10 @@ function StudentsPage() {
                         <AlertCircle className="mr-0.5 inline h-3 w-3" />
                         Долг {overdue.days}д
                         {overdue.amount > 0
-                          ? ` · ${formatMoney(overdue.amount, displayCurrency)}${overdue.hasUnknownRate ? "+" : ""}`
+                          ? ` · ${formatMoney(overdue.amount, displayCurrency)}`
+                          : ""}
+                        {Object.keys(overdue.unconverted).length > 0
+                          ? ` · курс недоступен: ${describeUnconverted(overdue.unconverted)}`
                           : ""}
                       </Badge>
                     ) : fin.length === 0 ? (

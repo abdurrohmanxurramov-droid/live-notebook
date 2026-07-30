@@ -26,7 +26,7 @@ import {
 } from "@/lib/db";
 import { BarChart3, TrendingUp, Users, AlertTriangle, BookOpen } from "lucide-react";
 import type { ReactNode } from "react";
-import { convert, formatMoney } from "@/lib/currency";
+import { convert, describeUnconverted, formatMoney, normalizeCurrency } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 
 export const Route = createFileRoute("/_authenticated/analytics")({ component: AnalyticsPage });
@@ -45,8 +45,12 @@ function AnalyticsPage() {
   const rateMap = useMemo(() => rateMapOf(rates), [rates]);
 
   // Доход по месяцам (последние N месяцев)
-  const incomeByMonth = useMemo(() => {
-    if (!rates) return [];
+  const incomeData = useMemo(() => {
+    if (!rates)
+      return {
+        buckets: [] as { key: string; label: string; rub: number }[],
+        unconverted: {} as Record<string, number>,
+      };
     const now = new Date();
     const buckets: { key: string; label: string; rub: number }[] = [];
     for (let i = range - 1; i >= 0; i--) {
@@ -58,19 +62,31 @@ function AnalyticsPage() {
       });
     }
     const map = new Map(buckets.map((b) => [b.key, b]));
+    const unconverted: Record<string, number> = {};
     for (const f of finance) {
       if (!f.is_paid) continue;
       const d = f.pay_date ? new Date(f.pay_date) : new Date(f.created_at);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       const b = map.get(key);
+      if (!b) continue;
       const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
-      if (b && res.ok) b.rub += res.value;
+      if (res.ok) b.rub += res.value;
+      else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        unconverted[code] = (unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
     }
-    return buckets.map((b) => ({ ...b, rub: Math.round(b.rub) }));
+    return {
+      buckets: buckets.map((b) => ({ ...b, rub: Math.round(b.rub) })),
+      unconverted,
+    };
   }, [finance, rates, rateMap, displayCurrency, range]);
 
+  const incomeByMonth = incomeData.buckets;
   const totalIncome = incomeByMonth.reduce((s, x) => s + x.rub, 0);
   const avgIncome = incomeByMonth.length ? Math.round(totalIncome / incomeByMonth.length) : 0;
+  const incomeUnconverted = incomeData.unconverted;
 
   // Посещаемость по дням недели
   const attendanceByDow = useMemo(() => {
@@ -106,16 +122,26 @@ function AnalyticsPage() {
   // Топ учеников по доходу
   const topStudents = useMemo(() => {
     if (!rates) return [];
-    const map = new Map<string, number>();
+    const map = new Map<string, { sum: number; unconverted: Record<string, number> }>();
     for (const f of finance) {
       if (!f.is_paid) continue;
+      const cur = map.get(f.student_id) ?? { sum: 0, unconverted: {} };
       const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
-      if (!res.ok) continue;
-      map.set(f.student_id, (map.get(f.student_id) ?? 0) + res.value);
+      if (res.ok) cur.sum += res.value;
+      else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        cur.unconverted[code] = (cur.unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
+      map.set(f.student_id, cur);
     }
     return students
-      .map((s) => ({ s, rub: Math.round(map.get(s.id) ?? 0) }))
-      .filter((x) => x.rub > 0)
+      .map((s) => ({
+        s,
+        rub: Math.round(map.get(s.id)?.sum ?? 0),
+        unconverted: map.get(s.id)?.unconverted ?? {},
+      }))
+      .filter((x) => x.rub > 0 || Object.keys(x.unconverted).length > 0)
       .sort((a, b) => b.rub - a.rub)
       .slice(0, 5);
   }, [students, finance, rates, rateMap, displayCurrency]);
@@ -192,6 +218,11 @@ function AnalyticsPage() {
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
                 За {range} мес
               </div>
+              {Object.keys(incomeUnconverted).length > 0 && (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  Курс недоступен, не включено: {describeUnconverted(incomeUnconverted)}
+                </div>
+              )}
             </Card>
             <Card className="p-4">
               <BarChart3 className="h-5 w-5 text-[color:var(--success)]" />
@@ -435,7 +466,7 @@ function AnalyticsPage() {
             <>
               <SectionTitle>Топ учеников по доходу</SectionTitle>
               <div className="space-y-2">
-                {topStudents.map(({ s, rub }, i) => {
+                {topStudents.map(({ s, rub, unconverted }, i) => {
                   const max = topStudents[0].rub || 1;
                   const pct = Math.round((rub / max) * 100);
                   return (
@@ -449,6 +480,11 @@ function AnalyticsPage() {
                           <div className="name-italic truncate text-[14px] font-semibold">
                             {s.name}
                           </div>
+                          {Object.keys(unconverted).length > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              Курс недоступен, не включено: {describeUnconverted(unconverted)}
+                            </div>
+                          )}
                           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                             <div
                               className="h-full rounded-full bg-accent transition-all"

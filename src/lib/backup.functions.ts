@@ -283,7 +283,7 @@ const ratesRowSchema = z
     usd_to_rub: z.number().finite().positive().max(1_000_000),
     usdt_to_egp: z.number().finite().positive().max(1_000_000),
     usd_to_egp: z.number().finite().positive().max(1_000_000),
-    base_currency: currencyCodeSchema.optional(),
+    base_currency: z.literal("USD").optional(),
     rates_map: z.record(z.string(), z.number().finite().positive()).nullable().optional(),
     rates_fetched_at: isoTimestamp.nullable().optional(),
     updated_at: isoTimestamp.optional(),
