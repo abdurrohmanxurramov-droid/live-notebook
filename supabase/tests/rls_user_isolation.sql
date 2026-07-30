@@ -422,11 +422,6 @@ BEGIN
 END;
 $test$;
 
-SELECT extensions.pass('RLS, ownership, RPC, finance, and FK isolation checks passed');
-SELECT * FROM extensions.finish();
-
-ROLLBACK;
-
 -- Multi-currency domain: valid ISO 4217 codes accepted, junk rejected.
 DO $test$
 DECLARE
@@ -465,14 +460,32 @@ END;
 $test$;
 
 -- user_settings keeps rejecting invalid non-currency values.
+INSERT INTO public.user_settings (user_id)
+VALUES ('10000000-0000-0000-0000-000000000001')
+ON CONFLICT (user_id) DO NOTHING;
+
 DO $test$
 DECLARE
-  rejected boolean := false;
+  rejected boolean;
+  affected_count integer;
 BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.user_settings
+    WHERE user_id = '10000000-0000-0000-0000-000000000001'
+  ) THEN
+    RAISE EXCEPTION 'Test user_settings row is missing; check cannot be validated';
+  END IF;
+
+  rejected := false;
   BEGIN
     UPDATE public.user_settings
     SET default_lesson_duration = 1
     WHERE user_id = '10000000-0000-0000-0000-000000000001';
+    GET DIAGNOSTICS affected_count = ROW_COUNT;
+    IF affected_count = 0 THEN
+      RAISE EXCEPTION 'user_settings update affected zero rows; check is meaningless';
+    END IF;
   EXCEPTION
     WHEN check_violation THEN
       rejected := true;
@@ -480,5 +493,25 @@ BEGIN
   IF NOT rejected THEN
     RAISE EXCEPTION 'Invalid default_lesson_duration was accepted';
   END IF;
+
+  rejected := false;
+  BEGIN
+    INSERT INTO public.user_settings (user_id, default_lesson_duration)
+    VALUES ('10000000-0000-0000-0000-000000000002', 1);
+  EXCEPTION
+    WHEN check_violation THEN
+      rejected := true;
+    WHEN insufficient_privilege THEN
+      rejected := true;
+  END;
+  IF NOT rejected THEN
+    RAISE EXCEPTION 'Invalid default_lesson_duration insert was accepted';
+  END IF;
 END;
 $test$;
+
+SELECT extensions.pass('RLS, ownership, RPC, finance, currency, and FK isolation checks passed');
+SELECT * FROM extensions.finish();
+
+ROLLBACK;
+
