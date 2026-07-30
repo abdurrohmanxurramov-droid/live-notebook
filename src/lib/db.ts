@@ -95,9 +95,7 @@ export function useStudents() {
       withSnapshot("students", "students", async () => {
         const { data, error } = await (await sb())
           .from("students")
-          .select(
-            "id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency",
-          )
+          .select("id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency")
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
         if (error) throw error;

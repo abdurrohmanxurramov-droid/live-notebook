@@ -80,9 +80,7 @@ function StudentsPage() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("students")
-        .select(
-          "id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency",
-        )
+        .select("id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency")
         .not("deleted_at", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -492,34 +490,24 @@ const PATTERN_DAYS: Record<Exclude<Pattern, "custom">, number[]> = {
   tts: [1, 3, 5], // Вт, Чт, Сб
 };
 
-/** Пустое поле = использовать общую цену урока из настроек. */
-function parseLessonPrice(raw: string): number | null {
-  const trimmed = raw.trim().replace(",", ".");
-  if (!trimmed) return null;
-  const value = Number(trimmed);
-  if (!Number.isFinite(value) || value < 0) return null;
-  return Math.min(value, 10_000_000);
-}
-
-
-
 function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [name, setName] = useState("");
   const [pattern, setPattern] = useState<Pattern>("mwf");
   const [customDays, setCustomDays] = useState("2");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
-  const [lessonPrice, setLessonPrice] = useState("");
+  const [price, setPrice] = useState("");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
-  const regenFn = useServerFn(regenerateLessons);
   const defaultCurrency = useDefaultCurrency();
+  const regenFn = useServerFn(regenerateLessons);
 
   const add = useMut(async () => {
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
-    const priceValue = parseLessonPrice(lessonPrice);
+    const priceValue =
+      price.trim() === "" ? null : Math.max(0, Math.min(10_000_000, Number(price) || 0));
 
     const sup = await sb();
     const { data: created, error } = await sup
@@ -530,7 +518,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
         subject: subject.trim() || null,
         phone: phone.trim() || null,
         lesson_price: priceValue,
-        lesson_currency: priceValue === null ? null : normalizeCurrency(defaultCurrency, "RUB"),
+        lesson_currency: priceValue === null ? null : defaultCurrency,
       })
       .select("id")
       .single();
@@ -661,19 +649,19 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
           </Field>
         </div>
         <div className="stagger-item" style={{ animationDelay: "315ms" }}>
-          <Field label={`Цена урока, ${normalizeCurrency(defaultCurrency, "RUB")} (необязательно)`}>
+          <Field label={`Цена урока, ${defaultCurrency} (необязательно)`}>
             <Input
               type="number"
               min={0}
+              step={50}
               inputMode="decimal"
-              value={lessonPrice}
-              onChange={(e) => setLessonPrice(e.target.value)}
-              placeholder="Оставьте пустым — цена из настроек"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              placeholder="Например, 1000"
             />
           </Field>
         </div>
       </div>
-
 
       <div className="mt-8 flex gap-3 pb-2">
         <Button variant="outline" className="flex-1" onClick={onClose}>
@@ -692,7 +680,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
               setCustomDays("2");
               setSubject("");
               setPhone("");
-              setLessonPrice("");
+              setPrice("");
               setTime("16:00");
               setDuration("60");
               onClose();
@@ -721,14 +709,14 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
-  const [lessonPrice, setLessonPrice] = useState("");
+  const [price, setPrice] = useState("");
   const [pattern, setPattern] = useState<Pattern>("custom");
   const [customDays, setCustomDays] = useState("2");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const regenFn = useServerFn(regenerateLessons);
   const defaultCurrency = useDefaultCurrency();
+  const regenFn = useServerFn(regenerateLessons);
 
   // Заполнить данные при открытии
   useEffect(() => {
@@ -736,7 +724,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     setName(student.name);
     setSubject(student.subject ?? "");
     setPhone(student.phone ?? "");
-    setLessonPrice(student.lesson_price === null ? "" : String(student.lesson_price));
+    setPrice(student.lesson_price == null ? "" : String(student.lesson_price));
     setCustomDays(String(student.days_per_week));
 
     (async () => {
@@ -767,7 +755,8 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
-    const priceValue = parseLessonPrice(lessonPrice);
+    const priceValue =
+      price.trim() === "" ? null : Math.max(0, Math.min(10_000_000, Number(price) || 0));
 
     const sup = await sb();
     const { error: upErr } = await sup
@@ -779,9 +768,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         phone: phone.trim() || null,
         lesson_price: priceValue,
         lesson_currency:
-          priceValue === null
-            ? null
-            : normalizeCurrency(student.lesson_currency ?? defaultCurrency, "RUB"),
+          priceValue === null ? null : (student.lesson_currency ?? defaultCurrency),
       })
       .eq("id", student.id);
     if (upErr) throw upErr;
@@ -919,19 +906,19 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
               />
             </Field>
             <Field
-              label={`Цена урока, ${normalizeCurrency(student?.lesson_currency ?? defaultCurrency, "RUB")}`}
+              label={`Цена урока, ${student?.lesson_currency ?? defaultCurrency} (пусто — из настроек)`}
             >
               <Input
                 type="number"
                 min={0}
+                step={50}
                 inputMode="decimal"
-                value={lessonPrice}
-                onChange={(e) => setLessonPrice(e.target.value)}
-                placeholder="Пусто — цена из настроек"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Например, 1000"
               />
             </Field>
           </div>
-
 
           <div className="mt-8 flex gap-3 pb-2">
             <Button variant="outline" className="flex-1" onClick={onClose}>
