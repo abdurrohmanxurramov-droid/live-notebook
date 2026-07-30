@@ -30,6 +30,8 @@ import {
   sumConverted,
 } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
+import { AmountPresets } from "@/components/AmountPresets";
+import { readPaymentMemory, rememberPayment } from "@/lib/package-price";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
 import { RefreshCw, Trash2, Wallet } from "lucide-react";
@@ -88,7 +90,13 @@ function FinancePage() {
       ) : (
         <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))]">
           {students.map((s) => (
-            <StudentFinanceCard key={s.id} studentId={s.id} name={s.name} />
+            <StudentFinanceCard
+              key={s.id}
+              studentId={s.id}
+              name={s.name}
+              lessonPrice={s.lesson_price}
+              lessonCurrency={s.lesson_currency}
+            />
           ))}
         </div>
       )}
@@ -258,12 +266,25 @@ function RateInput({
   );
 }
 
-function StudentFinanceCard({ studentId, name }: { studentId: string; name: string }) {
+function StudentFinanceCard({
+  studentId,
+  name,
+  lessonPrice,
+  lessonCurrency,
+}: {
+  studentId: string;
+  name: string;
+  lessonPrice: number | null;
+  lessonCurrency: string | null;
+}) {
   const { data: rates } = useRates();
   const defaultCurrency = useDefaultCurrency();
-  const [currency, setCurrency] = useState<string | null>(null);
+  const memory = useMemo(() => readPaymentMemory(studentId), [studentId]);
+  const [currency, setCurrency] = useState<string | null>(
+    memory?.currency ?? (lessonCurrency ? normalizeCurrency(lessonCurrency) : null),
+  );
   const activeCurrency = currency ?? defaultCurrency;
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(memory?.amount ?? "");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isPaid, setIsPaid] = useState(true);
 
@@ -278,6 +299,7 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
       pay_date: date,
     });
     if (error) throw error;
+    rememberPayment(studentId, amount, activeCurrency);
   }, ["finance"]);
 
   const n = Number(amount) || 0;
@@ -310,6 +332,13 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
           className="col-span-2"
         />
       </div>
+
+      <AmountPresets
+        lessonPrice={lessonPrice}
+        currency={activeCurrency}
+        value={amount}
+        onPick={setAmount}
+      />
 
       {preview && activeCurrency !== defaultCurrency && (
         <div className="mt-2 text-center text-[11px] text-muted-foreground">
