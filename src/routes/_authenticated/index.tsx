@@ -630,7 +630,7 @@ function todayDowMon0() {
 }
 
 function Overview() {
-  const { finance, schedule, homework, attendance, settings } = useDashData();
+  const { students, finance, schedule, homework, attendance, settings } = useDashData();
   const [period, setPeriod] = useState<"today" | "week">(() => {
     if (typeof window === "undefined") return "today";
     return (localStorage.getItem("home-overview-period") as "today" | "week") || "today";
