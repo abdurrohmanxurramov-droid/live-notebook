@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { currencyCodeSchema } from "@/lib/currency";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -240,7 +241,7 @@ const financeRowSchema = z
     owner_id: uuid.optional(),
     student_id: uuid,
     amount: z.number().finite().min(-120_000_000).max(120_000_000),
-    currency: z.enum(["RUB", "USD", "USDT", "EGP"]),
+    currency: currencyCodeSchema,
     is_paid: z.boolean().optional(),
     pay_date: isoDate.nullable().optional(),
     deleted_at: isoTimestamp.nullable().optional(),
@@ -301,7 +302,7 @@ const chatMessageRowSchema = z
 const userSettingsRowSchema = z
   .object({
     user_id: uuid.optional(),
-    default_currency: z.enum(["RUB", "USD", "USDT", "EGP"]).optional(),
+    default_currency: currencyCodeSchema.optional(),
     default_lesson_duration: z.number().int().min(5).max(600).optional(),
     default_lesson_price: z.number().finite().min(0).max(10_000_000).optional(),
     week_starts_on: z.number().int().min(0).max(6).optional(),
