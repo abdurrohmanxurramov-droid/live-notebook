@@ -48,14 +48,40 @@ export const updateSettings = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => userSettingsSchema.partial().parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: updated, error } = await supabase
+    const { data: existing, error: readError } = await supabase
       .from("user_settings")
-      .upsert({ user_id: userId, ...DEFAULTS, ...data }, { onConflict: "user_id" })
-      .select(SETTINGS_SELECT)
-      .single();
-    if (error) {
-      console.error("[settings-update]", error.code);
+      .select("user_id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (readError) {
+      console.error("[settings-update-read]", readError.code);
       throw new Error("Не удалось сохранить настройки.");
     }
-    return updated;
+
+    if (existing) {
+      // Частичное обновление: патчим только переданные поля, остальные не трогаем.
+      const { data: updated, error } = await supabase
+        .from("user_settings")
+        .update({ ...data, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .select(SETTINGS_SELECT)
+        .single();
+      if (error) {
+        console.error("[settings-update]", error.code);
+        throw new Error("Не удалось сохранить настройки.");
+      }
+      return updated;
+    }
+
+    // Строки нет — создаём её с дефолтами плюс патч.
+    const { data: created, error: insertError } = await supabase
+      .from("user_settings")
+      .insert({ user_id: userId, ...DEFAULTS, ...data })
+      .select(SETTINGS_SELECT)
+      .single();
+    if (insertError) {
+      console.error("[settings-insert]", insertError.code);
+      throw new Error("Не удалось сохранить настройки.");
+    }
+    return created;
   });

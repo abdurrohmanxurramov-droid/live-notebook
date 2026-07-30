@@ -43,7 +43,7 @@ import {
   BarChart3,
   FileText,
 } from "lucide-react";
-import { convert, describeUnconverted, sumConverted } from "@/lib/currency";
+import { convert, describeUnconverted, normalizeCurrency } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
@@ -117,21 +117,27 @@ function Home() {
     const now = new Date();
     const m = now.getMonth();
     const y = now.getFullYear();
-    let incomeRUB = 0;
+    let income = 0;
     let paid = 0;
     let unpaid = 0;
+    const unconverted: Record<string, number> = {};
     for (const f of finance) {
       const d = f.pay_date ? new Date(f.pay_date) : new Date(f.created_at);
       const inMonth = d.getMonth() === m && d.getFullYear() === y;
       if (inMonth && f.is_paid) {
         const res = convert(Number(f.amount), f.currency, dashCurrency, rateMap);
-        if (res.ok) incomeRUB += res.value;
+        if (res.ok) income += res.value;
+        else {
+          const code = normalizeCurrency(f.currency, f.currency);
+          const raw = Number(f.amount);
+          unconverted[code] = (unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+        }
       }
       if (f.is_paid) paid += 1;
       else unpaid += 1;
     }
-    return { incomeRUB: Math.round(incomeRUB), paid, unpaid };
-  }, [finance, rates, rateMap, dashCurrency]);
+    return { income, paid, unpaid, unconverted };
+  }, [finance, rateMap, dashCurrency]);
 
   const dateLabel = new Date().toLocaleDateString("ru-RU", {
     day: "numeric",
@@ -143,12 +149,28 @@ function Home() {
     {
       icon: Wallet,
       label: "Доход за месяц",
-      value: formatMoney(stats.incomeRUB, dashCurrency),
+      value: formatMoney(stats.income, dashCurrency),
+      note:
+        Object.keys(stats.unconverted).length > 0
+          ? `Курс недоступен, не включено: ${describeUnconverted(stats.unconverted)}`
+          : "",
       tone: "gold",
     },
-    { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy" },
-    { icon: CheckCircle2, label: "Оплатили", value: String(stats.paid), tone: "success" },
-    { icon: AlertTriangle, label: "Должники", value: String(stats.unpaid), tone: "danger" },
+    {
+      icon: GraduationCap,
+      label: "Ученики",
+      value: String(students.length),
+      note: "",
+      tone: "navy",
+    },
+    { icon: CheckCircle2, label: "Оплатили", value: String(stats.paid), note: "", tone: "success" },
+    {
+      icon: AlertTriangle,
+      label: "Должники",
+      value: String(stats.unpaid),
+      note: "",
+      tone: "danger",
+    },
   ] as const;
 
   const toneClasses: Record<string, string> = {
@@ -185,6 +207,9 @@ function Home() {
               <Icon className={`h-5 w-5 ${toneClasses[m.tone]}`} strokeWidth={2.2} />
               <div className="mt-3 num text-2xl text-foreground">{m.value}</div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">{m.label}</div>
+              {m.note && (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">{m.note}</div>
+              )}
             </Card>
           );
         })}
@@ -421,31 +446,51 @@ function PaymentsWidget() {
   const in7iso = in7.toISOString().slice(0, 10);
 
   const rateMap = useMemo(() => rateMapOf(rates), [rates]);
-  const overdueRows = useMemo(() => {
+  const { overdueRows, overdueTotals } = useMemo(() => {
     const map = new Map<
       string,
-      { amount: number; currency: string; days: number; firstId: string }
+      {
+        amount: number;
+        days: number;
+        firstId: string;
+        unconverted: Record<string, number>;
+      }
     >();
+    let total = 0;
+    let unconvertedCount = 0;
+    const unconvertedAll: Record<string, number> = {};
     for (const f of finance) {
       if (f.is_paid || !f.pay_date || f.pay_date >= today) continue;
       const days = Math.floor((Date.parse(today) - Date.parse(f.pay_date)) / 86400000);
-      const cur = map.get(f.student_id);
-      if (cur) {
-        cur.amount += Number(f.amount);
-        cur.days = Math.max(cur.days, days);
+      const cur = map.get(f.student_id) ?? {
+        amount: 0,
+        days: 0,
+        firstId: f.id,
+        unconverted: {} as Record<string, number>,
+      };
+      // Конвертируем КАЖДУЮ исходную запись до группировки по ученику.
+      const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
+      if (res.ok) {
+        cur.amount += res.value;
+        total += res.value;
       } else {
-        map.set(f.student_id, {
-          amount: Number(f.amount),
-          currency: f.currency,
-          days,
-          firstId: f.id,
-        });
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        const add = Number.isFinite(raw) ? raw : 0;
+        cur.unconverted[code] = (cur.unconverted[code] ?? 0) + add;
+        unconvertedAll[code] = (unconvertedAll[code] ?? 0) + add;
+        unconvertedCount += 1;
       }
+      cur.days = Math.max(cur.days, days);
+      map.set(f.student_id, cur);
     }
-    return Array.from(map.entries())
-      .map(([sid, v]) => ({ studentId: sid, ...v }))
-      .sort((a, b) => b.days - a.days);
-  }, [finance, today]);
+    return {
+      overdueRows: Array.from(map.entries())
+        .map(([sid, v]) => ({ studentId: sid, ...v }))
+        .sort((a, b) => b.days - a.days),
+      overdueTotals: { total, unconvertedCount, unconverted: unconvertedAll },
+    };
+  }, [finance, today, rateMap, displayCurrency]);
 
   const upcomingRows = useMemo(() => {
     return finance
@@ -453,11 +498,6 @@ function PaymentsWidget() {
       .sort((a, b) => (a.pay_date ?? "").localeCompare(b.pay_date ?? ""));
   }, [finance, today, in7iso]);
 
-  const overdueTotals = sumConverted(
-    overdueRows.map((r) => ({ amount: r.amount, currency: r.currency })),
-    displayCurrency,
-    rateMap,
-  );
 
   const markPaid = useMut(
     async (id: string) => {
@@ -516,8 +556,13 @@ function PaymentsWidget() {
                       {st.name}
                     </div>
                     <div className="text-[11px] text-destructive">
-                      {formatMoney(r.amount, r.currency)} · {r.days} дн просрочки
+                      {formatMoney(r.amount, displayCurrency)}
+                      {Object.keys(r.unconverted).length > 0
+                        ? ` + ${describeUnconverted(r.unconverted)} (курс недоступен)`
+                        : ""}{" "}
+                      · {r.days} дн просрочки
                     </div>
+
                   </div>
                   <Button
                     variant="outline"

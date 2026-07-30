@@ -153,8 +153,20 @@ export function RatesCard() {
     setLoading(true);
     try {
       const res = await fetch("https://open.er-api.com/v6/latest/USD");
-      const j = await res.json();
-      const map = buildRateMap(j?.rates);
+      if (!res.ok) throw new Error("Сервис курсов недоступен");
+      const j: unknown = await res.json();
+      const payload = (j ?? {}) as {
+        result?: unknown;
+        base_code?: unknown;
+        rates?: unknown;
+      };
+      const ratesRaw = payload.rates;
+      const isPlainRates =
+        typeof ratesRaw === "object" && ratesRaw !== null && !Array.isArray(ratesRaw);
+      if (payload.result !== "success" || payload.base_code !== "USD" || !isPlainRates) {
+        throw new Error("Некорректный ответ сервиса курсов");
+      }
+      const map = buildRateMap(ratesRaw);
       if (Object.keys(map).length <= 2) throw new Error("Нет данных курса");
       setFetchedMap(map);
       if (map.RUB) setUsdRub(String(Math.round(map.RUB * 100) / 100));

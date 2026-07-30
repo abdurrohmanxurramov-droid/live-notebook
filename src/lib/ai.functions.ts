@@ -572,13 +572,23 @@ async function execTool(
     }
     case "add_finance": {
       const v = addFinanceSchema.parse(args);
+      let currency = v.currency;
+      if (!currency) {
+        const { data: settingsRow } = await supabase
+          .from("user_settings")
+          .select("default_currency")
+          .eq("user_id", userId)
+          .maybeSingle();
+        // RUB — только если настроек реально нет.
+        currency = settingsRow?.default_currency ?? "RUB";
+      }
       const { data, error } = await supabase
         .from("finance")
         .insert({
           owner_id: userId,
           student_id: v.student_id,
           amount: v.amount,
-          currency: v.currency ?? "RUB",
+          currency,
           is_paid: v.is_paid ?? false,
           pay_date: v.pay_date ?? null,
         })

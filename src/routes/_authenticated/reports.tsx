@@ -19,7 +19,7 @@ import {
   type Attendance,
 } from "@/lib/db";
 import { listLessons } from "@/lib/lessons.functions";
-import { convert, sumConverted } from "@/lib/currency";
+import { convert, describeUnconverted, normalizeCurrency, sumConverted } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 import { FileText, Printer, User2, CalendarCheck, Wallet, ArrowLeft } from "lucide-react";
 
@@ -198,20 +198,22 @@ function StudentCard({
   const { data: rates } = useRates();
   const currency = useDefaultCurrency();
   const rateMap = rateMapOf(rates);
-  const paid = sumConverted(
+  const paidRes = sumConverted(
     finance
       .filter((f) => f.is_paid)
       .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
     currency,
     rateMap,
-  ).total;
-  const owed = sumConverted(
+  );
+  const owedRes = sumConverted(
     finance
       .filter((f) => !f.is_paid)
       .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
     currency,
     rateMap,
-  ).total;
+  );
+  const paid = paidRes.total;
+  const owed = owedRes.total;
   const doneHw = homework.filter((h) => h.status === "done").length;
   const totalHw = homework.length;
   const rate = totalHw ? Math.round((doneHw / totalHw) * 100) : 0;
@@ -238,11 +240,25 @@ function StudentCard({
           </tr>
           <tr>
             <th className="text-left font-normal text-muted-foreground">Всего оплачено</th>
-            <td className="text-right num font-semibold">{formatMoney(paid, currency)}</td>
+            <td className="text-right num font-semibold">
+              {formatMoney(paid, currency)}
+              {paidRes.unconvertedCount > 0 && (
+                <div className="text-[10px] font-normal text-muted-foreground">
+                  Курс недоступен, не включено: {describeUnconverted(paidRes.unconverted)}
+                </div>
+              )}
+            </td>
           </tr>
           <tr>
             <th className="text-left font-normal text-muted-foreground">Задолженность</th>
-            <td className="text-right num font-semibold">{formatMoney(owed, currency)}</td>
+            <td className="text-right num font-semibold">
+              {formatMoney(owed, currency)}
+              {owedRes.unconvertedCount > 0 && (
+                <div className="text-[10px] font-normal text-muted-foreground">
+                  Курс недоступен, не включено: {describeUnconverted(owedRes.unconverted)}
+                </div>
+              )}
+            </td>
           </tr>
           <tr>
             <th className="text-left font-normal text-muted-foreground">Выполнение ДЗ</th>
@@ -399,13 +415,21 @@ function FinanceReport() {
   const rateMap = useMemo(() => rateMapOf(rates), [rates]);
 
   const byStudent = useMemo(() => {
-    const m = new Map<string, { paid: number; pending: number; currency: string }>();
+    const m = new Map<
+      string,
+      { paid: number; pending: number; unconverted: Record<string, number> }
+    >();
     for (const f of inRange) {
-      const cur = m.get(f.student_id) ?? { paid: 0, pending: 0, currency };
+      const cur = m.get(f.student_id) ?? { paid: 0, pending: 0, unconverted: {} };
       const res = convert(Number(f.amount), f.currency, currency, rateMap);
-      if (!res.ok) continue;
-      if (f.is_paid) cur.paid += res.value;
-      else cur.pending += res.value;
+      if (res.ok) {
+        if (f.is_paid) cur.paid += res.value;
+        else cur.pending += res.value;
+      } else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        cur.unconverted[code] = (cur.unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
       m.set(f.student_id, cur);
     }
     return m;
@@ -434,17 +458,28 @@ function FinanceReport() {
   const totalPending = totals.pending.total;
 
   const byMonth = useMemo(() => {
-    const m = new Map<string, { paid: number; pending: number }>();
+    const m = new Map<
+      string,
+      { paid: number; pending: number; unconverted: Record<string, number> }
+    >();
     for (const f of inRange) {
       const d = f.pay_date ?? f.created_at.slice(0, 10);
       const key = d.slice(0, 7);
-      const cur = m.get(key) ?? { paid: 0, pending: 0 };
-      if (f.is_paid) cur.paid += Number(f.amount);
-      else cur.pending += Number(f.amount);
+      const cur = m.get(key) ?? { paid: 0, pending: 0, unconverted: {} };
+      // Конвертируем каждую запись до суммирования; несконвертированные не теряем.
+      const res = convert(Number(f.amount), f.currency, currency, rateMap);
+      if (res.ok) {
+        if (f.is_paid) cur.paid += res.value;
+        else cur.pending += res.value;
+      } else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        cur.unconverted[code] = (cur.unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
       m.set(key, cur);
     }
     return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
-  }, [inRange]);
+  }, [inRange, rateMap, currency]);
 
   return (
     <>
@@ -466,12 +501,24 @@ function FinanceReport() {
           <tbody>
             <tr>
               <th className="text-left font-normal text-muted-foreground">Всего получено</th>
-              <td className="text-right num font-semibold">{formatMoney(totalPaid, currency)}</td>
+              <td className="text-right num font-semibold">
+                {formatMoney(totalPaid, currency)}
+                {totals.paid.unconvertedCount > 0 && (
+                  <div className="text-[10px] font-normal text-muted-foreground">
+                    Курс недоступен, не включено: {describeUnconverted(totals.paid.unconverted)}
+                  </div>
+                )}
+              </td>
             </tr>
             <tr>
               <th className="text-left font-normal text-muted-foreground">Ожидается</th>
               <td className="text-right num font-semibold">
                 {formatMoney(totalPending, currency)}
+                {totals.pending.unconvertedCount > 0 && (
+                  <div className="text-[10px] font-normal text-muted-foreground">
+                    Курс недоступен, не включено: {describeUnconverted(totals.pending.unconverted)}
+                  </div>
+                )}
               </td>
             </tr>
           </tbody>
@@ -500,9 +547,16 @@ function FinanceReport() {
                 const s = studentsById.get(sid);
                 return (
                   <tr key={sid}>
-                    <td>{s?.name ?? "—"}</td>
-                    <td className="text-right num">{formatMoney(v.paid, v.currency)}</td>
-                    <td className="text-right num">{formatMoney(v.pending, v.currency)}</td>
+                    <td>
+                      {s?.name ?? "—"}
+                      {Object.keys(v.unconverted).length > 0 && (
+                        <div className="text-[10px] text-muted-foreground">
+                          Курс недоступен, не включено: {describeUnconverted(v.unconverted)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="text-right num">{formatMoney(v.paid, currency)}</td>
+                    <td className="text-right num">{formatMoney(v.pending, currency)}</td>
                   </tr>
                 );
               })
@@ -531,7 +585,14 @@ function FinanceReport() {
             ) : (
               byMonth.map(([m, v]) => (
                 <tr key={m}>
-                  <td className="num">{m}</td>
+                  <td className="num">
+                    {m}
+                    {Object.keys(v.unconverted).length > 0 && (
+                      <div className="text-[10px] text-muted-foreground">
+                        Курс недоступен, не включено: {describeUnconverted(v.unconverted)}
+                      </div>
+                    )}
+                  </td>
                   <td className="text-right num">{formatMoney(v.paid, currency)}</td>
                   <td className="text-right num">{formatMoney(v.pending, currency)}</td>
                 </tr>
