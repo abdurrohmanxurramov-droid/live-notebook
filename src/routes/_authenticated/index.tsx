@@ -43,7 +43,7 @@ import {
   BarChart3,
   FileText,
 } from "lucide-react";
-import { convert } from "@/lib/currency";
+import { convert, describeUnconverted, sumConverted } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
@@ -407,6 +407,8 @@ function pluralDays(n: number) {
 function PaymentsWidget() {
   const { data: students = [] } = useStudents();
   const { data: finance = [] } = useFinance();
+  const { data: rates } = useRates();
+  const displayCurrency = useDefaultCurrency();
   const studentsById = useMemo(() => {
     const m = new Map<string, (typeof students)[number]>();
     students.forEach((s) => m.set(s.id, s));
@@ -489,6 +491,11 @@ function PaymentsWidget() {
                 ? "—"
                 : formatMoney(overdueTotals.total, displayCurrency)}
             </div>
+            {overdueTotals.unconvertedCount > 0 && (
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Без курса: {describeUnconverted(overdueTotals.unconverted)}
+              </div>
+            )}
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
             <AlertCircle className="h-5 w-5" />
