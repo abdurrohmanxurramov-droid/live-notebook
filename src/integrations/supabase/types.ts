@@ -518,7 +518,10 @@ export type Database = {
         Args: { p_hook_name: string; p_window_key: string }
         Returns: boolean
       }
-      consume_app_rate_limit: { Args: { p_scope: string }; Returns: boolean }
+      consume_app_rate_limit: {
+        Args: { p_scope: string; p_user_id: string }
+        Returns: boolean
+      }
       get_hook_secret: { Args: never; Returns: string }
       set_lesson_status_with_attendance: {
         Args: {
