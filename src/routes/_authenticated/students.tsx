@@ -905,6 +905,19 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
                 placeholder="+7 ..."
               />
             </Field>
+            <Field
+              label={`Цена урока, ${student?.lesson_currency ?? defaultCurrency} (пусто — из настроек)`}
+            >
+              <Input
+                type="number"
+                min={0}
+                step={50}
+                inputMode="decimal"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="Например, 1000"
+              />
+            </Field>
           </div>
 
           <div className="mt-8 flex gap-3 pb-2">
