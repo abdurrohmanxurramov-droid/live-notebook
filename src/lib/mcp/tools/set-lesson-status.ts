@@ -33,10 +33,14 @@ export default defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
 
     const supabase = userClient(ctx);
-    const { data: allowed, error: rateError } = await supabase.rpc("consume_app_rate_limit", {
-      p_scope: "mcp_write",
-    });
-    if (rateError || allowed !== true) {
+    const { data: authData } = await supabase.auth.getUser();
+    const callerId = authData.user?.id;
+    if (!callerId)
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+
+    const { checkRateLimit } = await import("@/lib/rate-limit");
+    const allowed = await checkRateLimit(callerId, "mcp_write").catch(() => false);
+    if (!allowed) {
       return {
         content: [{ type: "text", text: "Too many requests. Try again later." }],
         isError: true,

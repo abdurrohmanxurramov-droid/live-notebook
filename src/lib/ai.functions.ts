@@ -666,7 +666,7 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
     const model = process.env.AI_MODEL?.trim() || "gpt-4o-mini";
 
     const { supabase, userId } = context;
-    await enforceRateLimit(supabase, "ai_chat");
+    await enforceRateLimit(userId, "ai_chat");
 
     // 1. Сохраняем сообщение пользователя
     await supabase.from("chat_messages").insert({

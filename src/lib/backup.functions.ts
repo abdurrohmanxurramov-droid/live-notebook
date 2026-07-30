@@ -105,8 +105,8 @@ async function selectBackupRows(
 export const exportBackup = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    await enforceRateLimit(supabase, "backup_export");
+    const { supabase, userId } = context;
+    await enforceRateLimit(userId, "backup_export");
     const tables: Record<string, BackupRow[]> = {};
     const byteBudget: ByteBudget = { used: 0 };
     for (const t of TABLES) {
@@ -154,8 +154,8 @@ function rowsToCsv(rows: Record<string, unknown>[]): string {
 export const exportCsv = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase } = context;
-    await enforceRateLimit(supabase, "backup_export");
+    const { supabase, userId } = context;
+    await enforceRateLimit(userId, "backup_export");
     const out: Record<string, string> = {};
     const byteBudget: ByteBudget = { used: 0 };
     for (const t of CSV_TABLES) {
@@ -370,7 +370,7 @@ export const importBackup = createServerFn({ method: "POST" })
   .inputValidator(validateImport)
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await enforceRateLimit(supabase, "backup_import");
+    await enforceRateLimit(userId, "backup_import");
     if (data.json.version !== BACKUP_VERSION) {
       throw new Error(`Несовместимая версия бэкапа: ${data.json.version}`);
     }
