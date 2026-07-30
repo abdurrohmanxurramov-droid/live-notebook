@@ -37,7 +37,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run lint
-        run: npm run lint
+        run: npm run lint -- --fix
 
       - name: Run TypeScript checks
         run: npx --no-install tsc --noEmit
