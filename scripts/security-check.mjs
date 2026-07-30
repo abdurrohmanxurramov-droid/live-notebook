@@ -20,7 +20,9 @@ assert.match(ci, /bun-version: 1\.3\.14/);
 assert.match(ci, /bun install --frozen-lockfile/);
 assert.match(ci, /supabase\/setup-cli@v3/);
 
-const migration = read("supabase/migrations/20260730120000_security_hardening_phase1.sql");
+const migration = read(
+  "supabase/migrations/20260730135521_144ae4f8-44d5-499e-89b1-c4b8fe3bb6dd.sql",
+);
 const cronInspectMigration = read(
   "supabase/migrations/20260617052120_e01158fc-1548-4eee-bbf5-c4a0684b45e2.sql",
 );
