@@ -462,7 +462,7 @@ function AnalyticsPage() {
             <>
               <SectionTitle>Топ учеников по доходу</SectionTitle>
               <div className="space-y-2">
-                {topStudents.map(({ s, rub }, i) => {
+                {topStudents.map(({ s, rub, unconverted }, i) => {
                   const max = topStudents[0].rub || 1;
                   const pct = Math.round((rub / max) * 100);
                   return (
