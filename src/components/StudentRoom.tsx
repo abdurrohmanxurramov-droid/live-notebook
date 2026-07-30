@@ -210,7 +210,7 @@ export function StudentRoom({ id }: { id: string }) {
           active={tab === "att"}
           onClick={() => setTab("att")}
           icon={<CalendarCheck className="h-5 w-5 shrink-0" />}
-          label="Посещения"
+          label="Явка"
         />
         <TabBtn
           active={tab === "hw"}
