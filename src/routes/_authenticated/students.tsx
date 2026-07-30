@@ -753,7 +753,12 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     setName(student.name);
     setSubject(student.subject ?? "");
     setPhone(student.phone ?? "");
-    setPrice(student.lesson_price == null ? "" : String(student.lesson_price));
+    setPkg(
+      student.lesson_price == null
+        ? ""
+        : String(Math.round(student.lesson_price * PACKAGE_SIZE * 100) / 100),
+    );
+    setCurrency(normalizeCurrency(student.lesson_currency ?? defaultCurrency, defaultCurrency));
     setCustomDays(String(student.days_per_week));
 
     (async () => {
