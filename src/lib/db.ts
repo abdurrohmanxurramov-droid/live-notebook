@@ -171,12 +171,14 @@ export function useHomework() {
 }
 
 export function useRates() {
+  const cols =
+    "id, usd_to_rub, usdt_to_egp, usd_to_egp, base_currency, rates_map, rates_fetched_at, updated_at";
   return useQuery({
     queryKey: ["rates"],
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("rates")
-        .select("id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at")
+        .select(cols)
         .order("updated_at", { ascending: false })
         .limit(1);
       if (error) throw error;
@@ -184,15 +186,16 @@ export function useRates() {
         const { data: inserted, error: insErr } = await (await sb())
           .from("rates")
           .insert({ usd_to_rub: 90, usdt_to_egp: 50, usd_to_egp: 50 })
-          .select("id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at")
+          .select(cols)
           .single();
         if (insErr) throw insErr;
-        return inserted as Rates;
+        return inserted as unknown as Rates;
       }
-      return data[0] as Rates;
+      return data[0] as unknown as Rates;
     },
   });
 }
+
 
 export function useInvalidate() {
   const qc = useQueryClient();
