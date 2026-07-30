@@ -410,6 +410,8 @@ export type Database = {
           days_per_week: number
           deleted_at: string | null
           id: string
+          lesson_currency: string | null
+          lesson_price: number | null
           name: string
           owner_id: string
           phone: string | null
@@ -421,6 +423,8 @@ export type Database = {
           days_per_week?: number
           deleted_at?: string | null
           id?: string
+          lesson_currency?: string | null
+          lesson_price?: number | null
           name: string
           owner_id: string
           phone?: string | null
@@ -432,6 +436,8 @@ export type Database = {
           days_per_week?: number
           deleted_at?: string | null
           id?: string
+          lesson_currency?: string | null
+          lesson_price?: number | null
           name?: string
           owner_id?: string
           phone?: string | null
