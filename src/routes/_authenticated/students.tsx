@@ -709,11 +709,13 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [phone, setPhone] = useState("");
+  const [price, setPrice] = useState("");
   const [pattern, setPattern] = useState<Pattern>("custom");
   const [customDays, setCustomDays] = useState("2");
   const [time, setTime] = useState("16:00");
   const [duration, setDuration] = useState("60");
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const defaultCurrency = useDefaultCurrency();
   const regenFn = useServerFn(regenerateLessons);
 
   // Заполнить данные при открытии
@@ -722,6 +724,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     setName(student.name);
     setSubject(student.subject ?? "");
     setPhone(student.phone ?? "");
+    setPrice(student.lesson_price == null ? "" : String(student.lesson_price));
     setCustomDays(String(student.days_per_week));
 
     (async () => {
