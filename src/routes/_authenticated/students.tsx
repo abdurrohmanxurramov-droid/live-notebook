@@ -733,6 +733,105 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+const PACKAGE_SIZE = 12;
+const PACKAGE_PRESETS = [2500, 4000, 5000];
+const PKG_MEMORY_KEY = "ln:last-package-price";
+
+function perLessonFromPackage(pkg: string): number | null {
+  if (pkg.trim() === "") return null;
+  const total = Math.max(0, Math.min(10_000_000, Number(pkg) || 0));
+  return Math.round((total / PACKAGE_SIZE) * 100) / 100;
+}
+
+function rememberPackagePrice(pkg: string, currency: string) {
+  try {
+    localStorage.setItem(PKG_MEMORY_KEY, JSON.stringify({ pkg, currency }));
+  } catch {
+    /* ignore */
+  }
+}
+
+function readPackageMemory(): { pkg: string; currency: string } | null {
+  try {
+    const raw = localStorage.getItem(PKG_MEMORY_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { pkg?: string; currency?: string };
+    if (!parsed?.pkg) return null;
+    return { pkg: String(parsed.pkg), currency: normalizeCurrency(parsed.currency) };
+  } catch {
+    return null;
+  }
+}
+
+function PackagePriceFields({
+  pkg,
+  setPkg,
+  currency,
+  setCurrency,
+}: {
+  pkg: string;
+  setPkg: (v: string) => void;
+  currency: string;
+  setCurrency: (v: string) => void;
+}) {
+  const perLesson = perLessonFromPackage(pkg);
+  return (
+    <div className="space-y-2">
+      <Field label={`Цена пакета из ${PACKAGE_SIZE} уроков`}>
+        <div className="grid grid-cols-[1fr_auto] gap-2">
+          <Input
+            type="number"
+            min={0}
+            step={100}
+            inputMode="decimal"
+            value={pkg}
+            onChange={(e) => setPkg(e.target.value)}
+            placeholder="Например, 4000"
+          />
+          <Select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="w-28"
+            aria-label="Валюта"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </Field>
+      <div className="flex flex-wrap gap-2">
+        {PACKAGE_PRESETS.map((preset) => {
+          const active = Number(pkg) === preset;
+          return (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setPkg(String(preset))}
+              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all active:scale-95 ${
+                active
+                  ? "border-accent/60 bg-accent/15 text-foreground"
+                  : "border-white/60 bg-white/50 text-muted-foreground dark:border-white/10 dark:bg-white/5"
+              }`}
+            >
+              {preset.toLocaleString("ru-RU")} {currency}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[11px] text-muted-foreground">
+        {perLesson === null
+          ? "Пусто — цена берётся из настроек"
+          : `≈ ${formatMoney(perLesson, currency)} за урок`}
+      </p>
+    </div>
+  );
+}
+
+
+
 function EditStudentSheet({ student, onClose }: { student: Student | null; onClose: () => void }) {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
