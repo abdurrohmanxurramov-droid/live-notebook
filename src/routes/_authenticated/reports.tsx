@@ -8,6 +8,8 @@ import {
   useFinance,
   useHomework,
   useAttendance,
+  useRates,
+  rateMapOf,
   formatMoney,
   STUDENT_STATUS_META,
   groupByStudentId,
@@ -17,6 +19,8 @@ import {
   type Attendance,
 } from "@/lib/db";
 import { listLessons } from "@/lib/lessons.functions";
+import { convert, sumConverted } from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 import { FileText, Printer, User2, CalendarCheck, Wallet, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/reports")({ component: ReportsPage });
