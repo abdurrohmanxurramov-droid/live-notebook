@@ -645,7 +645,23 @@ function Overview() {
 
   const todayDow = todayDowMon0();
   const price = Number(settings?.default_lesson_price ?? 0);
-  const currency = settings?.default_currency ?? "RUB";
+  const currency = normalizeCurrency(settings?.default_currency ?? "RUB", "RUB");
+  const { data: rates } = useRates();
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+
+  // Цена урока: персональная цена ученика (с конвертацией), иначе цена из настроек.
+  const priceOf = useCallback(
+    (studentId: string) => {
+      const student = students.find((s) => s.id === studentId);
+      const own = student?.lesson_price;
+      if (own === null || own === undefined || !Number.isFinite(Number(own))) return price;
+      const from = normalizeCurrency(student?.lesson_currency ?? currency, currency);
+      if (from === currency) return Number(own);
+      const res = convert(Number(own), from, currency, rateMap);
+      return res.ok ? res.value : Number(own);
+    },
+    [students, price, currency, rateMap],
+  );
 
   const todayLessons = useMemo(
     () =>
@@ -655,7 +671,10 @@ function Overview() {
     [schedule, todayDow],
   );
   const timesLine = todayLessons.map((s) => s.start_time.slice(0, 5)).join(" · ");
-  const expectedToday = todayLessons.length * price;
+  const expectedToday = useMemo(
+    () => todayLessons.reduce((sum, s) => sum + priceOf(s.student_id), 0),
+    [todayLessons, priceOf],
+  );
   const studentsUnpaid = useMemo(() => {
     const ids = new Set<string>();
     for (const f of finance) if (!f.is_paid) ids.add(f.student_id);
@@ -667,7 +686,10 @@ function Overview() {
   );
 
   const weekLessons = schedule.length;
-  const expectedWeek = weekLessons * price;
+  const expectedWeek = useMemo(
+    () => schedule.reduce((sum, s) => sum + priceOf(s.student_id), 0),
+    [schedule, priceOf],
+  );
   const { mondayIso, sundayIso } = useMemo(() => {
     const now = new Date();
     const dow = todayDowMon0();
