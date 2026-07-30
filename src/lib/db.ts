@@ -79,8 +79,12 @@ export type Rates = {
   usd_to_rub: number;
   usdt_to_egp: number;
   usd_to_egp: number;
+  base_currency: string;
+  rates_map: Record<string, number> | null;
+  rates_fetched_at: string | null;
   updated_at: string;
 };
+
 
 export function useStudents() {
   return useQuery({
