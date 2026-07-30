@@ -22,6 +22,7 @@ import {
 } from "@/lib/db";
 import {
   CURRENCIES,
+  buildRateMap,
   convert,
   describeUnconverted,
   formatMoney,
