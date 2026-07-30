@@ -426,3 +426,59 @@ SELECT extensions.pass('RLS, ownership, RPC, finance, and FK isolation checks pa
 SELECT * FROM extensions.finish();
 
 ROLLBACK;
+
+-- Multi-currency domain: valid ISO 4217 codes accepted, junk rejected.
+DO $test$
+DECLARE
+  rejected boolean;
+  code text;
+BEGIN
+  FOREACH code IN ARRAY ARRAY['EUR', 'TRY', 'AED', 'USDT'] LOOP
+    INSERT INTO public.finance (owner_id, student_id, amount, currency)
+    VALUES (
+      '10000000-0000-0000-0000-000000000001',
+      '20000000-0000-0000-0000-000000000001',
+      100,
+      code
+    );
+  END LOOP;
+
+  FOREACH code IN ARRAY ARRAY['eur', 'XXXXX', 'EURO', 'E1R', ''] LOOP
+    rejected := false;
+    BEGIN
+      INSERT INTO public.finance (owner_id, student_id, amount, currency)
+      VALUES (
+        '10000000-0000-0000-0000-000000000001',
+        '20000000-0000-0000-0000-000000000001',
+        100,
+        code
+      );
+    EXCEPTION
+      WHEN check_violation THEN
+        rejected := true;
+    END;
+    IF NOT rejected THEN
+      RAISE EXCEPTION 'Invalid currency code % was accepted', code;
+    END IF;
+  END LOOP;
+END;
+$test$;
+
+-- user_settings keeps rejecting invalid non-currency values.
+DO $test$
+DECLARE
+  rejected boolean := false;
+BEGIN
+  BEGIN
+    UPDATE public.user_settings
+    SET default_lesson_duration = 1
+    WHERE user_id = '10000000-0000-0000-0000-000000000001';
+  EXCEPTION
+    WHEN check_violation THEN
+      rejected := true;
+  END;
+  IF NOT rejected THEN
+    RAISE EXCEPTION 'Invalid default_lesson_duration was accepted';
+  END IF;
+END;
+$test$;
