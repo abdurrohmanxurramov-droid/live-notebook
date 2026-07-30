@@ -116,38 +116,60 @@ function FinancePage() {
   );
 }
 
+type RateRow = { code: string; value: string };
+
 export function RatesCard() {
   const { data: rates } = useRates();
   const displayCurrency = useDefaultCurrency();
-  const [usdRub, setUsdRub] = useState("");
-  const [usdtEgp, setUsdtEgp] = useState("");
-  const [usdEgp, setUsdEgp] = useState("");
   const [fetchedMap, setFetchedMap] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(false);
 
   const currentMap = useMemo(() => rateMapOf(rates), [rates]);
 
+  // Список редактируемых пар: 1 USD = X <валюта>. Любые валюты, сколько угодно.
+  const [rows, setRows] = useState<RateRow[] | null>(null);
+  const effectiveRows: RateRow[] =
+    rows ??
+    Object.entries(currentMap)
+      .filter(([code]) => code !== "USD" && code !== "USDT")
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([code, value]) => ({ code, value: String(Math.round(value * 10000) / 10000) }));
+
+  const setRow = (i: number, patch: Partial<RateRow>) =>
+    setRows(effectiveRows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  const removeRow = (i: number) => setRows(effectiveRows.filter((_, idx) => idx !== i));
+  const addRow = () => {
+    const used = new Set(effectiveRows.map((r) => r.code));
+    const next = CURRENCIES.find((c) => !used.has(c.code) && c.code !== "USD" && c.code !== "USDT");
+    setRows([...effectiveRows, { code: next?.code ?? "EUR", value: "" }]);
+  };
+
   const save = useMut(async () => {
     if (!rates) return;
-    const nextRub = Number(usdRub || rates.usd_to_rub);
-    const nextUsdtEgp = Number(usdtEgp || rates.usdt_to_egp);
-    const nextUsdEgp = Number(usdEgp || rates.usd_to_egp);
+    const manual: Record<string, number> = {};
+    for (const r of effectiveRows) {
+      const code = normalizeCurrency(r.code, "");
+      const num = Number(r.value);
+      if (!code || !Number.isFinite(num) || num <= 0) continue;
+      manual[code] = num;
+    }
     const nextMap: Record<string, number> = {
       ...currentMap,
       ...(fetchedMap ?? {}),
-      RUB: nextRub,
-      EGP: nextUsdEgp,
+      ...manual,
       USD: 1,
       USDT: 1,
     };
+    const nextRub = nextMap.RUB ?? Number(rates.usd_to_rub);
+    const nextEgp = nextMap.EGP ?? Number(rates.usd_to_egp);
     const { error } = await (
       await sb()
     )
       .from("rates")
       .update({
         usd_to_rub: nextRub,
-        usdt_to_egp: nextUsdtEgp,
-        usd_to_egp: nextUsdEgp,
+        usdt_to_egp: nextEgp,
+        usd_to_egp: nextEgp,
         base_currency: "USD",
         rates_map: nextMap,
         rates_fetched_at: fetchedMap ? new Date().toISOString() : rates.rates_fetched_at,
@@ -155,6 +177,8 @@ export function RatesCard() {
       })
       .eq("id", rates.id);
     if (error) throw error;
+    setRows(null);
+    setFetchedMap(null);
   }, ["rates"]);
 
   async function fetchLive() {
@@ -177,11 +201,12 @@ export function RatesCard() {
       const map = buildRateMap(ratesRaw);
       if (Object.keys(map).length <= 2) throw new Error("Нет данных курса");
       setFetchedMap(map);
-      if (map.RUB) setUsdRub(String(Math.round(map.RUB * 100) / 100));
-      if (map.EGP) {
-        setUsdEgp(String(Math.round(map.EGP * 100) / 100));
-        if (!usdtEgp) setUsdtEgp(String(Math.round(map.EGP * 100) / 100));
-      }
+      setRows(
+        effectiveRows.map((r) => {
+          const fresh = map[normalizeCurrency(r.code, "")];
+          return fresh ? { ...r, value: String(Math.round(fresh * 10000) / 10000) } : r;
+        }),
+      );
       toast.success(`Курсы обновлены (${Object.keys(map).length} валют)`);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Не удалось получить курс"));
@@ -204,26 +229,49 @@ export function RatesCard() {
       <div className="mb-3 text-xs text-muted-foreground">
         База USD · доступно курсов: {knownCount} · валюта отображения: {displayCurrency}
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <RateInput
-          label="1 USD = ₽"
-          value={usdRub}
-          onChange={setUsdRub}
-          placeholder={String(rates?.usd_to_rub ?? "")}
-        />
-        <RateInput
-          label="1 USDT = £"
-          value={usdtEgp}
-          onChange={setUsdtEgp}
-          placeholder={String(rates?.usdt_to_egp ?? "")}
-        />
-        <RateInput
-          label="1 USD = £"
-          value={usdEgp}
-          onChange={setUsdEgp}
-          placeholder={String(rates?.usd_to_egp ?? "")}
-        />
+
+      <div className="space-y-2">
+        {effectiveRows.length === 0 && (
+          <div className="text-xs text-muted-foreground">
+            Курсов пока нет — нажмите «Обновить» или добавьте пару вручную.
+          </div>
+        )}
+        {effectiveRows.map((row, i) => (
+          <div key={`${row.code}-${i}`} className="grid grid-cols-[auto_6.5rem_1fr_auto] items-center gap-2">
+            <span className="text-xs text-muted-foreground">1 USD =</span>
+            <Select
+              value={row.code}
+              onChange={(e) => setRow(i, { code: e.target.value })}
+              aria-label="Валюта"
+            >
+              {CURRENCIES.filter((c) => c.code !== "USD").map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
+                </option>
+              ))}
+            </Select>
+            <Input
+              inputMode="decimal"
+              placeholder="Курс"
+              value={row.value}
+              onChange={(e) => setRow(i, { value: e.target.value })}
+            />
+            <button
+              type="button"
+              onClick={() => removeRow(i)}
+              aria-label="Удалить курс"
+              className="rounded-lg p-2 text-muted-foreground transition-colors hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
       </div>
+
+      <Button variant="outline" className="mt-2 w-full" onClick={addRow}>
+        Добавить валюту
+      </Button>
+
       <Button
         variant="primary"
         className="mt-3 w-full"
