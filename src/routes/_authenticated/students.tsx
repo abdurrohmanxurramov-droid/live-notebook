@@ -430,7 +430,10 @@ function StudentsPage() {
                         <AlertCircle className="mr-0.5 inline h-3 w-3" />
                         Долг {overdue.days}д
                         {overdue.amount > 0
-                          ? ` · ${formatMoney(overdue.amount, displayCurrency)}${overdue.hasUnknownRate ? "+" : ""}`
+                          ? ` · ${formatMoney(overdue.amount, displayCurrency)}`
+                          : ""}
+                        {Object.keys(overdue.unconverted).length > 0
+                          ? ` · курс недоступен: ${describeUnconverted(overdue.unconverted)}`
                           : ""}
                       </Badge>
                     ) : fin.length === 0 ? (
