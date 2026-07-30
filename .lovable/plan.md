@@ -12,6 +12,16 @@
 
 RLS/политики/гранты не меняются (таблица уже owner-scoped). После миграции обновляются `src/integrations/supabase/types.ts`.
 
+### 1.1 Обязательное снятие 4-валютных CHECK (иначе EUR/TRY/AED падают с check_violation)
+
+В уже применённой миграции `20260730135521` зашиты два ограничения. Та же additive-миграция их пересоздаёт:
+
+- `finance_currency_check`: `DROP CONSTRAINT` → `ADD CONSTRAINT ... CHECK (currency ~ '^[A-Z]{3,4}$') NOT VALID` → `VALIDATE`.
+- `user_settings_values_check`: `DROP` и пересоздание с тем же составом, где заменяется только валютная часть:
+  `default_currency ~ '^[A-Z]{3,4}$' AND default_lesson_duration BETWEEN 5 AND 600 AND default_lesson_price BETWEEN 0 AND 10000000 AND week_starts_on BETWEEN 0 AND 6 AND remind_before_min BETWEEN 0 AND 10000` — остальные проверки сохраняются без ослабления.
+
+Дополнительно `supabase/preflight/security_hardening_preflight.sql` (строки с `currency NOT IN ('RUB','USD','USDT','EGP')` и `default_currency NOT IN (...)`) и SQL/security-тесты переводятся на проверку формата кода вместо списка из 4 валют.
+
 ## 2. Новый модуль `src/lib/currency.ts`
 
 Единая точка валютной логики:
@@ -19,7 +29,8 @@ RLS/политики/гранты не меняются (таблица уже o
 - `CURRENCIES` — список ISO 4217 кодов с названиями (генерируется статически, ~160 позиций) + `USDT` как совместимая псевдо-валюта.
 - `currencyCodeSchema` — Zod: строка `/^[A-Z]{3,4}$/`, приведение к upper-case, проверка по списку. Никаких enum из 4 значений.
 - `buildRateMap(raw)` — принимает только конечные положительные числа, гарантирует `USD = 1` и `USDT = 1`.
-- `convert(amount, from, to, map)` — общая формула `amount / rate[from] * rate[to]`; если код отсутствует в карте — возврат исходной суммы и пометка «неконвертировано».
+- `convert(amount, from, to, map)` — возвращает `{ ok: true, value }` или `{ ok: false, reason: "missing_rate" }`. Формула `amount / rate[from] * rate[to]`. Если `from === to` — сумма возвращается как есть (`ok: true`). При отсутствующем курсе исходная сумма НЕ выдаётся как успешная конвертация.
+- `sumConverted(rows, target, map)` — складывает только успешно сконвертированные записи и отдельно возвращает список несконвертированных (сумма по исходным валютам) для показа в UI.
 - `formatMoney(amount, currency, locale)` — через `Intl.NumberFormat` со `style: "currency"`, с graceful fallback на `USDT`/неизвестный код (форматирование числа + код). Ручные тернарники символов (`₽ / $ / £`) удаляются.
 - `legacyMapFromRates(row)` — строит карту из legacy-колонок для старых записей.
 
@@ -38,15 +49,20 @@ RLS/политики/гранты не меняются (таблица уже o
 ## 4. Правки по файлам
 
 - `src/lib/db.ts` — тип `Finance.currency: string`; `Rates` расширяется `base_currency`/`rates_map`/`rates_fetched_at`; `convertToRUB/USDT/EGP` заменяются на `convert` (тонкие обёртки временно сохраняются, чтобы не ломать вызовы); `formatMoney` реэкспортируется из `currency.ts`.
-- `src/routes/_authenticated/finance.tsx` — select валют заполняется полным списком ISO; «Итого получено» считается конвертацией каждой записи в валюту по умолчанию, затем суммой; блок курсов пишет в `rates_map` и оставляет legacy-поля для совместимости.
+- `src/routes/_authenticated/finance.tsx` — select валют заполняется полным списком ISO, начальное значение формы = `settings.default_currency`; «Итого получено» считается конвертацией каждой записи в валюту по умолчанию, затем суммой; блок курсов пишет в `rates_map` и оставляет legacy-поля для совместимости.
 - `src/routes/_authenticated/analytics.tsx` — агрегаты по графику и топ-ученикам считаются через `convert` в валюту по умолчанию (сейчас жёстко RUB).
 - `src/routes/_authenticated/index.tsx` — доход за месяц, «ожидается сегодня/за неделю» и просроченные: конвертация каждой записи, потом сумма; вывод в валюте по умолчанию вместо `overdueRows[0].currency`.
 - `src/routes/_authenticated/reports.tsx` — убираются `finance[0]?.currency ?? "RUB"` и `inRange[0]?.currency`; строки сначала конвертируются, потом складываются; итог показывается в валюте по умолчанию.
-- `src/components/StudentRoom.tsx` — select валют из общего списка; удаляется тернарник символов; суммы форматируются через `formatMoney`.
+- `src/routes/_authenticated/students.tsx` — все денежные значения и суммы в списке учеников переводятся на `formatMoney`/`convert` с валютой по умолчанию (сейчас там валютная логика не учтена).
+- `src/components/StudentRoom.tsx` — select валют из общего списка, дефолт формы нового платежа = `settings.default_currency`; удаляется тернарник символов; суммы форматируются через `formatMoney`.
 - `src/components/settings/UserSettingsSection.tsx` — `default_currency` выбирается из полного списка ISO (select без изменения стилей).
 - `src/lib/schemas.ts` — `paymentSchema.currency` и `userSettingsSchema.default_currency` переходят на `currencyCodeSchema`.
 - `src/lib/backup.functions.ts` — валютные поля импорта на `currencyCodeSchema`; в схеме `rates` добавляются новые опциональные поля, legacy остаются обязательными как сейчас.
-- `src/lib/ai.functions.ts` — описание инструмента и Zod-валидация валюты через `currencyCodeSchema`; дефолт берётся из настроек пользователя, а не хардкод `"RUB"`.
+- `src/lib/ai.functions.ts` — описание инструмента и Zod-валидация валюты через `currencyCodeSchema`; дефолт берётся из настроек пользователя, а не хардкод `"RUB"` (аналогично `src/lib/lessons.functions.ts`, где уже есть fallback `?? "RUB"`).
+
+### UI при отсутствующем курсе
+
+Там, где часть записей не сконвертировалась, итог показывается по сконвертированной части плюс подпись «Курс недоступен» и отдельная сумма в исходной валюте. Молчаливое сложение разных валют исключено. Новые подписи — только текст, существующие кнопки и их стили не меняются.
 
 Не трогаются: PWA/offline, MCP, push, auth, секреты, дизайн кнопок.
 
@@ -58,7 +74,8 @@ RLS/политики/гранты не меняются (таблица уже o
 
 ## 6. Проверки
 
-- Unit-проверки `currency.ts`: `convert` симметрична и возвращает исходную сумму при `from === to`; отказ от некорректных курсов (0, отрицательные, NaN, строки); `formatMoney` для RUB/USD/EGP/USDT/JPY (нулевые знаки после запятой) и неизвестного кода.
-- Ручная проверка: добавление платежа в новой валюте (например, TRY), корректный пересчёт итогов на «Финансы», «Аналитика», «Отчёты», главной и в карточке ученика.
+- Unit-проверки `currency.ts`: `convert` возвращает сумму как есть при `from === to`, `{ ok: false }` при отсутствующем курсе, симметрична при round-trip; отказ от некорректных курсов (0, отрицательные, NaN, строки); `formatMoney` для RUB/USD/EGP/USDT/JPY (нулевые знаки) и неизвестного кода; `sumConverted` не складывает неконвертированные записи.
+- SQL/security-тесты и preflight обновлены: вставка EUR/TRY/AED проходит, мусорный код (`eur`, `XXXXX`) отклоняется, остальные проверки `user_settings_values_check` продолжают отклонять некорректные duration/price/week/remind.
+- Ручная проверка: добавление платежа в новой валюте (например, TRY), корректный пересчёт итогов на «Финансы», «Аналитика», «Отчёты», «Ученики», главной и в карточке ученика.
 - Проверка fallback: имитация недоступного API — берётся сохранённая карта, затем legacy.
 - `bunx vitest run` и типизация после регенерации типов Supabase.
