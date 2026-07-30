@@ -209,31 +209,26 @@ export function initials(name: string) {
     .join("");
 }
 
-export function formatMoney(amount: number, currency: string) {
-  const sym = currency === "RUB" ? "₽" : currency === "USD" ? "$" : "£";
-  return `${Math.round(amount).toLocaleString("ru-RU")} ${sym}`;
-}
+export { formatMoney };
 
+/** @deprecated используйте convert(amount, currency, target, rateMapOf(rates)) */
 export function convertToRUB(amount: number, currency: string, rates: Rates) {
-  if (currency === "RUB") return amount;
-  if (currency === "USD") return amount * rates.usd_to_rub;
-  if (currency === "EGP") return (amount / rates.usdt_to_egp) * rates.usd_to_rub;
-  return amount;
+  const res = convert(amount, currency, "RUB", rateMapOf(rates));
+  return res.ok ? res.value : 0;
 }
 
+/** @deprecated используйте convert(...) */
 export function convertToUSDT(amount: number, currency: string, rates: Rates) {
-  if (currency === "USD") return amount;
-  if (currency === "RUB") return amount / rates.usd_to_rub;
-  if (currency === "EGP") return amount / rates.usdt_to_egp;
-  return amount;
+  const res = convert(amount, currency, "USDT", rateMapOf(rates));
+  return res.ok ? res.value : 0;
 }
 
+/** @deprecated используйте convert(...) */
 export function convertToEGP(amount: number, currency: string, rates: Rates) {
-  if (currency === "EGP") return amount;
-  if (currency === "USD") return amount * rates.usdt_to_egp;
-  if (currency === "RUB") return (amount / rates.usd_to_rub) * rates.usdt_to_egp;
-  return amount;
+  const res = convert(amount, currency, "EGP", rateMapOf(rates));
+  return res.ok ? res.value : 0;
 }
+
 
 export function groupByStudentId<T extends { student_id: string }>(rows: readonly T[]) {
   const map = new Map<string, T[]>();
