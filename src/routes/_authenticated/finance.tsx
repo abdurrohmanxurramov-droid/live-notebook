@@ -222,7 +222,6 @@ export function RatesCard() {
   );
 }
 
-
 function RateInput({
   label,
   value,
@@ -356,7 +355,6 @@ function PaymentRow({ f, name }: { f: Finance; name: string }) {
       .eq("id", f.id);
     if (error) throw error;
   }, ["finance"]);
-
 
   return (
     <Card className="flex items-center gap-3 p-3">

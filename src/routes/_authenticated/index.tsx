@@ -487,9 +487,7 @@ function PaymentsWidget() {
               Просрочено всего
             </div>
             <div className="mt-1 num text-2xl text-destructive">
-              {overdueRows.length === 0
-                ? "—"
-                : formatMoney(overdueTotals.total, displayCurrency)}
+              {overdueRows.length === 0 ? "—" : formatMoney(overdueTotals.total, displayCurrency)}
             </div>
             {overdueTotals.unconvertedCount > 0 && (
               <div className="mt-1 text-[11px] text-muted-foreground">

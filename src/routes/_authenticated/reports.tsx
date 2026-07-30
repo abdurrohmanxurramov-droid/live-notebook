@@ -199,12 +199,16 @@ function StudentCard({
   const currency = useDefaultCurrency();
   const rateMap = rateMapOf(rates);
   const paid = sumConverted(
-    finance.filter((f) => f.is_paid).map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+    finance
+      .filter((f) => f.is_paid)
+      .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
     currency,
     rateMap,
   ).total;
   const owed = sumConverted(
-    finance.filter((f) => !f.is_paid).map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+    finance
+      .filter((f) => !f.is_paid)
+      .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
     currency,
     rateMap,
   ).total;
@@ -410,12 +414,16 @@ function FinanceReport() {
   const totals = useMemo(
     () => ({
       paid: sumConverted(
-        inRange.filter((f) => f.is_paid).map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+        inRange
+          .filter((f) => f.is_paid)
+          .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
         currency,
         rateMap,
       ),
       pending: sumConverted(
-        inRange.filter((f) => !f.is_paid).map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+        inRange
+          .filter((f) => !f.is_paid)
+          .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
         currency,
         rateMap,
       ),

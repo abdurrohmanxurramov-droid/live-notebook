@@ -293,11 +293,16 @@ export function formatMoney(amount: number, currency: string, locale = "ru-RU"):
 }
 
 /** Карта курсов, восстановленная из legacy-колонок таблицы rates. */
-export function legacyMapFromRates(row: {
-  usd_to_rub?: number | null;
-  usdt_to_egp?: number | null;
-  usd_to_egp?: number | null;
-} | null | undefined): RateMap {
+export function legacyMapFromRates(
+  row:
+    | {
+        usd_to_rub?: number | null;
+        usdt_to_egp?: number | null;
+        usd_to_egp?: number | null;
+      }
+    | null
+    | undefined,
+): RateMap {
   const map: RateMap = { USD: 1, USDT: 1 };
   const rub = Number(row?.usd_to_rub);
   if (Number.isFinite(rub) && rub > 0) map.RUB = rub;
@@ -307,12 +312,17 @@ export function legacyMapFromRates(row: {
 }
 
 /** Итоговая карта курсов: сохранённая карта → legacy-колонки → минимальный набор. */
-export function resolveRateMap(row: {
-  rates_map?: unknown;
-  usd_to_rub?: number | null;
-  usdt_to_egp?: number | null;
-  usd_to_egp?: number | null;
-} | null | undefined): RateMap {
+export function resolveRateMap(
+  row:
+    | {
+        rates_map?: unknown;
+        usd_to_rub?: number | null;
+        usdt_to_egp?: number | null;
+        usd_to_egp?: number | null;
+      }
+    | null
+    | undefined,
+): RateMap {
   const stored = buildRateMap(row?.rates_map);
   if (Object.keys(stored).length > 2) {
     // сохранённая карта содержит что-то помимо USD/USDT
