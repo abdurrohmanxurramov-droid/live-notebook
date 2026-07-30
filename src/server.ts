@@ -110,7 +110,14 @@ async function limitRequestBody(request: Request): Promise<Request | Response> {
     body.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return new Request(request, { body });
+  return new Request(request.url, {
+    method: request.method,
+    headers: request.headers,
+    body,
+    redirect: request.redirect,
+    referrer: request.referrer,
+    signal: request.signal,
+  });
 }
 
 function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boolean {
