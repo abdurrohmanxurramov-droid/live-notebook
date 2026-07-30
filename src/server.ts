@@ -85,6 +85,10 @@ async function limitRequestBody(request: Request): Promise<Request | Response> {
     return request;
   }
 
+  const url = request.url;
+  const method = request.method;
+  const headers = new Headers(request.headers);
+
   const declaredLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BODY_BYTES) {
     return payloadTooLargeResponse();
@@ -110,7 +114,7 @@ async function limitRequestBody(request: Request): Promise<Request | Response> {
     body.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return new Request(request, { body });
+  return new Request(url, { method, headers, body });
 }
 
 function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boolean {
