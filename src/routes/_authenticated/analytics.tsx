@@ -118,16 +118,26 @@ function AnalyticsPage() {
   // Топ учеников по доходу
   const topStudents = useMemo(() => {
     if (!rates) return [];
-    const map = new Map<string, number>();
+    const map = new Map<string, { sum: number; unconverted: Record<string, number> }>();
     for (const f of finance) {
       if (!f.is_paid) continue;
+      const cur = map.get(f.student_id) ?? { sum: 0, unconverted: {} };
       const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
-      if (!res.ok) continue;
-      map.set(f.student_id, (map.get(f.student_id) ?? 0) + res.value);
+      if (res.ok) cur.sum += res.value;
+      else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        cur.unconverted[code] = (cur.unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
+      map.set(f.student_id, cur);
     }
     return students
-      .map((s) => ({ s, rub: Math.round(map.get(s.id) ?? 0) }))
-      .filter((x) => x.rub > 0)
+      .map((s) => ({
+        s,
+        rub: Math.round(map.get(s.id)?.sum ?? 0),
+        unconverted: map.get(s.id)?.unconverted ?? {},
+      }))
+      .filter((x) => x.rub > 0 || Object.keys(x.unconverted).length > 0)
       .sort((a, b) => b.rub - a.rub)
       .slice(0, 5);
   }, [students, finance, rates, rateMap, displayCurrency]);
