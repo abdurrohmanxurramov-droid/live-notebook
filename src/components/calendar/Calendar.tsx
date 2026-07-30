@@ -734,7 +734,9 @@ function PositionedBlock({
 }) {
   const [hh, mm] = lesson.scheduled_time.slice(0, 5).split(":").map(Number);
   const startMin = hh * 60 + mm;
-  const top = ((startMin - BASE_MIN) / 30) * SLOT_PX - SLOT_PX;
+  // Must match the slot grid exactly, otherwise a dragged pill visually sits one
+  // row above/below the cell it actually belongs to (and drops look "off by one").
+  const top = ((startMin - BASE_MIN) / 30) * SLOT_PX;
   const height = Math.max(SLOT_PX - 2, (lesson.duration_min / 30) * SLOT_PX - 2);
   if (top < 0 || top > SLOTS.length * SLOT_PX) return null;
   return (
