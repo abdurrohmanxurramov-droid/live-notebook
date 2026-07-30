@@ -405,6 +405,25 @@ async function reconcileCycles(supabase: any, userId: string, studentId: string)
     .eq("user_id", userId)
     .maybeSingle();
 
+  const { data: student } = await supabase
+    .from("students")
+    .select("lesson_price, lesson_currency")
+    .eq("id", studentId)
+    .maybeSingle();
+
+  const ownPrice =
+    student?.lesson_price === null || student?.lesson_price === undefined
+      ? null
+      : Number(student.lesson_price);
+  const unitPrice =
+    ownPrice !== null && Number.isFinite(ownPrice)
+      ? ownPrice
+      : (settings?.default_lesson_price ?? 0);
+  const unitCurrency =
+    ownPrice !== null && Number.isFinite(ownPrice)
+      ? (student?.lesson_currency ?? settings?.default_currency ?? "RUB")
+      : (settings?.default_currency ?? "RUB");
+
   const payDate = counted[count - 1]?.date ?? null;
 
   const { error } = await supabase.from("finance").insert({
@@ -412,8 +431,8 @@ async function reconcileCycles(supabase: any, userId: string, studentId: string)
     student_id: studentId,
     entry_type: "lesson_cycle",
     cycle_number: cycleNumber,
-    amount: (settings?.default_lesson_price ?? 0) * LESSONS_PER_CYCLE,
-    currency: settings?.default_currency ?? "RUB",
+    amount: unitPrice * LESSONS_PER_CYCLE,
+    currency: unitCurrency,
     is_paid: false,
     pay_date: payDate,
   });
