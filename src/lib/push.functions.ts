@@ -69,7 +69,7 @@ export const sendTestPush = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ endpoint: z.string().url().max(2000) }).parse(input))
   .handler(async ({ data, context }) => {
-    await enforceRateLimit(context.supabase, "push_test");
+    await enforceRateLimit(context.userId, "push_test");
     const { sendPushTo } = await import("./push.server");
     const { data: sub, error } = await context.supabase
       .from("push_subscriptions")
