@@ -126,14 +126,18 @@ export function RatesCard() {
 
   const currentMap = useMemo(() => rateMapOf(rates), [rates]);
 
-  // Список редактируемых пар: 1 USD = X <валюта>. Любые валюты, сколько угодно.
+  // Компактный список пар: 1 USD = X <валюта>. Показываем только нужные валюты,
+  // остальные курсы хранятся в базе и подтягиваются автоматически.
   const [rows, setRows] = useState<RateRow[] | null>(null);
   const effectiveRows: RateRow[] =
     rows ??
-    Object.entries(currentMap)
-      .filter(([code]) => code !== "USD" && code !== "USDT")
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([code, value]) => ({ code, value: String(Math.round(value * 10000) / 10000) }));
+    Array.from(new Set([displayCurrency, "RUB", "EGP"]))
+      .filter((code) => code && code !== "USD" && code !== "USDT")
+      .map((code) => {
+        const value = currentMap[code];
+        return { code, value: value ? String(Math.round(value * 10000) / 10000) : "" };
+      });
+
 
   const setRow = (i: number, patch: Partial<RateRow>) =>
     setRows(effectiveRows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
