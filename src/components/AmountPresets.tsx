@@ -1,4 +1,4 @@
-import { formatMoney } from "@/lib/currency";
+import { formatMoneyCompact } from "@/lib/currency";
 import { amountSuggestions, PACKAGE_SIZE } from "@/lib/package-price";
 
 export function AmountPresets({
