@@ -47,7 +47,8 @@ export default defineTool({
       "set_lesson_status_with_attendance",
       {
         p_lesson_id: lesson_id,
-        p_notes: null,
+        // ignored by the RPC when p_update_notes is false
+        p_notes: "",
         p_status: status,
         p_update_notes: false,
       },
