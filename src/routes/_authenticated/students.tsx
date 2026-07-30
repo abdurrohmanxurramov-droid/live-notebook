@@ -26,7 +26,7 @@ import {
   type Student,
   type StudentStatus,
 } from "@/lib/db";
-import { convert, formatMoney } from "@/lib/currency";
+import { convert, describeUnconverted, formatMoney, normalizeCurrency } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
