@@ -214,6 +214,11 @@ function AnalyticsPage() {
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
                 За {range} мес
               </div>
+              {Object.keys(incomeUnconverted).length > 0 && (
+                <div className="mt-0.5 text-[10px] text-muted-foreground">
+                  Курс недоступен, не включено: {describeUnconverted(incomeUnconverted)}
+                </div>
+              )}
             </Card>
             <Card className="p-4">
               <BarChart3 className="h-5 w-5 text-[color:var(--success)]" />
