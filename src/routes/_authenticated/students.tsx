@@ -17,6 +17,8 @@ import { GlassChips } from "@/components/GlassChips";
 import {
   useStudents,
   useFinance,
+  useRates,
+  rateMapOf,
   useMut,
   initials,
   STUDENT_STATUS_META,
@@ -24,6 +26,8 @@ import {
   type Student,
   type StudentStatus,
 } from "@/lib/db";
+import { convert, formatMoney } from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
 import { softDeleteStudent } from "@/lib/softdelete.functions";
