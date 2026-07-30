@@ -17,11 +17,18 @@ import {
   useRates,
   useMut,
   initials,
-  convertToRUB,
-  convertToUSDT,
-  convertToEGP,
+  rateMapOf,
   type Finance,
 } from "@/lib/db";
+import {
+  CURRENCIES,
+  convert,
+  describeUnconverted,
+  formatMoney,
+  normalizeCurrency,
+  sumConverted,
+} from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
 import { RefreshCw, Trash2, Wallet } from "lucide-react";
@@ -38,17 +45,15 @@ function FinancePage() {
     return m;
   }, [students]);
 
-  const totalsRUB = useMemo(() => {
-    if (!rates) return { rub: 0, usdt: 0, egp: 0 };
-    let rub = 0;
-    for (const f of finance)
-      if (f.is_paid) rub += convertToRUB(Number(f.amount), f.currency, rates);
-    return {
-      rub: Math.round(rub),
-      usdt: Math.round((rub / rates.usd_to_rub) * 100) / 100,
-      egp: Math.round((rub / rates.usd_to_rub) * rates.usdt_to_egp),
-    };
-  }, [finance, rates]);
+  const displayCurrency = useDefaultCurrency();
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+
+  const totals = useMemo(() => {
+    const paid = finance
+      .filter((f) => f.is_paid)
+      .map((f) => ({ amount: Number(f.amount), currency: f.currency }));
+    return sumConverted(paid, displayCurrency, rateMap);
+  }, [finance, rateMap, displayCurrency]);
 
   return (
     <div className="px-4 pt-6">
@@ -58,11 +63,19 @@ function FinancePage() {
       <RatesCard />
 
       <SectionTitle>Итого получено</SectionTitle>
-      <div className="grid grid-cols-3 gap-3">
-        <SumCard label="₽" value={totalsRUB.rub.toLocaleString("ru-RU")} />
-        <SumCard label="USDT" value={totalsRUB.usdt.toLocaleString("ru-RU")} />
-        <SumCard label="£" value={totalsRUB.egp.toLocaleString("ru-RU")} />
-      </div>
+      <Card className="p-4">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          В валюте {displayCurrency}
+        </div>
+        <div className="num mt-1 text-2xl text-foreground">
+          {formatMoney(totals.total, displayCurrency)}
+        </div>
+        {totals.unconvertedCount > 0 && (
+          <div className="mt-1 text-xs text-muted-foreground">
+            Курс недоступен для {describeUnconverted(totals.unconverted)} — не включено в сумму
+          </div>
+        )}
+      </Card>
 
       <SectionTitle>Ученики</SectionTitle>
       {students.length === 0 ? (
@@ -220,7 +233,9 @@ function RateInput({
 
 function StudentFinanceCard({ studentId, name }: { studentId: string; name: string }) {
   const { data: rates } = useRates();
-  const [currency, setCurrency] = useState<Finance["currency"]>("RUB");
+  const defaultCurrency = useDefaultCurrency();
+  const [currency, setCurrency] = useState<string | null>(null);
+  const activeCurrency = currency ?? defaultCurrency;
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isPaid, setIsPaid] = useState(true);
@@ -231,7 +246,7 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
     const { error } = await (await sb()).from("finance").insert({
       student_id: studentId,
       amount: num,
-      currency,
+      currency: activeCurrency,
       is_paid: isPaid,
       pay_date: date,
     });
@@ -239,13 +254,8 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
   }, ["finance"]);
 
   const n = Number(amount) || 0;
-  const conv = rates
-    ? {
-        rub: Math.round(convertToRUB(n, currency, rates)),
-        usdt: Math.round(convertToUSDT(n, currency, rates) * 100) / 100,
-        egp: Math.round(convertToEGP(n, currency, rates)),
-      }
-    : null;
+  const rateMap = rateMapOf(rates);
+  const preview = n > 0 ? convert(n, activeCurrency, defaultCurrency, rateMap) : null;
 
   return (
     <Card className="p-4">
@@ -258,13 +268,12 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <Select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value as Finance["currency"])}
-        >
-          <option value="RUB">₽ RUB</option>
-          <option value="USD">$ USD</option>
-          <option value="EGP">£ EGP</option>
+        <Select value={activeCurrency} onChange={(e) => setCurrency(e.target.value)}>
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.code}
+            </option>
+          ))}
         </Select>
         <Input
           inputMode="decimal"
@@ -275,11 +284,11 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
         />
       </div>
 
-      {conv && n > 0 && (
-        <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px] text-muted-foreground">
-          <span>≈ {conv.rub.toLocaleString("ru-RU")} ₽</span>
-          <span>≈ {conv.usdt} USDT</span>
-          <span>≈ {conv.egp.toLocaleString("ru-RU")} £</span>
+      {preview && activeCurrency !== defaultCurrency && (
+        <div className="mt-2 text-center text-[11px] text-muted-foreground">
+          {preview.ok
+            ? `≈ ${formatMoney(preview.value, defaultCurrency)}`
+            : `Курс ${activeCurrency} → ${defaultCurrency} недоступен`}
         </div>
       )}
 
@@ -332,7 +341,6 @@ function PaymentRow({ f, name }: { f: Finance; name: string }) {
     if (error) throw error;
   }, ["finance"]);
 
-  const sym = f.currency === "RUB" ? "₽" : f.currency === "USD" ? "$" : "£";
 
   return (
     <Card className="flex items-center gap-3 p-3">
@@ -347,7 +355,7 @@ function PaymentRow({ f, name }: { f: Finance; name: string }) {
       </div>
       <div className="text-right">
         <div className="num text-base text-foreground">
-          {Number(f.amount).toLocaleString("ru-RU")} {sym}
+          {formatMoney(Number(f.amount), normalizeCurrency(f.currency, f.currency))}
         </div>
         <button
           onClick={() => toggle.mutateAsync(undefined as never)}
