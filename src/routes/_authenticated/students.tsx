@@ -692,6 +692,7 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
               setCustomDays("2");
               setSubject("");
               setPhone("");
+              setLessonPrice("");
               setTime("16:00");
               setDuration("60");
               onClose();
