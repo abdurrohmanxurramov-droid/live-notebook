@@ -12,6 +12,16 @@
 
 RLS/политики/гранты не меняются (таблица уже owner-scoped). После миграции обновляются `src/integrations/supabase/types.ts`.
 
+### 1.1 Обязательное снятие 4-валютных CHECK (иначе EUR/TRY/AED падают с check_violation)
+
+В уже применённой миграции `20260730135521` зашиты два ограничения. Та же additive-миграция их пересоздаёт:
+
+- `finance_currency_check`: `DROP CONSTRAINT` → `ADD CONSTRAINT ... CHECK (currency ~ '^[A-Z]{3,4}$') NOT VALID` → `VALIDATE`.
+- `user_settings_values_check`: `DROP` и пересоздание с тем же составом, где заменяется только валютная часть:
+  `default_currency ~ '^[A-Z]{3,4}$' AND default_lesson_duration BETWEEN 5 AND 600 AND default_lesson_price BETWEEN 0 AND 10000000 AND week_starts_on BETWEEN 0 AND 6 AND remind_before_min BETWEEN 0 AND 10000` — остальные проверки сохраняются без ослабления.
+
+Дополнительно `supabase/preflight/security_hardening_preflight.sql` (строки с `currency NOT IN ('RUB','USD','USDT','EGP')` и `default_currency NOT IN (...)`) и SQL/security-тесты переводятся на проверку формата кода вместо списка из 4 валют.
+
 ## 2. Новый модуль `src/lib/currency.ts`
 
 Единая точка валютной логики:
