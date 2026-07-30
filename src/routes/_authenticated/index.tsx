@@ -17,7 +17,7 @@ import {
   useHomework,
   useMut,
   initials,
-  convertToRUB,
+  rateMapOf,
   formatMoney,
   STUDENT_STATUS_META,
   groupByStudentId,
@@ -43,6 +43,8 @@ import {
   BarChart3,
   FileText,
 } from "lucide-react";
+import { convert } from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
 
@@ -108,6 +110,9 @@ function Home() {
   }, [students]);
   const financeByStudent = useMemo(() => groupByStudentId(finance), [finance]);
 
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+  const dashCurrency = useDefaultCurrency();
+
   const stats = useMemo(() => {
     const now = new Date();
     const m = now.getMonth();
@@ -118,13 +123,15 @@ function Home() {
     for (const f of finance) {
       const d = f.pay_date ? new Date(f.pay_date) : new Date(f.created_at);
       const inMonth = d.getMonth() === m && d.getFullYear() === y;
-      if (rates && inMonth && f.is_paid)
-        incomeRUB += convertToRUB(Number(f.amount), f.currency, rates);
+      if (inMonth && f.is_paid) {
+        const res = convert(Number(f.amount), f.currency, dashCurrency, rateMap);
+        if (res.ok) incomeRUB += res.value;
+      }
       if (f.is_paid) paid += 1;
       else unpaid += 1;
     }
     return { incomeRUB: Math.round(incomeRUB), paid, unpaid };
-  }, [finance, rates]);
+  }, [finance, rates, rateMap, dashCurrency]);
 
   const dateLabel = new Date().toLocaleDateString("ru-RU", {
     day: "numeric",
@@ -136,7 +143,7 @@ function Home() {
     {
       icon: Wallet,
       label: "Доход за месяц",
-      value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽",
+      value: formatMoney(stats.incomeRUB, dashCurrency),
       tone: "gold",
     },
     { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy" },
