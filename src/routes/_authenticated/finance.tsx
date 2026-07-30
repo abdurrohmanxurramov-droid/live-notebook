@@ -107,17 +107,6 @@ function FinancePage() {
   );
 }
 
-function SumCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="p-4">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="num mt-1 text-xl text-foreground">{value}</div>
-    </Card>
-  );
-}
-
 export function RatesCard() {
   const { data: rates } = useRates();
   const [usdRub, setUsdRub] = useState("");
