@@ -789,8 +789,9 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
     const slotDays = pattern === "custom" ? [] : PATTERN_DAYS[pattern];
     const daysCount =
       pattern === "custom" ? Math.max(1, Math.min(7, Number(customDays) || 1)) : slotDays.length;
-    const priceValue =
-      price.trim() === "" ? null : Math.max(0, Math.min(10_000_000, Number(price) || 0));
+    const priceValue = perLessonFromPackage(pkg);
+    const currencyValue = normalizeCurrency(currency, defaultCurrency);
+    if (priceValue !== null) rememberPackagePrice(pkg, currencyValue);
 
     const sup = await sb();
     const { error: upErr } = await sup
@@ -801,10 +802,10 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
         subject: subject.trim() || null,
         phone: phone.trim() || null,
         lesson_price: priceValue,
-        lesson_currency:
-          priceValue === null ? null : (student.lesson_currency ?? defaultCurrency),
+        lesson_currency: priceValue === null ? null : currencyValue,
       })
       .eq("id", student.id);
+
     if (upErr) throw upErr;
 
     if (pattern !== "custom") {
