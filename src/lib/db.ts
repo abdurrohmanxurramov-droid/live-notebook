@@ -17,6 +17,8 @@ export type Student = {
   phone: string | null;
   created_at: string;
   status: StudentStatus;
+  lesson_price: number | null;
+  lesson_currency: string | null;
 };
 
 export const STUDENT_STATUS_META: Record<
