@@ -26,7 +26,7 @@ import {
 } from "@/lib/db";
 import { BarChart3, TrendingUp, Users, AlertTriangle, BookOpen } from "lucide-react";
 import type { ReactNode } from "react";
-import { convert, formatMoney } from "@/lib/currency";
+import { convert, describeUnconverted, formatMoney, normalizeCurrency } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
 
 export const Route = createFileRoute("/_authenticated/analytics")({ component: AnalyticsPage });
