@@ -329,24 +329,33 @@ export type Database = {
       }
       rates: {
         Row: {
+          base_currency: string
           id: string
           owner_id: string
+          rates_fetched_at: string | null
+          rates_map: Json
           updated_at: string
           usd_to_egp: number
           usd_to_rub: number
           usdt_to_egp: number
         }
         Insert: {
+          base_currency?: string
           id?: string
           owner_id: string
+          rates_fetched_at?: string | null
+          rates_map?: Json
           updated_at?: string
           usd_to_egp?: number
           usd_to_rub?: number
           usdt_to_egp?: number
         }
         Update: {
+          base_currency?: string
           id?: string
           owner_id?: string
+          rates_fetched_at?: string | null
+          rates_map?: Json
           updated_at?: string
           usd_to_egp?: number
           usd_to_rub?: number
