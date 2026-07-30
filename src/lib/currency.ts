@@ -321,6 +321,24 @@ export function formatMoney(amount: number, currency: string, locale = "ru-RU"):
   })} ${code || ""}`.trim();
 }
 
+/** Денежный формат без копеек/центов — для кнопок быстрых сумм. */
+export function formatMoneyCompact(amount: number, currency: string, locale = "ru-RU"): string {
+  const code = typeof currency === "string" ? currency.trim().toUpperCase() : "";
+  const value = Number.isFinite(amount) ? amount : 0;
+  if (/^[A-Z]{3}$/.test(code)) {
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency",
+        currency: code,
+        maximumFractionDigits: 0,
+      }).format(value);
+    } catch {
+      /* неизвестный ISO-код — падаем на общий формат ниже */
+    }
+  }
+  return `${value.toLocaleString(locale, { maximumFractionDigits: 0 })} ${code || ""}`.trim();
+}
+
 /** Карта курсов, восстановленная из legacy-колонок таблицы rates. */
 export function legacyMapFromRates(
   row:
