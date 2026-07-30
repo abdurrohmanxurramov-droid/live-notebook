@@ -492,6 +492,17 @@ const PATTERN_DAYS: Record<Exclude<Pattern, "custom">, number[]> = {
   tts: [1, 3, 5], // Вт, Чт, Сб
 };
 
+/** Пустое поле = использовать общую цену урока из настроек. */
+function parseLessonPrice(raw: string): number | null {
+  const trimmed = raw.trim().replace(",", ".");
+  if (!trimmed) return null;
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || value < 0) return null;
+  return Math.min(value, 10_000_000);
+}
+
+
+
 function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [name, setName] = useState("");
   const [pattern, setPattern] = useState<Pattern>("mwf");
