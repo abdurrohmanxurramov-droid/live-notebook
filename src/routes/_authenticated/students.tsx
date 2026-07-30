@@ -121,20 +121,26 @@ function StudentsPage() {
     return c;
   }, [activeStudents]);
 
+  const { data: rates } = useRates();
+  const displayCurrency = useDefaultCurrency();
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+
   // Overdue map: student_id -> { amount, days }
   const today = new Date().toISOString().slice(0, 10);
   const overdueByStudent = useMemo(() => {
-    const m = new Map<string, { amount: number; days: number }>();
+    const m = new Map<string, { amount: number; days: number; hasUnknownRate: boolean }>();
     for (const f of finance) {
       if (f.is_paid || !f.pay_date || f.pay_date >= today) continue;
       const days = Math.floor((Date.parse(today) - Date.parse(f.pay_date)) / 86400000);
-      const cur = m.get(f.student_id) ?? { amount: 0, days: 0 };
-      cur.amount += Number(f.amount);
+      const cur = m.get(f.student_id) ?? { amount: 0, days: 0, hasUnknownRate: false };
+      const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
+      if (res.ok) cur.amount += res.value;
+      else cur.hasUnknownRate = true;
       cur.days = Math.max(cur.days, days);
       m.set(f.student_id, cur);
     }
     return m;
-  }, [finance, today]);
+  }, [finance, today, rateMap, displayCurrency]);
 
   const subjects = useMemo(() => {
     const set = new Set<string>();
@@ -412,6 +418,9 @@ function StudentsPage() {
                       <Badge tone="danger">
                         <AlertCircle className="mr-0.5 inline h-3 w-3" />
                         Долг {overdue.days}д
+                        {overdue.amount > 0
+                          ? ` · ${formatMoney(overdue.amount, displayCurrency)}${overdue.hasUnknownRate ? "+" : ""}`
+                          : ""}
                       </Badge>
                     ) : fin.length === 0 ? (
                       <Badge>Без платежей</Badge>
