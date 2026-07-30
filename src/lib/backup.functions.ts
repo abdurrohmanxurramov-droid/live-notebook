@@ -34,7 +34,8 @@ const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
     "id, owner_id, student_id, amount, currency, is_paid, pay_date, entry_type, cycle_number, deleted_at, created_at",
   homework:
     "id, owner_id, student_id, assigned_date, due_date, task, status, note, deleted_at, created_at",
-  rates: "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at",
+  rates:
+    "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, base_currency, rates_map, rates_fetched_at, updated_at",
   chat_messages: "id, user_id, role, content, tool_calls, tool_call_id, name, created_at",
   user_settings:
     "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at",
@@ -282,6 +283,9 @@ const ratesRowSchema = z
     usd_to_rub: z.number().finite().positive().max(1_000_000),
     usdt_to_egp: z.number().finite().positive().max(1_000_000),
     usd_to_egp: z.number().finite().positive().max(1_000_000),
+    base_currency: currencyCodeSchema.optional(),
+    rates_map: z.record(z.string(), z.number().finite().positive()).nullable().optional(),
+    rates_fetched_at: isoTimestamp.nullable().optional(),
     updated_at: isoTimestamp.optional(),
   })
   .strip();
