@@ -1,4 +1,4 @@
-import { formatMoneyCompact } from "@/lib/currency";
+import { formatMoney } from "@/lib/currency";
 import { amountSuggestions, PACKAGE_SIZE } from "@/lib/package-price";
 
 export function AmountPresets({
@@ -32,7 +32,7 @@ export function AmountPresets({
               i === 0 && hasPackage ? `Пакет из ${PACKAGE_SIZE} уроков этого ученика` : undefined
             }
           >
-            {formatMoneyCompact(amount, currency)}
+            {formatMoney(amount, currency)}
           </button>
         );
       })}

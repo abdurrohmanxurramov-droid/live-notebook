@@ -80,10 +80,10 @@ describe("sumConverted", () => {
 });
 
 describe("formatMoney", () => {
-  it("uses currency minor units", () => {
-    expect(formatMoney(1234.567, "KWD", "en-US")).toContain("1,234.567");
-    expect(formatMoney(1234.5, "USD", "en-US")).toContain("1,234.50");
-    expect(formatMoney(1234.5, "JPY", "en-US")).toContain("1,235");
+  it("always shows whole units without cents/kopeks", () => {
+    expect(formatMoney(1234.567, "KWD", "en-US")).toContain("1,235");
+    expect(formatMoney(1234.5, "USD", "en-US")).toContain("1,235");
+    expect(formatMoney(1234.4, "JPY", "en-US")).toContain("1,234");
   });
 
   it("falls back for USDT and junk codes", () => {
