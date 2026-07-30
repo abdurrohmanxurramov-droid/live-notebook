@@ -50,6 +50,8 @@ import {
   AlertTriangle,
   type LucideIcon,
 } from "lucide-react";
+import { CURRENCIES, formatMoney } from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 
 const LESSONS_PER_CYCLE = 12;
 const EXCUSED_LIMIT = 3;
@@ -604,7 +606,9 @@ function HomeworkTab({ studentId, hw }: { studentId: string; hw: Homework[] }) {
 function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
   const today = new Date().toISOString().slice(0, 10);
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState<Finance["currency"]>("RUB");
+  const defaultCurrency = useDefaultCurrency();
+  const [currency, setCurrency] = useState<string | null>(null);
+  const activeCurrency = currency ?? defaultCurrency;
   const [date, setDate] = useState(today);
   const [isPaid, setIsPaid] = useState(true);
 
@@ -614,7 +618,7 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
     const { error } = await (await sb()).from("finance").insert({
       student_id: studentId,
       amount: num,
-      currency,
+      currency: activeCurrency,
       is_paid: isPaid,
       pay_date: date,
     });
@@ -647,13 +651,12 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
     <>
       <Card className="mt-4 p-4">
         <div className="grid grid-cols-3 gap-2">
-          <Select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value as Finance["currency"])}
-          >
-            <option value="RUB">₽ RUB</option>
-            <option value="USD">$ USD</option>
-            <option value="EGP">£ EGP</option>
+          <Select value={activeCurrency} onChange={(e) => setCurrency(e.target.value)}>
+            {CURRENCIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.code}
+              </option>
+            ))}
           </Select>
           <Input
             inputMode="decimal"
@@ -703,12 +706,11 @@ function FinanceTab({ studentId, fin }: { studentId: string; fin: Finance[] }) {
       ) : (
         <div className="space-y-2">
           {fin.map((f) => {
-            const sym = f.currency === "RUB" ? "₽" : f.currency === "USD" ? "$" : "£";
             return (
               <Card key={f.id} className="flex items-center gap-3 p-3">
                 <div className="min-w-0 flex-1">
                   <div className="num text-base text-foreground">
-                    {Number(f.amount).toLocaleString("ru-RU")} {sym}
+                    {formatMoney(Number(f.amount), f.currency)}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {f.entry_type === "lesson_cycle" ? `Пакет №${f.cycle_number}` : "Ручная запись"}
@@ -851,7 +853,7 @@ function TimelineTab({ att, hw, fin }: { att: Attendance[]; hw: Homework[]; fin:
         date: d,
         kind: "payment",
         title: f.is_paid ? "Оплата получена" : "Начислен платёж",
-        sub: `${Number(f.amount).toLocaleString("ru-RU")} ${f.currency}`,
+        sub: formatMoney(Number(f.amount), f.currency),
         tone: f.is_paid ? "success" : "danger",
         icon: <Wallet className="h-3.5 w-3.5" />,
       });

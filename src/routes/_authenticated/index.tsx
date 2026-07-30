@@ -17,7 +17,7 @@ import {
   useHomework,
   useMut,
   initials,
-  convertToRUB,
+  rateMapOf,
   formatMoney,
   STUDENT_STATUS_META,
   groupByStudentId,
@@ -43,6 +43,8 @@ import {
   BarChart3,
   FileText,
 } from "lucide-react";
+import { convert, describeUnconverted, sumConverted } from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 
 export const Route = createFileRoute("/_authenticated/")({ component: Home });
 
@@ -108,6 +110,9 @@ function Home() {
   }, [students]);
   const financeByStudent = useMemo(() => groupByStudentId(finance), [finance]);
 
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+  const dashCurrency = useDefaultCurrency();
+
   const stats = useMemo(() => {
     const now = new Date();
     const m = now.getMonth();
@@ -118,13 +123,15 @@ function Home() {
     for (const f of finance) {
       const d = f.pay_date ? new Date(f.pay_date) : new Date(f.created_at);
       const inMonth = d.getMonth() === m && d.getFullYear() === y;
-      if (rates && inMonth && f.is_paid)
-        incomeRUB += convertToRUB(Number(f.amount), f.currency, rates);
+      if (inMonth && f.is_paid) {
+        const res = convert(Number(f.amount), f.currency, dashCurrency, rateMap);
+        if (res.ok) incomeRUB += res.value;
+      }
       if (f.is_paid) paid += 1;
       else unpaid += 1;
     }
     return { incomeRUB: Math.round(incomeRUB), paid, unpaid };
-  }, [finance, rates]);
+  }, [finance, rates, rateMap, dashCurrency]);
 
   const dateLabel = new Date().toLocaleDateString("ru-RU", {
     day: "numeric",
@@ -136,7 +143,7 @@ function Home() {
     {
       icon: Wallet,
       label: "Доход за месяц",
-      value: stats.incomeRUB.toLocaleString("ru-RU") + " ₽",
+      value: formatMoney(stats.incomeRUB, dashCurrency),
       tone: "gold",
     },
     { icon: GraduationCap, label: "Ученики", value: String(students.length), tone: "navy" },
@@ -400,6 +407,8 @@ function pluralDays(n: number) {
 function PaymentsWidget() {
   const { data: students = [] } = useStudents();
   const { data: finance = [] } = useFinance();
+  const { data: rates } = useRates();
+  const displayCurrency = useDefaultCurrency();
   const studentsById = useMemo(() => {
     const m = new Map<string, (typeof students)[number]>();
     students.forEach((s) => m.set(s.id, s));
@@ -411,6 +420,7 @@ function PaymentsWidget() {
   in7.setDate(in7.getDate() + 7);
   const in7iso = in7.toISOString().slice(0, 10);
 
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
   const overdueRows = useMemo(() => {
     const map = new Map<
       string,
@@ -443,7 +453,11 @@ function PaymentsWidget() {
       .sort((a, b) => (a.pay_date ?? "").localeCompare(b.pay_date ?? ""));
   }, [finance, today, in7iso]);
 
-  const totalUnpaid = overdueRows.reduce((acc, r) => acc + r.amount, 0);
+  const overdueTotals = sumConverted(
+    overdueRows.map((r) => ({ amount: r.amount, currency: r.currency })),
+    displayCurrency,
+    rateMap,
+  );
 
   const markPaid = useMut(
     async (id: string) => {
@@ -473,10 +487,13 @@ function PaymentsWidget() {
               Просрочено всего
             </div>
             <div className="mt-1 num text-2xl text-destructive">
-              {overdueRows.length === 0
-                ? "—"
-                : formatMoney(totalUnpaid, overdueRows[0]?.currency ?? "RUB")}
+              {overdueRows.length === 0 ? "—" : formatMoney(overdueTotals.total, displayCurrency)}
             </div>
+            {overdueTotals.unconvertedCount > 0 && (
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                Без курса: {describeUnconverted(overdueTotals.unconverted)}
+              </div>
+            )}
           </div>
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/15 text-destructive">
             <AlertCircle className="h-5 w-5" />

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { currencyCodeSchema } from "@/lib/currency";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -33,7 +34,8 @@ const TABLE_SELECTS: Record<(typeof TABLES)[number], string> = {
     "id, owner_id, student_id, amount, currency, is_paid, pay_date, entry_type, cycle_number, deleted_at, created_at",
   homework:
     "id, owner_id, student_id, assigned_date, due_date, task, status, note, deleted_at, created_at",
-  rates: "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at",
+  rates:
+    "id, owner_id, usd_to_rub, usdt_to_egp, usd_to_egp, base_currency, rates_map, rates_fetched_at, updated_at",
   chat_messages: "id, user_id, role, content, tool_calls, tool_call_id, name, created_at",
   user_settings:
     "user_id, default_currency, default_lesson_duration, default_lesson_price, week_starts_on, remind_before_min, locale, remind_lessons, remind_payments, remind_homework, gender, theme, onboarding_completed, created_at, updated_at",
@@ -240,7 +242,7 @@ const financeRowSchema = z
     owner_id: uuid.optional(),
     student_id: uuid,
     amount: z.number().finite().min(-120_000_000).max(120_000_000),
-    currency: z.enum(["RUB", "USD", "USDT", "EGP"]),
+    currency: currencyCodeSchema,
     is_paid: z.boolean().optional(),
     pay_date: isoDate.nullable().optional(),
     deleted_at: isoTimestamp.nullable().optional(),
@@ -281,6 +283,9 @@ const ratesRowSchema = z
     usd_to_rub: z.number().finite().positive().max(1_000_000),
     usdt_to_egp: z.number().finite().positive().max(1_000_000),
     usd_to_egp: z.number().finite().positive().max(1_000_000),
+    base_currency: currencyCodeSchema.optional(),
+    rates_map: z.record(z.string(), z.number().finite().positive()).nullable().optional(),
+    rates_fetched_at: isoTimestamp.nullable().optional(),
     updated_at: isoTimestamp.optional(),
   })
   .strip();
@@ -301,7 +306,7 @@ const chatMessageRowSchema = z
 const userSettingsRowSchema = z
   .object({
     user_id: uuid.optional(),
-    default_currency: z.enum(["RUB", "USD", "USDT", "EGP"]).optional(),
+    default_currency: currencyCodeSchema.optional(),
     default_lesson_duration: z.number().int().min(5).max(600).optional(),
     default_lesson_price: z.number().finite().min(0).max(10_000_000).optional(),
     week_starts_on: z.number().int().min(0).max(6).optional(),

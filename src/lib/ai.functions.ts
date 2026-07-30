@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { currencyCodeSchema } from "@/lib/currency";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -226,7 +227,7 @@ const tools = [
         properties: {
           student_id: { type: "string" },
           amount: { type: "number" },
-          currency: { type: "string", description: "RUB|USD|USDT|EGP" },
+          currency: { type: "string", description: "Код валюты ISO 4217, напр. RUB, USD, EUR (или USDT)" },
           is_paid: { type: "boolean" },
           pay_date: { type: "string", description: "YYYY-MM-DD" },
         },
@@ -353,7 +354,7 @@ const addFinanceSchema = z
   .object({
     student_id: uuidSchema,
     amount: z.number().finite().min(0).max(10_000_000),
-    currency: z.enum(["RUB", "USD", "USDT", "EGP"]).optional(),
+    currency: currencyCodeSchema.optional(),
     is_paid: z.boolean().optional(),
     pay_date: dateSchema.nullable().optional(),
   })

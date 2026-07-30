@@ -21,11 +21,13 @@ import {
   useAttendance,
   useHomework,
   useRates,
-  convertToRUB,
+  rateMapOf,
   initials,
 } from "@/lib/db";
 import { BarChart3, TrendingUp, Users, AlertTriangle, BookOpen } from "lucide-react";
 import type { ReactNode } from "react";
+import { convert, formatMoney } from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 
 export const Route = createFileRoute("/_authenticated/analytics")({ component: AnalyticsPage });
 
@@ -39,6 +41,8 @@ function AnalyticsPage() {
   const { data: homework = [] } = useHomework();
   const { data: rates } = useRates();
   const [range, setRange] = useState<6 | 12>(6);
+  const displayCurrency = useDefaultCurrency();
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
 
   // Доход по месяцам (последние N месяцев)
   const incomeByMonth = useMemo(() => {
@@ -59,10 +63,11 @@ function AnalyticsPage() {
       const d = f.pay_date ? new Date(f.pay_date) : new Date(f.created_at);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       const b = map.get(key);
-      if (b) b.rub += convertToRUB(Number(f.amount), f.currency, rates);
+      const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
+      if (b && res.ok) b.rub += res.value;
     }
     return buckets.map((b) => ({ ...b, rub: Math.round(b.rub) }));
-  }, [finance, rates, range]);
+  }, [finance, rates, rateMap, displayCurrency, range]);
 
   const totalIncome = incomeByMonth.reduce((s, x) => s + x.rub, 0);
   const avgIncome = incomeByMonth.length ? Math.round(totalIncome / incomeByMonth.length) : 0;
@@ -104,17 +109,16 @@ function AnalyticsPage() {
     const map = new Map<string, number>();
     for (const f of finance) {
       if (!f.is_paid) continue;
-      map.set(
-        f.student_id,
-        (map.get(f.student_id) ?? 0) + convertToRUB(Number(f.amount), f.currency, rates),
-      );
+      const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
+      if (!res.ok) continue;
+      map.set(f.student_id, (map.get(f.student_id) ?? 0) + res.value);
     }
     return students
       .map((s) => ({ s, rub: Math.round(map.get(s.id) ?? 0) }))
       .filter((x) => x.rub > 0)
       .sort((a, b) => b.rub - a.rub)
       .slice(0, 5);
-  }, [students, finance, rates]);
+  }, [students, finance, rates, rateMap, displayCurrency]);
 
   // Должники
   const debtors = useMemo(() => {
@@ -183,7 +187,7 @@ function AnalyticsPage() {
             <Card className="p-4">
               <TrendingUp className="h-5 w-5 text-accent" />
               <div className="num mt-3 text-2xl text-foreground">
-                {totalIncome.toLocaleString("ru-RU")} ₽
+                {formatMoney(totalIncome, displayCurrency)}
               </div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
                 За {range} мес
@@ -192,7 +196,7 @@ function AnalyticsPage() {
             <Card className="p-4">
               <BarChart3 className="h-5 w-5 text-[color:var(--success)]" />
               <div className="num mt-3 text-2xl text-foreground">
-                {avgIncome.toLocaleString("ru-RU")} ₽
+                {formatMoney(avgIncome, displayCurrency)}
               </div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
                 Средний месяц
@@ -239,7 +243,7 @@ function AnalyticsPage() {
                     width={42}
                     tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
                   />
-                  <Tooltip content={<ChartTooltip suffix=" ₽" />} />
+                  <Tooltip content={<ChartTooltip suffix={` ${displayCurrency}`} />} />
                   <Area
                     type="monotone"
                     dataKey="rub"
@@ -453,7 +457,7 @@ function AnalyticsPage() {
                           </div>
                         </div>
                         <div className="num text-sm text-foreground">
-                          {rub.toLocaleString("ru-RU")} ₽
+                          {formatMoney(rub, displayCurrency)}
                         </div>
                       </div>
                     </Card>

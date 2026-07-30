@@ -1,6 +1,12 @@
 import { sb } from "@/lib/sb";
 import { assertOnlineForMutation, withSnapshot } from "@/lib/offline";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { convert, formatMoney, resolveRateMap, type RateMap } from "@/lib/currency";
+
+export function rateMapOf(rates: Rates | null | undefined): RateMap {
+  return resolveRateMap(rates ?? undefined);
+}
+
 
 export type StudentStatus = "active" | "paused" | "completed" | "archived";
 export type Student = {
@@ -28,7 +34,7 @@ export type Finance = {
   id: string;
   student_id: string;
   amount: number;
-  currency: "RUB" | "USD" | "EGP" | "USDT";
+  currency: string;
   is_paid: boolean;
   pay_date: string | null;
   created_at: string;
@@ -73,8 +79,12 @@ export type Rates = {
   usd_to_rub: number;
   usdt_to_egp: number;
   usd_to_egp: number;
+  base_currency: string;
+  rates_map: Record<string, number> | null;
+  rates_fetched_at: string | null;
   updated_at: string;
 };
+
 
 export function useStudents() {
   return useQuery({
@@ -161,12 +171,14 @@ export function useHomework() {
 }
 
 export function useRates() {
+  const cols =
+    "id, usd_to_rub, usdt_to_egp, usd_to_egp, base_currency, rates_map, rates_fetched_at, updated_at";
   return useQuery({
     queryKey: ["rates"],
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("rates")
-        .select("id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at")
+        .select(cols)
         .order("updated_at", { ascending: false })
         .limit(1);
       if (error) throw error;
@@ -174,15 +186,16 @@ export function useRates() {
         const { data: inserted, error: insErr } = await (await sb())
           .from("rates")
           .insert({ usd_to_rub: 90, usdt_to_egp: 50, usd_to_egp: 50 })
-          .select("id, usd_to_rub, usdt_to_egp, usd_to_egp, updated_at")
+          .select(cols)
           .single();
         if (insErr) throw insErr;
-        return inserted as Rates;
+        return inserted as unknown as Rates;
       }
-      return data[0] as Rates;
+      return data[0] as unknown as Rates;
     },
   });
 }
+
 
 export function useInvalidate() {
   const qc = useQueryClient();
@@ -209,31 +222,26 @@ export function initials(name: string) {
     .join("");
 }
 
-export function formatMoney(amount: number, currency: string) {
-  const sym = currency === "RUB" ? "₽" : currency === "USD" ? "$" : "£";
-  return `${Math.round(amount).toLocaleString("ru-RU")} ${sym}`;
-}
+export { formatMoney };
 
+/** @deprecated используйте convert(amount, currency, target, rateMapOf(rates)) */
 export function convertToRUB(amount: number, currency: string, rates: Rates) {
-  if (currency === "RUB") return amount;
-  if (currency === "USD") return amount * rates.usd_to_rub;
-  if (currency === "EGP") return (amount / rates.usdt_to_egp) * rates.usd_to_rub;
-  return amount;
+  const res = convert(amount, currency, "RUB", rateMapOf(rates));
+  return res.ok ? res.value : 0;
 }
 
+/** @deprecated используйте convert(...) */
 export function convertToUSDT(amount: number, currency: string, rates: Rates) {
-  if (currency === "USD") return amount;
-  if (currency === "RUB") return amount / rates.usd_to_rub;
-  if (currency === "EGP") return amount / rates.usdt_to_egp;
-  return amount;
+  const res = convert(amount, currency, "USDT", rateMapOf(rates));
+  return res.ok ? res.value : 0;
 }
 
+/** @deprecated используйте convert(...) */
 export function convertToEGP(amount: number, currency: string, rates: Rates) {
-  if (currency === "EGP") return amount;
-  if (currency === "USD") return amount * rates.usdt_to_egp;
-  if (currency === "RUB") return (amount / rates.usd_to_rub) * rates.usdt_to_egp;
-  return amount;
+  const res = convert(amount, currency, "EGP", rateMapOf(rates));
+  return res.ok ? res.value : 0;
 }
+
 
 export function groupByStudentId<T extends { student_id: string }>(rows: readonly T[]) {
   const map = new Map<string, T[]>();

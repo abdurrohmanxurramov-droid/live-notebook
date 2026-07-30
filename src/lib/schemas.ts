@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { currencyCodeSchema } from "@/lib/currency";
 
 export const studentSchema = z.object({
   name: z.string().trim().min(1, "Введите имя").max(100),
@@ -10,7 +11,7 @@ export const studentSchema = z.object({
 export const paymentSchema = z.object({
   student_id: z.string().uuid(),
   amount: z.number().finite().min(0).max(10_000_000),
-  currency: z.enum(["RUB", "USD", "USDT", "EGP"]),
+  currency: currencyCodeSchema,
   is_paid: z.boolean(),
   pay_date: z
     .string()
@@ -33,7 +34,7 @@ export const homeworkSchema = z.object({
 });
 
 export const userSettingsSchema = z.object({
-  default_currency: z.enum(["RUB", "USD", "USDT", "EGP"]),
+  default_currency: currencyCodeSchema,
   default_lesson_duration: z.number().int().min(15).max(240),
   default_lesson_price: z.number().finite().min(0).max(10_000_000),
   week_starts_on: z.number().int().min(0).max(6),

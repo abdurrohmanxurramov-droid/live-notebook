@@ -17,11 +17,19 @@ import {
   useRates,
   useMut,
   initials,
-  convertToRUB,
-  convertToUSDT,
-  convertToEGP,
+  rateMapOf,
   type Finance,
 } from "@/lib/db";
+import {
+  CURRENCIES,
+  buildRateMap,
+  convert,
+  describeUnconverted,
+  formatMoney,
+  normalizeCurrency,
+  sumConverted,
+} from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
 import { RefreshCw, Trash2, Wallet } from "lucide-react";
@@ -38,17 +46,15 @@ function FinancePage() {
     return m;
   }, [students]);
 
-  const totalsRUB = useMemo(() => {
-    if (!rates) return { rub: 0, usdt: 0, egp: 0 };
-    let rub = 0;
-    for (const f of finance)
-      if (f.is_paid) rub += convertToRUB(Number(f.amount), f.currency, rates);
-    return {
-      rub: Math.round(rub),
-      usdt: Math.round((rub / rates.usd_to_rub) * 100) / 100,
-      egp: Math.round((rub / rates.usd_to_rub) * rates.usdt_to_egp),
-    };
-  }, [finance, rates]);
+  const displayCurrency = useDefaultCurrency();
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+
+  const totals = useMemo(() => {
+    const paid = finance
+      .filter((f) => f.is_paid)
+      .map((f) => ({ amount: Number(f.amount), currency: f.currency }));
+    return sumConverted(paid, displayCurrency, rateMap);
+  }, [finance, rateMap, displayCurrency]);
 
   return (
     <div className="px-4 pt-6">
@@ -58,11 +64,19 @@ function FinancePage() {
       <RatesCard />
 
       <SectionTitle>Итого получено</SectionTitle>
-      <div className="grid grid-cols-3 gap-3">
-        <SumCard label="₽" value={totalsRUB.rub.toLocaleString("ru-RU")} />
-        <SumCard label="USDT" value={totalsRUB.usdt.toLocaleString("ru-RU")} />
-        <SumCard label="£" value={totalsRUB.egp.toLocaleString("ru-RU")} />
-      </div>
+      <Card className="p-4">
+        <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          В валюте {displayCurrency}
+        </div>
+        <div className="num mt-1 text-2xl text-foreground">
+          {formatMoney(totals.total, displayCurrency)}
+        </div>
+        {totals.unconvertedCount > 0 && (
+          <div className="mt-1 text-xs text-muted-foreground">
+            Курс недоступен для {describeUnconverted(totals.unconverted)} — не включено в сумму
+          </div>
+        )}
+      </Card>
 
       <SectionTitle>Ученики</SectionTitle>
       {students.length === 0 ? (
@@ -94,34 +108,41 @@ function FinancePage() {
   );
 }
 
-function SumCard({ label, value }: { label: string; value: string }) {
-  return (
-    <Card className="p-4">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="num mt-1 text-xl text-foreground">{value}</div>
-    </Card>
-  );
-}
-
 export function RatesCard() {
   const { data: rates } = useRates();
+  const displayCurrency = useDefaultCurrency();
   const [usdRub, setUsdRub] = useState("");
   const [usdtEgp, setUsdtEgp] = useState("");
   const [usdEgp, setUsdEgp] = useState("");
+  const [fetchedMap, setFetchedMap] = useState<Record<string, number> | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const currentMap = useMemo(() => rateMapOf(rates), [rates]);
 
   const save = useMut(async () => {
     if (!rates) return;
+    const nextRub = Number(usdRub || rates.usd_to_rub);
+    const nextUsdtEgp = Number(usdtEgp || rates.usdt_to_egp);
+    const nextUsdEgp = Number(usdEgp || rates.usd_to_egp);
+    const nextMap: Record<string, number> = {
+      ...currentMap,
+      ...(fetchedMap ?? {}),
+      RUB: nextRub,
+      EGP: nextUsdEgp,
+      USD: 1,
+      USDT: 1,
+    };
     const { error } = await (
       await sb()
     )
       .from("rates")
       .update({
-        usd_to_rub: Number(usdRub || rates.usd_to_rub),
-        usdt_to_egp: Number(usdtEgp || rates.usdt_to_egp),
-        usd_to_egp: Number(usdEgp || rates.usd_to_egp),
+        usd_to_rub: nextRub,
+        usdt_to_egp: nextUsdtEgp,
+        usd_to_egp: nextUsdEgp,
+        base_currency: "USD",
+        rates_map: nextMap,
+        rates_fetched_at: fetchedMap ? new Date().toISOString() : rates.rates_fetched_at,
         updated_at: new Date().toISOString(),
       })
       .eq("id", rates.id);
@@ -133,19 +154,23 @@ export function RatesCard() {
     try {
       const res = await fetch("https://open.er-api.com/v6/latest/USD");
       const j = await res.json();
-      const rub = j?.rates?.RUB;
-      const egp = j?.rates?.EGP;
-      if (!rub || !egp) throw new Error("Нет данных курса");
-      setUsdRub(String(Math.round(rub * 100) / 100));
-      setUsdEgp(String(Math.round(egp * 100) / 100));
-      if (!usdtEgp) setUsdtEgp(String(Math.round(egp * 100) / 100));
-      toast.success("Курс обновлён");
+      const map = buildRateMap(j?.rates);
+      if (Object.keys(map).length <= 2) throw new Error("Нет данных курса");
+      setFetchedMap(map);
+      if (map.RUB) setUsdRub(String(Math.round(map.RUB * 100) / 100));
+      if (map.EGP) {
+        setUsdEgp(String(Math.round(map.EGP * 100) / 100));
+        if (!usdtEgp) setUsdtEgp(String(Math.round(map.EGP * 100) / 100));
+      }
+      toast.success(`Курсы обновлены (${Object.keys(map).length} валют)`);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Не удалось получить курс"));
     } finally {
       setLoading(false);
     }
   }
+
+  const knownCount = Object.keys(fetchedMap ?? currentMap).length;
 
   return (
     <Card className="mt-4 p-4">
@@ -155,6 +180,9 @@ export function RatesCard() {
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Обновить
         </Button>
+      </div>
+      <div className="mb-3 text-xs text-muted-foreground">
+        База USD · доступно курсов: {knownCount} · валюта отображения: {displayCurrency}
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <RateInput
@@ -220,7 +248,9 @@ function RateInput({
 
 function StudentFinanceCard({ studentId, name }: { studentId: string; name: string }) {
   const { data: rates } = useRates();
-  const [currency, setCurrency] = useState<Finance["currency"]>("RUB");
+  const defaultCurrency = useDefaultCurrency();
+  const [currency, setCurrency] = useState<string | null>(null);
+  const activeCurrency = currency ?? defaultCurrency;
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [isPaid, setIsPaid] = useState(true);
@@ -231,7 +261,7 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
     const { error } = await (await sb()).from("finance").insert({
       student_id: studentId,
       amount: num,
-      currency,
+      currency: activeCurrency,
       is_paid: isPaid,
       pay_date: date,
     });
@@ -239,13 +269,8 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
   }, ["finance"]);
 
   const n = Number(amount) || 0;
-  const conv = rates
-    ? {
-        rub: Math.round(convertToRUB(n, currency, rates)),
-        usdt: Math.round(convertToUSDT(n, currency, rates) * 100) / 100,
-        egp: Math.round(convertToEGP(n, currency, rates)),
-      }
-    : null;
+  const rateMap = rateMapOf(rates);
+  const preview = n > 0 ? convert(n, activeCurrency, defaultCurrency, rateMap) : null;
 
   return (
     <Card className="p-4">
@@ -258,13 +283,12 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
-        <Select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value as Finance["currency"])}
-        >
-          <option value="RUB">₽ RUB</option>
-          <option value="USD">$ USD</option>
-          <option value="EGP">£ EGP</option>
+        <Select value={activeCurrency} onChange={(e) => setCurrency(e.target.value)}>
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.code}
+            </option>
+          ))}
         </Select>
         <Input
           inputMode="decimal"
@@ -275,11 +299,11 @@ function StudentFinanceCard({ studentId, name }: { studentId: string; name: stri
         />
       </div>
 
-      {conv && n > 0 && (
-        <div className="mt-2 grid grid-cols-3 gap-2 text-center text-[11px] text-muted-foreground">
-          <span>≈ {conv.rub.toLocaleString("ru-RU")} ₽</span>
-          <span>≈ {conv.usdt} USDT</span>
-          <span>≈ {conv.egp.toLocaleString("ru-RU")} £</span>
+      {preview && activeCurrency !== defaultCurrency && (
+        <div className="mt-2 text-center text-[11px] text-muted-foreground">
+          {preview.ok
+            ? `≈ ${formatMoney(preview.value, defaultCurrency)}`
+            : `Курс ${activeCurrency} → ${defaultCurrency} недоступен`}
         </div>
       )}
 
@@ -332,8 +356,6 @@ function PaymentRow({ f, name }: { f: Finance; name: string }) {
     if (error) throw error;
   }, ["finance"]);
 
-  const sym = f.currency === "RUB" ? "₽" : f.currency === "USD" ? "$" : "£";
-
   return (
     <Card className="flex items-center gap-3 p-3">
       <Avatar initials={initials(name)} />
@@ -347,7 +369,7 @@ function PaymentRow({ f, name }: { f: Finance; name: string }) {
       </div>
       <div className="text-right">
         <div className="num text-base text-foreground">
-          {Number(f.amount).toLocaleString("ru-RU")} {sym}
+          {formatMoney(Number(f.amount), normalizeCurrency(f.currency, f.currency))}
         </div>
         <button
           onClick={() => toggle.mutateAsync(undefined as never)}

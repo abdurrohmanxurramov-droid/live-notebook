@@ -8,6 +8,8 @@ import {
   useFinance,
   useHomework,
   useAttendance,
+  useRates,
+  rateMapOf,
   formatMoney,
   STUDENT_STATUS_META,
   groupByStudentId,
@@ -17,6 +19,8 @@ import {
   type Attendance,
 } from "@/lib/db";
 import { listLessons } from "@/lib/lessons.functions";
+import { convert, sumConverted } from "@/lib/currency";
+import { useDefaultCurrency } from "@/lib/use-settings";
 import { FileText, Printer, User2, CalendarCheck, Wallet, ArrowLeft } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/reports")({ component: ReportsPage });
@@ -191,9 +195,23 @@ function StudentCard({
   attendance: Attendance[];
 }) {
   const attended = attendance.filter((a) => a.status === "present").length;
-  const paid = finance.filter((f) => f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
-  const owed = finance.filter((f) => !f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
-  const currency = finance[0]?.currency ?? "RUB";
+  const { data: rates } = useRates();
+  const currency = useDefaultCurrency();
+  const rateMap = rateMapOf(rates);
+  const paid = sumConverted(
+    finance
+      .filter((f) => f.is_paid)
+      .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+    currency,
+    rateMap,
+  ).total;
+  const owed = sumConverted(
+    finance
+      .filter((f) => !f.is_paid)
+      .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+    currency,
+    rateMap,
+  ).total;
   const doneHw = homework.filter((h) => h.status === "done").length;
   const totalHw = homework.length;
   const rate = totalHw ? Math.round((doneHw / totalHw) * 100) : 0;
@@ -376,20 +394,44 @@ function FinanceReport() {
     });
   }, [finance, from, to]);
 
+  const { data: rates } = useRates();
+  const currency = useDefaultCurrency();
+  const rateMap = useMemo(() => rateMapOf(rates), [rates]);
+
   const byStudent = useMemo(() => {
     const m = new Map<string, { paid: number; pending: number; currency: string }>();
     for (const f of inRange) {
-      const cur = m.get(f.student_id) ?? { paid: 0, pending: 0, currency: f.currency };
-      if (f.is_paid) cur.paid += Number(f.amount);
-      else cur.pending += Number(f.amount);
+      const cur = m.get(f.student_id) ?? { paid: 0, pending: 0, currency };
+      const res = convert(Number(f.amount), f.currency, currency, rateMap);
+      if (!res.ok) continue;
+      if (f.is_paid) cur.paid += res.value;
+      else cur.pending += res.value;
       m.set(f.student_id, cur);
     }
     return m;
-  }, [inRange]);
+  }, [inRange, rateMap, currency]);
 
-  const totalPaid = inRange.filter((f) => f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
-  const totalPending = inRange.filter((f) => !f.is_paid).reduce((s, f) => s + Number(f.amount), 0);
-  const currency = inRange[0]?.currency ?? "RUB";
+  const totals = useMemo(
+    () => ({
+      paid: sumConverted(
+        inRange
+          .filter((f) => f.is_paid)
+          .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+        currency,
+        rateMap,
+      ),
+      pending: sumConverted(
+        inRange
+          .filter((f) => !f.is_paid)
+          .map((f) => ({ amount: Number(f.amount), currency: f.currency })),
+        currency,
+        rateMap,
+      ),
+    }),
+    [inRange, rateMap, currency],
+  );
+  const totalPaid = totals.paid.total;
+  const totalPending = totals.pending.total;
 
   const byMonth = useMemo(() => {
     const m = new Map<string, { paid: number; pending: number }>();
