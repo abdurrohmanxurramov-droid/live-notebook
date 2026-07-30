@@ -49,15 +49,20 @@ RLS/политики/гранты не меняются (таблица уже o
 ## 4. Правки по файлам
 
 - `src/lib/db.ts` — тип `Finance.currency: string`; `Rates` расширяется `base_currency`/`rates_map`/`rates_fetched_at`; `convertToRUB/USDT/EGP` заменяются на `convert` (тонкие обёртки временно сохраняются, чтобы не ломать вызовы); `formatMoney` реэкспортируется из `currency.ts`.
-- `src/routes/_authenticated/finance.tsx` — select валют заполняется полным списком ISO; «Итого получено» считается конвертацией каждой записи в валюту по умолчанию, затем суммой; блок курсов пишет в `rates_map` и оставляет legacy-поля для совместимости.
+- `src/routes/_authenticated/finance.tsx` — select валют заполняется полным списком ISO, начальное значение формы = `settings.default_currency`; «Итого получено» считается конвертацией каждой записи в валюту по умолчанию, затем суммой; блок курсов пишет в `rates_map` и оставляет legacy-поля для совместимости.
 - `src/routes/_authenticated/analytics.tsx` — агрегаты по графику и топ-ученикам считаются через `convert` в валюту по умолчанию (сейчас жёстко RUB).
 - `src/routes/_authenticated/index.tsx` — доход за месяц, «ожидается сегодня/за неделю» и просроченные: конвертация каждой записи, потом сумма; вывод в валюте по умолчанию вместо `overdueRows[0].currency`.
 - `src/routes/_authenticated/reports.tsx` — убираются `finance[0]?.currency ?? "RUB"` и `inRange[0]?.currency`; строки сначала конвертируются, потом складываются; итог показывается в валюте по умолчанию.
-- `src/components/StudentRoom.tsx` — select валют из общего списка; удаляется тернарник символов; суммы форматируются через `formatMoney`.
+- `src/routes/_authenticated/students.tsx` — все денежные значения и суммы в списке учеников переводятся на `formatMoney`/`convert` с валютой по умолчанию (сейчас там валютная логика не учтена).
+- `src/components/StudentRoom.tsx` — select валют из общего списка, дефолт формы нового платежа = `settings.default_currency`; удаляется тернарник символов; суммы форматируются через `formatMoney`.
 - `src/components/settings/UserSettingsSection.tsx` — `default_currency` выбирается из полного списка ISO (select без изменения стилей).
 - `src/lib/schemas.ts` — `paymentSchema.currency` и `userSettingsSchema.default_currency` переходят на `currencyCodeSchema`.
 - `src/lib/backup.functions.ts` — валютные поля импорта на `currencyCodeSchema`; в схеме `rates` добавляются новые опциональные поля, legacy остаются обязательными как сейчас.
-- `src/lib/ai.functions.ts` — описание инструмента и Zod-валидация валюты через `currencyCodeSchema`; дефолт берётся из настроек пользователя, а не хардкод `"RUB"`.
+- `src/lib/ai.functions.ts` — описание инструмента и Zod-валидация валюты через `currencyCodeSchema`; дефолт берётся из настроек пользователя, а не хардкод `"RUB"` (аналогично `src/lib/lessons.functions.ts`, где уже есть fallback `?? "RUB"`).
+
+### UI при отсутствующем курсе
+
+Там, где часть записей не сконвертировалась, итог показывается по сконвертированной части плюс подпись «Курс недоступен» и отдельная сумма в исходной валюте. Молчаливое сложение разных валют исключено. Новые подписи — только текст, существующие кнопки и их стили не меняются.
 
 Не трогаются: PWA/offline, MCP, push, auth, секреты, дизайн кнопок.
 
