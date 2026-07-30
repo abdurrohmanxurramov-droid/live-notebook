@@ -473,28 +473,7 @@ export type Database = {
       }
     }
     Functions: {
-      claim_hook_execution: {
-        Args: { p_hook_name: string; p_window_key: string }
-        Returns: boolean
-      }
-      consume_app_rate_limit: {
-        Args: { p_scope: string }
-        Returns: boolean
-      }
       get_hook_secret: { Args: never; Returns: string }
-      set_lesson_status_with_attendance: {
-        Args: {
-          p_lesson_id: string
-          p_notes: string | null
-          p_status: Database["public"]["Enums"]["lesson_status"]
-          p_update_notes: boolean
-        }
-        Returns: Json
-      }
-      set_student_deleted_state: {
-        Args: { p_deleted: boolean; p_student_id: string }
-        Returns: boolean
-      }
     }
     Enums: {
       lesson_status: "planned" | "completed" | "cancelled" | "moved"
