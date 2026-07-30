@@ -187,7 +187,7 @@ function AnalyticsPage() {
             <Card className="p-4">
               <TrendingUp className="h-5 w-5 text-accent" />
               <div className="num mt-3 text-2xl text-foreground">
-                {totalIncome.toLocaleString("ru-RU")} ₽
+                {formatMoney(totalIncome, displayCurrency)}
               </div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
                 За {range} мес
@@ -196,7 +196,7 @@ function AnalyticsPage() {
             <Card className="p-4">
               <BarChart3 className="h-5 w-5 text-[color:var(--success)]" />
               <div className="num mt-3 text-2xl text-foreground">
-                {avgIncome.toLocaleString("ru-RU")} ₽
+                {formatMoney(avgIncome, displayCurrency)}
               </div>
               <div className="mt-0.5 text-[11px] font-medium text-muted-foreground">
                 Средний месяц
@@ -243,7 +243,7 @@ function AnalyticsPage() {
                     width={42}
                     tickFormatter={(v) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
                   />
-                  <Tooltip content={<ChartTooltip suffix=" ₽" />} />
+                  <Tooltip content={<ChartTooltip suffix={` ${displayCurrency}`} />} />
                   <Area
                     type="monotone"
                     dataKey="rub"
@@ -457,7 +457,7 @@ function AnalyticsPage() {
                           </div>
                         </div>
                         <div className="num text-sm text-foreground">
-                          {rub.toLocaleString("ru-RU")} ₽
+                          {formatMoney(rub, displayCurrency)}
                         </div>
                       </div>
                     </Card>
