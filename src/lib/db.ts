@@ -1,6 +1,12 @@
 import { sb } from "@/lib/sb";
 import { assertOnlineForMutation, withSnapshot } from "@/lib/offline";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { convert, formatMoney, resolveRateMap, type RateMap } from "@/lib/currency";
+
+export function rateMapOf(rates: Rates | null | undefined): RateMap {
+  return resolveRateMap(rates ?? undefined);
+}
+
 
 export type StudentStatus = "active" | "paused" | "completed" | "archived";
 export type Student = {
