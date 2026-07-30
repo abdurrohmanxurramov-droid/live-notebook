@@ -476,6 +476,11 @@ function AnalyticsPage() {
                           <div className="name-italic truncate text-[14px] font-semibold">
                             {s.name}
                           </div>
+                          {Object.keys(unconverted).length > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              Курс недоступен, не включено: {describeUnconverted(unconverted)}
+                            </div>
+                          )}
                           <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
                             <div
                               className="h-full rounded-full bg-accent transition-all"
