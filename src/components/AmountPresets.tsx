@@ -32,7 +32,7 @@ export function AmountPresets({
               i === 0 && hasPackage ? `Пакет из ${PACKAGE_SIZE} уроков этого ученика` : undefined
             }
           >
-            {formatMoney(amount, currency)}
+            {formatMoneyCompact(amount, currency)}
           </button>
         );
       })}
