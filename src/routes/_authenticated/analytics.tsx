@@ -58,19 +58,31 @@ function AnalyticsPage() {
       });
     }
     const map = new Map(buckets.map((b) => [b.key, b]));
+    const unconverted: Record<string, number> = {};
     for (const f of finance) {
       if (!f.is_paid) continue;
       const d = f.pay_date ? new Date(f.pay_date) : new Date(f.created_at);
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       const b = map.get(key);
+      if (!b) continue;
       const res = convert(Number(f.amount), f.currency, displayCurrency, rateMap);
-      if (b && res.ok) b.rub += res.value;
+      if (res.ok) b.rub += res.value;
+      else {
+        const code = normalizeCurrency(f.currency, f.currency);
+        const raw = Number(f.amount);
+        unconverted[code] = (unconverted[code] ?? 0) + (Number.isFinite(raw) ? raw : 0);
+      }
     }
-    return buckets.map((b) => ({ ...b, rub: Math.round(b.rub) }));
+    return {
+      buckets: buckets.map((b) => ({ ...b, rub: Math.round(b.rub) })),
+      unconverted,
+    };
   }, [finance, rates, rateMap, displayCurrency, range]);
 
+  const incomeByMonth = incomeData.buckets;
   const totalIncome = incomeByMonth.reduce((s, x) => s + x.rub, 0);
   const avgIncome = incomeByMonth.length ? Math.round(totalIncome / incomeByMonth.length) : 0;
+  const incomeUnconverted = incomeData.unconverted;
 
   // Посещаемость по дням недели
   const attendanceByDow = useMemo(() => {
