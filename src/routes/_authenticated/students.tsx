@@ -665,39 +665,14 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
           </Field>
         </div>
         <div className="stagger-item" style={{ animationDelay: "315ms" }}>
-          <Field label={`Цена урока, ${defaultCurrency} (необязательно)`}>
-            <Input
-              type="number"
-              min={0}
-              step={50}
-              inputMode="decimal"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Например, 1000"
-            />
-          </Field>
+          <PackagePriceFields
+            pkg={pkg}
+            setPkg={setPkg}
+            currency={currency}
+            setCurrency={setCurrency}
+          />
         </div>
-        <div className="stagger-item" style={{ animationDelay: "340ms" }}>
-          <Field label={`Цена пакета из 12 уроков, ${defaultCurrency}`}>
-            <Input
-              type="number"
-              min={0}
-              step={100}
-              inputMode="decimal"
-              value={price.trim() === "" ? "" : String(Math.round(Number(price) * 12 * 100) / 100)}
-              onChange={(e) => {
-                const raw = e.target.value;
-                if (raw.trim() === "") {
-                  setPrice("");
-                  return;
-                }
-                const per = Math.round(((Number(raw) || 0) / 12) * 100) / 100;
-                setPrice(String(per));
-              }}
-              placeholder="Например, 12000"
-            />
-          </Field>
-        </div>
+
 
       </div>
 
