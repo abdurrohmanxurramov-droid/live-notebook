@@ -80,7 +80,9 @@ function StudentsPage() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("students")
-        .select("id, name, days_per_week, subject, phone, created_at, status")
+        .select(
+          "id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency",
+        )
         .not("deleted_at", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
