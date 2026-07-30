@@ -111,7 +111,7 @@ const backup = read("src/lib/backup.functions.ts");
 assert.doesNotMatch(backup, /push_subscriptions/);
 assert.match(backup, /MAX_BACKUP_BYTES/);
 assert.match(backup, /consumeByteBudget/);
-assert.match(backup, /enforceRateLimit\(supabase, "backup_import"\)/);
+assert.match(backup, /enforceRateLimit\(userId, "backup_import"\)/);
 assert.match(backup, /importedSlotStudentById/);
 assert.match(backup, /row\.owner_id = userId/);
 
@@ -123,7 +123,7 @@ const ai = read("src/lib/ai.functions.ts");
 assert.match(ai, /const readOnlyAiTools = tools\.filter/);
 assert.match(ai, /MUTATING_AI_TOOLS\.has\(fname\)/);
 assert.match(ai, /tools: readOnlyAiTools/);
-assert.match(ai, /enforceRateLimit\(supabase, "ai_chat"\)/);
+assert.match(ai, /enforceRateLimit\(userId, "ai_chat"\)/);
 
 const push = read("src/lib/push.ts");
 assert.match(push, /ownsPushSubscription/);
