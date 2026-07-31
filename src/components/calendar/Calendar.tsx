@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
@@ -108,30 +108,39 @@ export function Calendar() {
     queryFn: () =>
       withSnapshot("lessons", `lessons:${from}:${to}`, () => list({ data: { from, to } })),
   });
-  const lessons = (data?.lessons ?? []) as Lesson[];
+  const lessons = useMemo(() => (data?.lessons ?? []) as Lesson[], [data]);
   const { data: students = [] } = useStudents();
-  const studentName = (id: string) => students.find((s) => s.id === id)?.name ?? "—";
+  const namesById = useMemo(() => {
+    const m = new Map<string, string>();
+    students.forEach((s) => m.set(s.id, s.name));
+    return m;
+  }, [students]);
+  const studentName = useCallback((id: string) => namesById.get(id) ?? "—", [namesById]);
   const pausedIds = useMemo(
     () => new Set(students.filter((s) => s.status === "paused").map((s) => s.id)),
     [students],
   );
-  const isPaused = (id: string) => pausedIds.has(id);
+  const isPaused = useCallback((id: string) => pausedIds.has(id), [pausedIds]);
 
   const qc = useQueryClient();
   const move = useServerFn(moveLesson);
   const setStatus = useServerFn(setLessonStatus);
   const del = useServerFn(deleteLesson);
 
-  async function handleDrop(id: string, newDate: string, newTime: string) {
-    try {
-      await move({ data: { id, new_date: newDate, new_time: newTime } });
-      qc.invalidateQueries({ queryKey: ["lessons"] });
-      qc.invalidateQueries({ queryKey: ["attendance"] });
-      toast.success("Урок перенесён");
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Ошибка переноса"));
-    }
-  }
+  const handleDrop = useCallback(
+    async (id: string, newDate: string, newTime: string) => {
+      try {
+        await move({ data: { id, new_date: newDate, new_time: newTime } });
+        qc.invalidateQueries({ queryKey: ["lessons"] });
+        qc.invalidateQueries({ queryKey: ["attendance"] });
+        toast.success("Урок перенесён");
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, "Ошибка переноса"));
+      }
+    },
+    [move, qc],
+  );
+  const handleMonthSlot = useCallback((d: string) => setCreateSlot({ date: d, time: "10:00" }), []);
 
   const label = useMemo(() => {
     const opts: Intl.DateTimeFormatOptions =
@@ -219,7 +228,7 @@ export function Calendar() {
               studentName={studentName}
               isPaused={isPaused}
               onDrop={handleDrop}
-              onSlot={(d) => setCreateSlot({ date: d, time: "10:00" })}
+              onSlot={handleMonthSlot}
               onMore={setMoreDay}
               onLesson={setActive}
             />
@@ -414,7 +423,7 @@ function CalendarViewPill({ view, setView }: { view: View; setView: (v: View) =>
 
 /* -------------------- DAY -------------------- */
 
-function DayView({
+const DayView = memo(function DayView({
   date,
   lessons,
   studentName,
@@ -461,11 +470,11 @@ function DayView({
       </div>
     </div>
   );
-}
+});
 
 /* -------------------- WEEK -------------------- */
 
-function WeekView({
+const WeekView = memo(function WeekView({
   start,
   lessons,
   studentName,
@@ -555,11 +564,11 @@ function WeekView({
       </div>
     </div>
   );
-}
+});
 
 /* -------------------- MONTH -------------------- */
 
-function MonthView({
+const MonthView = memo(function MonthView({
   start,
   cursor,
   lessons,
@@ -657,7 +666,7 @@ function MonthView({
       })}
     </div>
   );
-}
+});
 
 /* -------------------- PARTS -------------------- */
 
@@ -719,7 +728,7 @@ function SlotCell({
   );
 }
 
-function PositionedBlock({
+const PositionedBlock = memo(function PositionedBlock({
   lesson,
   studentName,
   paused,
@@ -760,7 +769,7 @@ function PositionedBlock({
       )}
     </div>
   );
-}
+});
 
 function toneBg(s: LessonStatus) {
   switch (s) {
