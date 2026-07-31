@@ -1,5 +1,4 @@
 import { defineTool } from "@lovable.dev/mcp-js";
-import { z } from "zod";
 import {
   assertOwnStudent,
   dbError,
@@ -155,4 +154,3 @@ export default [
   moveScheduleSlot,
 ];
 
-export const _internal = { z };
