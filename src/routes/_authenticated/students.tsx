@@ -866,7 +866,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
       }
       setLoadingSlots(false);
     })();
-  }, [student]);
+  }, [student, defaultCurrency]);
 
   const save = useMut(async () => {
     if (!student) return;
