@@ -664,9 +664,9 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => chatInputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("AI временно недоступен. Попробуйте позже.");
-    const model = process.env.AI_MODEL?.trim() || "gpt-4o-mini";
+    const apiKey = process.env.GROQ_API_KEY?.trim();
+    if (!apiKey) throw new Error("ИИ-помощник пока не настроен. Обратитесь к администратору.");
+    const model = process.env.GROQ_MODEL?.trim() || "openai/gpt-oss-20b";
 
     const { supabase, userId } = context;
     await enforceRateLimit(userId, "ai_chat");
