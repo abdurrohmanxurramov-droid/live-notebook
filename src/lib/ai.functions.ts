@@ -776,7 +776,7 @@ ${slotsStr}`,
     let finalReply = "";
 
     for (let step = 0; step < MAX_STEPS; step++) {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -789,8 +789,11 @@ ${slotsStr}`,
 
       if (!res.ok) {
         console.error("[ai-provider]", res.status, res.headers.get("x-request-id") ?? "");
+        if (res.status === 401 || res.status === 403) {
+          throw new Error("ИИ-помощник пока не настроен. Обратитесь к администратору.");
+        }
         if (res.status === 429) {
-          throw new Error("Слишком много запросов. Попробуйте позже.");
+          throw new Error("Слишком много запросов к ИИ. Подождите немного и попробуйте снова.");
         }
         throw new Error("AI временно недоступен. Попробуйте позже.");
       }
