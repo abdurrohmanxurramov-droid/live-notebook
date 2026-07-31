@@ -12,30 +12,398 @@
   "mcp": {
     "server": {
       "name": "livenotebook-mcp",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "title": "LiveNotebook"
     },
     "tools": [
       {
         "name": "list_students",
         "title": "List students",
-        "description": "List the signed-in teacher's students (name, subject, days per week, status).",
+        "description": "List the signed-in teacher's students, optionally filtered by status.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
-          "properties": {}
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "paused",
+                "completed",
+                "archived"
+              ],
+              "description": "Filter by student status"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_student",
+        "title": "Get student",
+        "description": "Get one student with their schedule slots and recent lessons.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Student ID"
+            }
+          },
+          "required": [
+            "student_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_student",
+        "title": "Create student",
+        "description": "Create a new student for the signed-in teacher.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Student name"
+            },
+            "subject": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "phone": {
+              "type": "string",
+              "maxLength": 40
+            },
+            "days_per_week": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            },
+            "lesson_price": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "lesson_currency": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_student",
+        "title": "Update student",
+        "description": "Update fields of an existing student owned by the signed-in teacher.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "subject": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "phone": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 40
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "days_per_week": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 7
+            },
+            "lesson_price": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 10000000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lesson_currency": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "student_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "set_student_status",
+        "title": "Set student status",
+        "description": "Pause, resume (active), complete or archive a student. Repeating the call is safe.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "active",
+                "paused",
+                "completed",
+                "archived"
+              ],
+              "description": "active = resume, paused = pause"
+            }
+          },
+          "required": [
+            "student_id",
+            "status"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_schedule_slots",
+        "title": "List schedule slots",
+        "description": "List recurring weekly schedule slots, optionally filtered by student or weekday.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "day_of_week": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6,
+              "description": "0 = Sunday … 6 = Saturday"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_schedule_slot",
+        "title": "Get schedule slot",
+        "description": "Get one recurring schedule slot by ID.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "slot_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "slot_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_schedule_slot",
+        "title": "Create schedule slot",
+        "description": "Add a recurring weekly slot for one of the teacher's students.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "day_of_week": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "start_time": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+              "description": "Time, HH:MM"
+            },
+            "duration_min": {
+              "type": "integer",
+              "minimum": 15,
+              "maximum": 480
+            }
+          },
+          "required": [
+            "student_id",
+            "day_of_week",
+            "start_time"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_schedule_slot",
+        "title": "Update schedule slot",
+        "description": "Change the duration or start time of an existing recurring slot.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "slot_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "start_time": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+              "description": "Time, HH:MM"
+            },
+            "duration_min": {
+              "type": "integer",
+              "minimum": 15,
+              "maximum": 480
+            }
+          },
+          "required": [
+            "slot_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "move_schedule_slot",
+        "title": "Move schedule slot",
+        "description": "Move a recurring slot to another weekday and/or time.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "slot_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "day_of_week": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "start_time": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+              "description": "Time, HH:MM"
+            }
+          },
+          "required": [
+            "slot_id",
+            "day_of_week",
+            "start_time"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
       {
         "name": "list_lessons",
         "title": "List lessons",
-        "description": "List lessons in a date range (YYYY-MM-DD) for the signed-in teacher.",
+        "description": "List lessons in a date range (YYYY-MM-DD), optionally by student or status.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -47,12 +415,23 @@
             "from": {
               "type": "string",
               "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-              "description": "Start date, YYYY-MM-DD"
+              "description": "Date, YYYY-MM-DD"
             },
             "to": {
+              "$ref": "#/properties/from"
+            },
+            "student_id": {
               "type": "string",
-              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-              "description": "End date, YYYY-MM-DD"
+              "format": "uuid"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "planned",
+                "completed",
+                "cancelled",
+                "moved"
+              ]
             }
           },
           "required": [
@@ -65,41 +444,158 @@
         "outputSchema": null
       },
       {
-        "name": "list_finance",
-        "title": "List payments",
-        "description": "List finance/payment records for the signed-in teacher.",
+        "name": "get_lesson",
+        "title": "Get lesson",
+        "description": "Get one lesson by ID.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
-          "properties": {}
+          "properties": {
+            "lesson_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "lesson_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
       {
-        "name": "list_homework",
-        "title": "List homework",
-        "description": "List homework entries for the signed-in teacher's students.",
+        "name": "create_lesson",
+        "title": "Create lesson",
+        "description": "Create a single lesson for one of the teacher's students.",
         "annotations": {
-          "readOnlyHint": true,
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "scheduled_date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Date, YYYY-MM-DD"
+            },
+            "scheduled_time": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+              "description": "Time, HH:MM"
+            },
+            "duration_min": {
+              "type": "integer",
+              "minimum": 15,
+              "maximum": 480
+            },
+            "notes": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "student_id",
+            "scheduled_date",
+            "scheduled_time"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "move_lesson",
+        "title": "Move lesson",
+        "description": "Reschedule an existing lesson to another date and/or time.",
+        "annotations": {
+          "readOnlyHint": false,
           "idempotentHint": true,
           "openWorldHint": false
         },
         "inputSchema": {
-          "$schema": "http://json-schema.org/draft-07/schema#",
           "type": "object",
-          "properties": {}
+          "properties": {
+            "lesson_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "scheduled_date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Date, YYYY-MM-DD"
+            },
+            "scheduled_time": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+              "description": "Time, HH:MM"
+            }
+          },
+          "required": [
+            "lesson_id",
+            "scheduled_date",
+            "scheduled_time"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_lesson",
+        "title": "Update lesson notes or duration",
+        "description": "Update the notes and/or duration of an existing lesson.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "lesson_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "duration_min": {
+              "type": "integer",
+              "minimum": 15,
+              "maximum": 480
+            }
+          },
+          "required": [
+            "lesson_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
       },
       {
         "name": "set_lesson_status",
         "title": "Set lesson status",
-        "description": "Update the status of one existing lesson owned by the signed-in teacher. Allowed values: planned, completed, cancelled, moved.",
+        "description": "Update the status of one lesson (planned, completed, cancelled, moved) and keep attendance in sync. Repeating the call is idempotent.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": true,
@@ -111,8 +607,7 @@
           "properties": {
             "lesson_id": {
               "type": "string",
-              "format": "uuid",
-              "description": "ID of the lesson to update"
+              "format": "uuid"
             },
             "status": {
               "type": "string",
@@ -121,13 +616,766 @@
                 "completed",
                 "cancelled",
                 "moved"
-              ],
-              "description": "New lesson status"
+              ]
             }
           },
           "required": [
             "lesson_id",
             "status"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_attendance",
+        "title": "List attendance",
+        "description": "List attendance records in a date range, optionally for one student.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Date, YYYY-MM-DD"
+            },
+            "to": {
+              "$ref": "#/properties/from"
+            },
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "mark_attendance",
+        "title": "Mark attendance",
+        "description": "Set attendance for a student on a date. Calling it again for the same student and date updates the existing record instead of creating a duplicate.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Date, YYYY-MM-DD"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "present",
+                "absent",
+                "excused",
+                "rescheduled_by_teacher"
+              ]
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 1000,
+              "description": "Optional note; omit to keep the current note"
+            }
+          },
+          "required": [
+            "student_id",
+            "date",
+            "status"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_finance",
+        "title": "List payments",
+        "description": "List finance records, optionally filtered by student or paid state.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "is_paid": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_debts",
+        "title": "List outstanding payments",
+        "description": "List unpaid finance records grouped per student, with totals per currency.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_finance_entry",
+        "title": "Create payment record",
+        "description": "Create a manual payment/charge record for one of the teacher's students.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "amount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "currency": {
+              "type": "string"
+            },
+            "is_paid": {
+              "type": "boolean"
+            },
+            "pay_date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Date, YYYY-MM-DD"
+            }
+          },
+          "required": [
+            "student_id",
+            "amount",
+            "currency"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_finance_entry",
+        "title": "Update payment record",
+        "description": "Update the amount, currency or payment date of an existing finance record.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "finance_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "amount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "currency": {
+              "type": "string"
+            },
+            "pay_date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "description": "Date, YYYY-MM-DD"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date, YYYY-MM-DD"
+            }
+          },
+          "required": [
+            "finance_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "set_finance_paid",
+        "title": "Mark payment paid or unpaid",
+        "description": "Mark a finance record as paid or unpaid. Repeating the call is safe.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "finance_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "is_paid": {
+              "type": "boolean"
+            },
+            "pay_date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Payment date; defaults to today when marking paid"
+            }
+          },
+          "required": [
+            "finance_id",
+            "is_paid"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_homework",
+        "title": "List homework",
+        "description": "List homework entries, optionally filtered by student or status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "assigned",
+                "done",
+                "not_done",
+                "partial"
+              ]
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_homework",
+        "title": "Get homework",
+        "description": "Get one homework entry by ID.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "homework_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "homework_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "create_homework",
+        "title": "Create homework",
+        "description": "Assign homework to one of the teacher's students.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "student_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "task": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "assigned_date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Date, YYYY-MM-DD"
+            },
+            "due_date": {
+              "$ref": "#/properties/assigned_date",
+              "description": "Date, YYYY-MM-DD"
+            },
+            "note": {
+              "type": "string",
+              "maxLength": 1000
+            }
+          },
+          "required": [
+            "student_id",
+            "task"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_homework",
+        "title": "Update homework",
+        "description": "Update the task text, due date, status or note of an existing homework entry.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "homework_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "task": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2000
+            },
+            "due_date": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+                  "description": "Date, YYYY-MM-DD"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Date, YYYY-MM-DD"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "assigned",
+                "done",
+                "not_done",
+                "partial"
+              ]
+            },
+            "note": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "homework_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_settings",
+        "title": "Get settings",
+        "description": "Read the signed-in teacher's app settings (defaults, reminders, locale).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "update_settings",
+        "title": "Update settings",
+        "description": "Update safe app preferences: default currency, lesson duration and price, week start, reminder options and locale.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "default_currency": {
+              "type": "string"
+            },
+            "default_lesson_duration": {
+              "type": "integer",
+              "minimum": 15,
+              "maximum": 240
+            },
+            "default_lesson_price": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10000000
+            },
+            "week_starts_on": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 6
+            },
+            "remind_before_min": {
+              "type": "integer",
+              "minimum": 5,
+              "maximum": 1440
+            },
+            "locale": {
+              "type": "string",
+              "enum": [
+                "ru",
+                "en"
+              ]
+            },
+            "remind_lessons": {
+              "type": "boolean"
+            },
+            "remind_payments": {
+              "type": "boolean"
+            },
+            "remind_homework": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "today_lessons",
+        "title": "Today's lessons",
+        "description": "List the teacher's lessons for today (or a given date) with student names.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Defaults to today"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "upcoming_homework",
+        "title": "Upcoming homework",
+        "description": "List homework that is still open and due within the next N days (default 7).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "days": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "unpaid_students",
+        "title": "Students with unpaid balances",
+        "description": "Summarise students who currently have unpaid finance records.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "period_summary",
+        "title": "Period summary",
+        "description": "Aggregate counts for a date range: lessons by status, attendance by status, and paid/unpaid totals per currency.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+              "description": "Date, YYYY-MM-DD"
+            },
+            "to": {
+              "$ref": "#/properties/from"
+            }
+          },
+          "required": [
+            "from",
+            "to"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_trash",
+        "title": "List trash",
+        "description": "List soft-deleted records that can still be restored.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "table": {
+              "type": "string",
+              "enum": [
+                "students",
+                "lessons",
+                "attendance",
+                "finance",
+                "homework",
+                "schedule_slots"
+              ],
+              "description": "Which record type to act on"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "soft_delete_record",
+        "title": "Move record to trash",
+        "description": "Soft-delete a record (moves it to trash; it can be restored). Deleting a student also trashes their slots, lessons, attendance and homework.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "table": {
+              "type": "string",
+              "enum": [
+                "students",
+                "lessons",
+                "attendance",
+                "finance",
+                "homework",
+                "schedule_slots"
+              ],
+              "description": "Which record type to act on"
+            },
+            "record_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "table",
+            "record_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "restore_record",
+        "title": "Restore record from trash",
+        "description": "Restore a soft-deleted record. Restoring a student also restores their related data.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "table": {
+              "type": "string",
+              "enum": [
+                "students",
+                "lessons",
+                "attendance",
+                "finance",
+                "homework",
+                "schedule_slots"
+              ],
+              "description": "Which record type to act on"
+            },
+            "record_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "table",
+            "record_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "prepare_permanent_delete",
+        "title": "Prepare permanent delete",
+        "description": "Step 1 of 2 for irreversible deletion: returns a confirmation token valid for 5 minutes. Show the record to the user and ask for explicit confirmation before calling confirm_permanent_delete.",
+        "annotations": {
+          "readOnlyHint": false,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "table": {
+              "type": "string",
+              "enum": [
+                "students",
+                "lessons",
+                "attendance",
+                "finance",
+                "homework",
+                "schedule_slots"
+              ],
+              "description": "Which record type to act on"
+            },
+            "record_id": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "required": [
+            "table",
+            "record_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "confirm_permanent_delete",
+        "title": "Confirm permanent delete",
+        "description": "Step 2 of 2: permanently delete the record referenced by a confirmation token from prepare_permanent_delete. This cannot be undone.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "confirmation_token": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Token returned by prepare_permanent_delete"
+            }
+          },
+          "required": [
+            "confirmation_token"
           ],
           "additionalProperties": false,
           "$schema": "http://json-schema.org/draft-07/schema#"

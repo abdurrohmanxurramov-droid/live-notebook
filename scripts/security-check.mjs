@@ -119,11 +119,12 @@ const server = read("src/server.ts");
 assert.match(server, /MAX_REQUEST_BODY_BYTES = 8_000_000/);
 assert.match(server, /total > MAX_REQUEST_BODY_BYTES/);
 
-const ai = read("src/lib/ai.functions.ts");
-assert.match(ai, /const readOnlyAiTools = tools\.filter/);
-assert.match(ai, /MUTATING_AI_TOOLS\.has\(fname\)/);
-assert.match(ai, /tools: readOnlyAiTools/);
-assert.match(ai, /enforceRateLimit\(userId, "ai_chat"\)/);
+const mcpSupabase = read("src/lib/mcp/supabase.ts");
+assert.doesNotMatch(mcpSupabase, /SERVICE_ROLE/);
+assert.match(mcpSupabase, /SUPABASE_PUBLISHABLE_KEY/);
+assert.match(mcpSupabase, /Authorization: `Bearer \$\{token\}`/);
+assert.match(mcpSupabase, /checkRateLimit\(userId, "mcp_write"\)/);
+
 
 const push = read("src/lib/push.ts");
 assert.match(push, /ownsPushSubscription/);
@@ -145,7 +146,7 @@ assert.match(auth, /next\.includes\("\\\\"\)/);
 const allSecuritySensitiveSources = [
   "src/integrations/supabase/client.server.ts",
   "src/lib/push.server.ts",
-  "src/lib/ai.functions.ts",
+  "src/lib/mcp/supabase.ts",
   "vite.config.ts",
   ".env.example",
 ]

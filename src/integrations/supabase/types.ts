@@ -297,6 +297,33 @@ export type Database = {
           },
         ]
       }
+      mcp_pending_deletes: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          owner_id: string
+          target_id: string
+          target_table: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          owner_id: string
+          target_id: string
+          target_table: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          owner_id?: string
+          target_id?: string
+          target_table?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -541,6 +568,16 @@ export type Database = {
       set_student_deleted_state: {
         Args: { p_deleted: boolean; p_student_id: string }
         Returns: boolean
+      }
+      upsert_attendance_entry: {
+        Args: {
+          p_date: string
+          p_note: string
+          p_status: string
+          p_student_id: string
+          p_update_note: boolean
+        }
+        Returns: Json
       }
     }
     Enums: {
