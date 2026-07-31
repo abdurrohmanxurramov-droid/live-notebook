@@ -689,7 +689,7 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
     const prior = (history ?? []).reverse().map((message) => {
       const msg: Msg = {
         role: message.role as Msg["role"],
-        content: message.content ?? "",
+        content: (message.content ?? "").slice(0, 2000),
       };
       if (Array.isArray(message.tool_calls)) {
         msg.tool_calls = message.tool_calls as unknown as ToolCall[];
