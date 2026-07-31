@@ -47,6 +47,8 @@ const WORKER_ENV_KEYS = [
   "VAPID_SUBJECT",
   "OPENAI_API_KEY",
   "AI_MODEL",
+  "GROQ_API_KEY",
+  "GROQ_MODEL",
 ] as const;
 
 function installWorkerEnv(env: unknown) {
