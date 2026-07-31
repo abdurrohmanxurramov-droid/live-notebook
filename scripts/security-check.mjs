@@ -146,7 +146,7 @@ assert.match(auth, /next\.includes\("\\\\"\)/);
 const allSecuritySensitiveSources = [
   "src/integrations/supabase/client.server.ts",
   "src/lib/push.server.ts",
-  "src/lib/ai.functions.ts",
+  "src/lib/mcp/supabase.ts",
   "vite.config.ts",
   ".env.example",
 ]
