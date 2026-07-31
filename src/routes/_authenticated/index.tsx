@@ -30,7 +30,6 @@ import {
   GraduationCap,
   CheckCircle2,
   AlertTriangle,
-  Sparkles,
   Clock,
   CalendarDays,
   X,
@@ -217,7 +216,6 @@ function Home() {
 
       <SectionTitle>Быстрые действия</SectionTitle>
       <div className="grid grid-cols-4 gap-3">
-        <QuickAction to="/assistant" icon={<Sparkles className="h-5 w-5" />} label="ИИ" />
         <QuickAction to="/analytics" icon={<BarChart3 className="h-5 w-5" />} label="Аналитика" />
         <QuickAction to="/reports" icon={<FileText className="h-5 w-5" />} label="Отчёты" />
         <QuickAction to="/homework" icon={<BookOpen className="h-5 w-5" />} label="Журнал" />
