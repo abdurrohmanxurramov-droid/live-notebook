@@ -775,24 +775,39 @@ ${slotsStr}`,
     const MAX_STEPS = 10;
     let finalReply = "";
 
-    for (let step = 0; step < MAX_STEPS; step++) {
-      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model,
-          messages,
-          tools: readOnlyAiTools,
-          tool_choice: "auto",
-        }),
-      });
+    // Groq отвечает 413, когда запрос превышает лимит токенов в минуту.
+    // Поэтому пробуем всё более короткое окно истории.
+    const windowSizes = [messages.length, 12, 6, 2];
+    const buildPayload = (limit: number) => {
+      const [sys, ...rest] = messages;
+      let tail = rest.slice(Math.max(0, rest.length - limit));
+      while (tail.length && tail[0].role === "tool") tail = tail.slice(1);
+      return [sys, ...tail];
+    };
 
-      if (!res.ok) {
-        console.error("[ai-provider]", res.status, res.headers.get("x-request-id") ?? "");
-        if (res.status === 401 || res.status === 403) {
+    for (let step = 0; step < MAX_STEPS; step++) {
+      let res: Response | undefined;
+      for (const size of windowSizes) {
+        res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model,
+            messages: buildPayload(size),
+            tools: readOnlyAiTools,
+            tool_choice: "auto",
+          }),
+        });
+        if (res.status !== 413) break;
+        console.error("[ai-provider] 413 retry window", size);
+      }
+
+      if (!res || !res.ok) {
+        console.error("[ai-provider]", res?.status, res?.headers.get("x-request-id") ?? "");
+        if (res && (res.status === 401 || res.status === 403)) {
           throw new Error("ИИ-помощник пока не настроен. Обратитесь к администратору.");
         }
-        if (res.status === 429) {
+        if (res && (res.status === 429 || res.status === 413)) {
           throw new Error("Слишком много запросов к ИИ. Подождите немного и попробуйте снова.");
         }
         throw new Error("AI временно недоступен. Попробуйте позже.");
