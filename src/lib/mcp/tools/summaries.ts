@@ -76,7 +76,10 @@ export const unpaidStudents = defineTool({
       .eq("is_paid", false)
       .limit(200);
     if (error) return dbError("unpaid_students", error);
-    const map = new Map<string, { student_id: string; name: string | null; totals: Record<string, number> }>();
+    const map = new Map<
+      string,
+      { student_id: string; name: string | null; totals: Record<string, number> }
+    >();
     for (const row of data ?? []) {
       const id = String(row.student_id);
       const student = row.students as { name?: string } | null;

@@ -147,8 +147,7 @@ export const updateStudent = defineTool({
 export const setStudentStatus = defineTool({
   name: "set_student_status",
   title: "Set student status",
-  description:
-    "Pause, resume (active), complete or archive a student. Repeating the call is safe.",
+  description: "Pause, resume (active), complete or archive a student. Repeating the call is safe.",
   inputSchema: {
     student_id: uuid,
     status: z.enum(STUDENT_STATUSES).describe("active = resume, paused = pause"),

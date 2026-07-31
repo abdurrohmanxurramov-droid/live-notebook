@@ -80,7 +80,8 @@ export const softDeleteRecord = defineTool({
 export const restoreRecord = defineTool({
   name: "restore_record",
   title: "Restore record from trash",
-  description: "Restore a soft-deleted record. Restoring a student also restores their related data.",
+  description:
+    "Restore a soft-deleted record. Restoring a student also restores their related data.",
   inputSchema: { table: tableSchema, record_id: uuid },
   annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
   handler: async ({ table, record_id }, ctx) => {
