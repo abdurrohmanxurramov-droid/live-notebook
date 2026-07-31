@@ -59,6 +59,9 @@ function addMinutes(t: string, mins: number) {
   return `${hh}:${mm}`;
 }
 
+const REGEN_COOLDOWN_MS = 60_000;
+let lastRegenAt = 0;
+
 function SchedulePage() {
   const { data: slots = [] } = useSchedule();
   const { data: students = [] } = useStudents();
@@ -70,6 +73,10 @@ function SchedulePage() {
   useEffect(() => {
     let cancelled = false;
     if (!isOnline()) return;
+    // Не дёргаем тяжёлую регенерацию при каждом маунте страницы (переходы по табам).
+    const now = Date.now();
+    if (now - lastRegenAt < REGEN_COOLDOWN_MS) return;
+    lastRegenAt = now;
     regenOnMount()
       .then(() => {
         if (!cancelled) qcMount.invalidateQueries({ queryKey: ["lessons"] });
