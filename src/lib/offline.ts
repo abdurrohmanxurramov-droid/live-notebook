@@ -1,7 +1,5 @@
 // Offline-first snapshots (Phase 1: read-only).
 // Snapshots are stored in IndexedDB via Dexie, scoped per authenticated user id.
-import Dexie, { type Table } from "dexie";
-
 import { sb } from "@/lib/sb";
 
 export const OFFLINE_TEXT = {
@@ -28,21 +26,29 @@ type SnapshotRow = {
   data: unknown;
 };
 
-class OfflineDb extends Dexie {
-  snapshots!: Table<SnapshotRow, string>;
-  constructor() {
-    super("livenotebook-offline");
-    this.version(1).stores({ snapshots: "id, userId, kind" });
-  }
-}
+type OfflineDb = {
+  snapshots: import("dexie").Table<SnapshotRow, string>;
+};
 
-let _db: OfflineDb | null = null;
+let _dbPromise: Promise<OfflineDb | null> | null = null;
 let snapshotGeneration = 0;
 
-function db(): OfflineDb | null {
-  if (typeof indexedDB === "undefined") return null;
-  if (!_db) _db = new OfflineDb();
-  return _db;
+/**
+ * Dexie весит ~150 КБ и нужен только для офлайн-снимков, поэтому грузим его
+ * динамически — он не попадает в основной бандл и не тормозит первый рендер.
+ */
+function db(): Promise<OfflineDb | null> {
+  if (typeof indexedDB === "undefined") return Promise.resolve(null);
+  if (!_dbPromise) {
+    _dbPromise = import("dexie")
+      .then(({ default: Dexie }) => {
+        const instance = new Dexie("livenotebook-offline");
+        instance.version(1).stores({ snapshots: "id, userId, kind" });
+        return instance as unknown as OfflineDb;
+      })
+      .catch(() => null);
+  }
+  return _dbPromise;
 }
 
 export function isOnline(): boolean {
@@ -73,7 +79,7 @@ async function saveSnapshotForUser(
   key: string,
   data: unknown,
 ) {
-  const database = db();
+  const database = await db();
   if (!database || generation !== snapshotGeneration) return;
   try {
     if (generation !== snapshotGeneration) return;
@@ -97,7 +103,7 @@ export async function saveSnapshot(kind: SnapshotKind, key: string, data: unknow
 }
 
 export async function readSnapshot<T>(key: string): Promise<T | undefined> {
-  const database = db();
+  const database = await db();
   if (!database) return undefined;
   const userId = await currentUserId();
   if (!userId) return undefined;
@@ -110,7 +116,7 @@ export async function readSnapshot<T>(key: string): Promise<T | undefined> {
 }
 
 export async function hasAnySnapshot(): Promise<boolean> {
-  const database = db();
+  const database = await db();
   if (!database) return false;
   const userId = await currentUserId();
   if (!userId) return false;
@@ -127,7 +133,7 @@ export async function hasAnySnapshot(): Promise<boolean> {
  */
 export async function clearOfflineSnapshots(): Promise<void> {
   snapshotGeneration += 1;
-  const database = db();
+  const database = await db();
   if (!database) return;
   try {
     await database.snapshots.clear();
