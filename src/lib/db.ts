@@ -7,7 +7,6 @@ export function rateMapOf(rates: Rates | null | undefined): RateMap {
   return resolveRateMap(rates ?? undefined);
 }
 
-
 export type StudentStatus = "active" | "paused" | "completed" | "archived";
 export type Student = {
   id: string;
@@ -87,7 +86,6 @@ export type Rates = {
   updated_at: string;
 };
 
-
 export function useStudents() {
   return useQuery({
     queryKey: ["students"],
@@ -95,7 +93,9 @@ export function useStudents() {
       withSnapshot("students", "students", async () => {
         const { data, error } = await (await sb())
           .from("students")
-          .select("id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency")
+          .select(
+            "id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency",
+          )
           .is("deleted_at", null)
           .order("created_at", { ascending: false });
         if (error) throw error;
@@ -198,7 +198,6 @@ export function useRates() {
   });
 }
 
-
 export function useInvalidate() {
   const qc = useQueryClient();
   return (keys: string[]) => keys.forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
@@ -243,7 +242,6 @@ export function convertToEGP(amount: number, currency: string, rates: Rates) {
   const res = convert(amount, currency, "EGP", rateMapOf(rates));
   return res.ok ? res.value : 0;
 }
-
 
 export function groupByStudentId<T extends { student_id: string }>(rows: readonly T[]) {
   const map = new Map<string, T[]>();

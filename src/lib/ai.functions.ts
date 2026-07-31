@@ -227,7 +227,10 @@ const tools = [
         properties: {
           student_id: { type: "string" },
           amount: { type: "number" },
-          currency: { type: "string", description: "Код валюты ISO 4217, напр. RUB, USD, EUR (или USDT)" },
+          currency: {
+            type: "string",
+            description: "Код валюты ISO 4217, напр. RUB, USD, EUR (или USDT)",
+          },
           is_paid: { type: "boolean" },
           pay_date: { type: "string", description: "YYYY-MM-DD" },
         },

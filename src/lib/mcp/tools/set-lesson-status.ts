@@ -35,8 +35,7 @@ export default defineTool({
     const supabase = userClient(ctx);
     const { data: authData } = await supabase.auth.getUser();
     const callerId = authData.user?.id;
-    if (!callerId)
-      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+    if (!callerId) return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
 
     const { checkRateLimit } = await import("@/lib/rate-limit");
     const allowed = await checkRateLimit(callerId, "mcp_write").catch(() => false);
