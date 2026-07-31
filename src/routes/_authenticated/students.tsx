@@ -86,7 +86,9 @@ function StudentsPage() {
     queryFn: async () => {
       const { data, error } = await (await sb())
         .from("students")
-        .select("id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency")
+        .select(
+          "id, name, days_per_week, subject, phone, created_at, status, lesson_price, lesson_currency",
+        )
         .not("deleted_at", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -672,8 +674,6 @@ function AddStudentSheet({ open, onClose }: { open: boolean; onClose: () => void
             setCurrency={setCurrency}
           />
         </div>
-
-
       </div>
 
       <div className="mt-8 flex gap-3 pb-2">
@@ -815,8 +815,6 @@ function PackagePriceFields({
   );
 }
 
-
-
 function EditStudentSheet({ student, onClose }: { student: Student | null; onClose: () => void }) {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
@@ -866,7 +864,7 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
       }
       setLoadingSlots(false);
     })();
-  }, [student]);
+  }, [student, defaultCurrency]);
 
   const save = useMut(async () => {
     if (!student) return;
@@ -1030,8 +1028,6 @@ function EditStudentSheet({ student, onClose }: { student: Student | null; onClo
               currency={currency}
               setCurrency={setCurrency}
             />
-
-
           </div>
 
           <div className="mt-8 flex gap-3 pb-2">

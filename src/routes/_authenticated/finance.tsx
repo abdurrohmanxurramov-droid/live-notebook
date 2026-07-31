@@ -138,7 +138,6 @@ export function RatesCard() {
         return { code, value: value ? String(Math.round(value * 10000) / 10000) : "" };
       });
 
-
   const setRow = (i: number, patch: Partial<RateRow>) =>
     setRows(effectiveRows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
   const removeRow = (i: number) => setRows(effectiveRows.filter((_, idx) => idx !== i));
