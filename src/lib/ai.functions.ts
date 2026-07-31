@@ -684,7 +684,7 @@ export const chatWithAssistant = createServerFn({ method: "POST" })
       .select("role, content, tool_calls, tool_call_id, name, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(60);
+      .limit(20);
 
     const prior = (history ?? []).reverse().map((message) => {
       const msg: Msg = {
