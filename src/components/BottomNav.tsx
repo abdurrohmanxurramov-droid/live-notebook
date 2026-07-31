@@ -10,7 +10,6 @@ import {
   CalendarDays,
   BarChart3,
   BookOpen,
-  Sparkles,
   MoreHorizontal,
   FileText,
 } from "lucide-react";
@@ -29,7 +28,6 @@ const moreTabs = [
   { to: "/homework", label: "Домашние задания", icon: BookOpen, hint: "Список и статусы" },
   { to: "/reports", label: "Отчёты", icon: FileText, hint: "Печать и PDF" },
   { to: "/analytics", label: "Аналитика", icon: BarChart3, hint: "Сводка и графики" },
-  { to: "/assistant", label: "ИИ-помощник", icon: Sparkles, hint: "Подсказки и расчёты" },
   { to: "/settings", label: "Настройки", icon: Settings, hint: "Тема, push, курсы" },
 ] as const;
 
