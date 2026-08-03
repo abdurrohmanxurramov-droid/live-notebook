@@ -8,7 +8,9 @@ export const queryTool = defineTool({
   title: "Query LiveNotebook data",
   description: `Read data from the signed-in teacher's LiveNotebook CRM. Never writes. Pick one operation in "request.resource": ${operationNames(
     QUERY_OPS,
-  ).join(", ")}. Dates are YYYY-MM-DD, times HH:MM, weekdays 0=Sunday..6=Saturday. Date ranges may not exceed one year.`,
+  ).join(
+    ", ",
+  )}. Dates are YYYY-MM-DD, times HH:MM, weekdays 0=Sunday..6=Saturday. Date ranges may not exceed one year.`,
   inputSchema: {
     request: buildRequestSchema("resource", QUERY_OPS).describe(
       "The read operation and its parameters, discriminated by `resource`.",

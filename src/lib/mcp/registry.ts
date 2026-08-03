@@ -39,9 +39,9 @@ export function buildRequestSchema(key: string, ops: readonly Op[]) {
       .describe(op.summary),
   );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return z.discriminatedUnion(key, variants as any).describe(
-    `One of: ${ops.map((o) => o.operation).join(", ")}`,
-  );
+  return z
+    .discriminatedUnion(key, variants as any)
+    .describe(`One of: ${ops.map((o) => o.operation).join(", ")}`);
 }
 
 /** Validates and routes one request to its operation handler. */

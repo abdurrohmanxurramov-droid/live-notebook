@@ -141,7 +141,9 @@ export const createSlot = defineOp({
     if (!(await assertOwnStudent(caller.supabase, student_id))) return fail("Ученик не найден.");
     const { data, error } = await caller.supabase
       .from("schedule_slots")
-      .insert(compact({ student_id, day_of_week, start_time, duration_min, owner_id: caller.userId }))
+      .insert(
+        compact({ student_id, day_of_week, start_time, duration_min, owner_id: caller.userId }),
+      )
       .select(SLOT_COLUMNS)
       .maybeSingle();
     if (error) return dbError("schedule_slot.create", error);

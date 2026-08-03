@@ -70,10 +70,7 @@ const onboardStudent = defineOp({
   },
   handler: async ({ slots, ...student }, ctx) => {
     const steps: Step[] = [];
-    const created = await createStudent.handler(
-      { ...student, days_per_week: slots?.length },
-      ctx,
-    );
+    const created = await createStudent.handler({ ...student, days_per_week: slots?.length }, ctx);
     steps.push(stepResult("student.create", created));
     if (created.isError) return { ...created, structuredContent: { steps } };
     const studentId = (created.structuredContent as { student?: { id?: string } } | undefined)
