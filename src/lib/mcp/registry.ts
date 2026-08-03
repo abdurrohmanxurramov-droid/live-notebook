@@ -38,10 +38,12 @@ export function buildRequestSchema(key: string, ops: readonly Op[]) {
       .strict()
       .describe(op.summary),
   );
-  return z
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .discriminatedUnion(key, variants as any)
-    .describe(`One of: ${ops.map((o) => o.operation).join(", ")}`);
+  return (
+    z
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .discriminatedUnion(key, variants as any)
+      .describe(`One of: ${ops.map((o) => o.operation).join(", ")}`)
+  );
 }
 
 /** Validates and routes one request to its operation handler. */
