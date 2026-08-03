@@ -38,8 +38,8 @@ export function buildRequestSchema(key: string, ops: readonly Op[]) {
       .strict()
       .describe(op.summary),
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return z
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .discriminatedUnion(key, variants as any)
     .describe(`One of: ${ops.map((o) => o.operation).join(", ")}`);
 }
