@@ -73,3 +73,55 @@ export function translateJsonRpcPayload(payload: unknown): unknown {
     params: { ...params, name: translated.tool, arguments: translated.arguments },
   };
 }
+
+/**
+ * Request-level adapter. Applied at the server entry (before routing) because
+ * the generated MCP routes are owned by the build plugin. Rewrites:
+ *  - `POST /mcp` JSON-RPC `tools/call` payloads for legacy names;
+ *  - `POST /.mcp/invoke-tool/<legacy>` to the modern tool + translated body.
+ * Any other request is returned untouched.
+ */
+export async function adaptLegacyMcpRequest(request: Request): Promise<Request> {
+  if (request.method !== "POST") return request;
+  let url: URL;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return request;
+  }
+  const path = url.pathname;
+  const isRpc = path === "/mcp";
+  const isInvoke = path.startsWith("/.mcp/invoke-tool/");
+  if (!isRpc && !isInvoke) return request;
+  if (isInvoke && !isLegacyToolName(path.slice("/.mcp/invoke-tool/".length))) return request;
+
+  const text = await request.clone().text();
+  let payload: unknown = {};
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      return request;
+    }
+  }
+
+  if (isRpc) {
+    const translated = translateJsonRpcPayload(payload);
+    if (translated === payload) return request;
+    return new Request(request.url, {
+      method: request.method,
+      headers: request.headers,
+      body: JSON.stringify(translated),
+    });
+  }
+
+  const legacyName = path.slice("/.mcp/invoke-tool/".length);
+  const translated = translateLegacyCall(legacyName, payload);
+  if (!translated) return request;
+  url.pathname = `/.mcp/invoke-tool/${translated.tool}`;
+  return new Request(url.toString(), {
+    method: request.method,
+    headers: request.headers,
+    body: JSON.stringify(translated.arguments),
+  });
+}
