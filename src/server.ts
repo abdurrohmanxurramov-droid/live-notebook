@@ -27,6 +27,7 @@ if (typeof globalThis.localStorage === "undefined") {
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { adaptLegacyMcpRequest } from "./lib/mcp/legacy";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -227,9 +228,10 @@ export default {
       if (boundedRequest instanceof Response) {
         return withSecurityHeaders(request, boundedRequest);
       }
+      const adaptedRequest = await adaptLegacyMcpRequest(boundedRequest);
       const handler = await getServerEntry();
-      const response = await handler.fetch(boundedRequest, env, ctx);
-      return withSecurityHeaders(boundedRequest, await normalizeCatastrophicSsrResponse(response));
+      const response = await handler.fetch(adaptedRequest, env, ctx);
+      return withSecurityHeaders(adaptedRequest, await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return withSecurityHeaders(request, brandedErrorResponse());
