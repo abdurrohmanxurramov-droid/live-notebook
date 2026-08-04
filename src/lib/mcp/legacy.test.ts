@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import mcp from "./index";
 import {
   LEGACY_TOOL_ALIASES,
+  adaptLegacyMcpRequest,
   isLegacyToolName,
   translateJsonRpcPayload,
   translateLegacyCall,
@@ -99,5 +100,73 @@ describe("legacy tool aliases", () => {
       params: { name: "query", arguments: { request: { resource: "students.list" } } },
     };
     expect(translateJsonRpcPayload(modern)).toBe(modern);
+  });
+});
+
+describe("request-level adapter", () => {
+  const post = (url: string, body: unknown) =>
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: "Bearer t" },
+      body: JSON.stringify(body),
+    });
+
+  it("rewrites a legacy invoke-tool path and body", async () => {
+    const out = await adaptLegacyMcpRequest(
+      post("https://app.test/.mcp/invoke-tool/list_students", { status: "active" }),
+    );
+    expect(new URL(out.url).pathname).toBe("/.mcp/invoke-tool/query");
+    expect(await out.json()).toEqual({
+      request: { resource: "students.list", status: "active" },
+    });
+    expect(out.headers.get("authorization")).toBe("Bearer t");
+  });
+
+  it("rewrites set_lesson_status to the mutate tool", async () => {
+    const out = await adaptLegacyMcpRequest(
+      post("https://app.test/.mcp/invoke-tool/set_lesson_status", {
+        lesson_id: "11111111-1111-4111-8111-111111111111",
+        status: "completed",
+      }),
+    );
+    expect(new URL(out.url).pathname).toBe("/.mcp/invoke-tool/mutate");
+    expect(await out.json()).toEqual({
+      request: {
+        operation: "lesson.set_status",
+        lesson_id: "11111111-1111-4111-8111-111111111111",
+        status: "completed",
+      },
+    });
+  });
+
+  it("rewrites a legacy JSON-RPC tools/call on /mcp", async () => {
+    const out = await adaptLegacyMcpRequest(
+      post("https://app.test/mcp", {
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: { name: "list_finance", arguments: { is_paid: false } },
+      }),
+    );
+    expect(await out.json()).toEqual({
+      jsonrpc: "2.0",
+      id: 3,
+      method: "tools/call",
+      params: {
+        name: "query",
+        arguments: { request: { resource: "finance.list", is_paid: false } },
+      },
+    });
+  });
+
+  it("passes through modern calls and non-MCP paths unchanged", async () => {
+    const modern = post("https://app.test/.mcp/invoke-tool/query", {
+      request: { resource: "students.list" },
+    });
+    expect(await adaptLegacyMcpRequest(modern)).toBe(modern);
+    const other = post("https://app.test/api/public/hooks/lesson-reminders", {});
+    expect(await adaptLegacyMcpRequest(other)).toBe(other);
+    const listing = post("https://app.test/mcp", { jsonrpc: "2.0", id: 1, method: "tools/list" });
+    expect(await adaptLegacyMcpRequest(listing)).toBe(listing);
   });
 });
