@@ -22,6 +22,8 @@ import { registerAppServiceWorker } from "@/lib/register-sw";
 import { clearOfflineSnapshots } from "@/lib/offline";
 import { healPushSubscriptionForCurrentUser, unsubscribePushLocally } from "@/lib/push";
 import { getSafeUiErrorMessage } from "@/lib/utils";
+import { hardRestart, installStaleBuildRecovery, looksLikeStaleBuildError } from "@/lib/recover";
+
 
 function NotFoundComponent() {
   return (
@@ -43,12 +45,17 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   const message = getSafeUiErrorMessage(error, "Не удалось загрузить страницу");
+
+  useEffect(() => {
+    if (looksLikeStaleBuildError(error)) void hardRestart();
+  }, [error]);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold text-foreground">Что-то пошло не так</h1>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
-        <div className="mt-6 flex justify-center gap-2">
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
               router.invalidate();
@@ -57,6 +64,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground"
           >
             Повторить
+          </button>
+          <button
+            onClick={() => void hardRestart()}
+            className="rounded-xl border border-border px-4 py-2 text-sm text-foreground"
+          >
+            Перезапустить
           </button>
           <Link
             to="/"
@@ -68,6 +81,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
       </div>
     </div>
   );
+
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -161,6 +175,8 @@ function RootComponent() {
 
   useEffect(() => {
     installGlobalHaptics();
+    installStaleBuildRecovery();
+
     registerAppServiceWorker();
     const {
       data: { subscription },
