@@ -175,6 +175,8 @@ function RootComponent() {
 
   useEffect(() => {
     installGlobalHaptics();
+    installStaleBuildRecovery();
+
     registerAppServiceWorker();
     const {
       data: { subscription },
