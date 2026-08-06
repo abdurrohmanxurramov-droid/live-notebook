@@ -22,6 +22,8 @@ import { registerAppServiceWorker } from "@/lib/register-sw";
 import { clearOfflineSnapshots } from "@/lib/offline";
 import { healPushSubscriptionForCurrentUser, unsubscribePushLocally } from "@/lib/push";
 import { getSafeUiErrorMessage } from "@/lib/utils";
+import { hardRestart, installStaleBuildRecovery, looksLikeStaleBuildError } from "@/lib/recover";
+
 
 function NotFoundComponent() {
   return (
