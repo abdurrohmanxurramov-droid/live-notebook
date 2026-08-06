@@ -1,5 +1,5 @@
 // Service worker for Живой Блокнот — Web Push notifications + offline app shell (read-only).
-const VERSION = "v4";
+const VERSION = "v5";
 const SHELL_CACHE = `ln-shell-${VERSION}`;
 const ASSET_CACHE = `ln-assets-${VERSION}`;
 const OFFLINE_URL = "/";
