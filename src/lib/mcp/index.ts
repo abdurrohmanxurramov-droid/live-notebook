@@ -11,9 +11,10 @@ const projectRef = import.meta.env.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unse
 export default defineMcp({
   name: "livenotebook",
   title: "LiveNotebook",
-  version: "0.3.0",
+  version: "0.4.0",
   instructions:
-    "Tools for LiveNotebook — a teacher CRM — exposed as exactly three tools. Use `query` for all reads (students, schedule slots, lessons, attendance, finance, homework, settings, reports, trash). Use `mutate` for a single typed write (create/update/status changes, soft delete, restore, two-step permanent delete). Use `workflow` for supported multi-step routines (onboard_student, complete_lesson, reschedule_lesson, record_payment, archive_student, request_permanent_delete). Every call is scoped to the signed-in teacher via Supabase RLS; there is no raw SQL and no access to other users' data. Deletion is soft and restorable by default; permanent deletion requires record.prepare_permanent_delete followed by record.confirm_permanent_delete with the returned token and explicit user confirmation — workflows never delete permanently.",
+    "Tools for LiveNotebook — a teacher CRM — exposed as exactly three tools. Use `query` for all reads and analytics (students, schedule, free slots, conflicts, lessons, attendance, finance, homework, dashboard snapshot, per-student and period reports, global search, trash). Use `mutate` for typed writes, including bulk operations capped at 100 items that return per-item results. Use `workflow` for multi-step routines (onboard_student, complete_lesson, reschedule_lesson, record_payment, archive_student, request_permanent_delete, schedule.reschedule_day, student.full_profile, finance.reconcile_student). Every call is scoped to the signed-in teacher via Supabase RLS; there is no raw SQL and no access to other users' data. Deletion is soft and restorable by default; permanent deletion requires record.prepare_permanent_delete followed by record.confirm_permanent_delete with the returned token and explicit user confirmation — workflows never delete permanently. schedule.reschedule_day only previews unless confirm=true, and finance.reconcile_student never writes.",
+
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
