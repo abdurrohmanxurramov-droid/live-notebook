@@ -2,7 +2,6 @@ import { z } from "zod";
 import { dbError, fail, isToolResult, ok, requireCaller } from "../supabase";
 import {
   DELETABLE_TABLES,
-  HOMEWORK_STATUSES,
   STUDENT_STATUSES,
   addDaysIso,
   dateStr,
@@ -787,6 +786,3 @@ export const ANALYTICS_QUERY_OPS: readonly Op[] = [
 ];
 
 export { studentReport, studentBalance, dashboardSummary };
-export const HOMEWORK_OPEN_STATUSES = OPEN_HOMEWORK;
-export type { Counter };
-export const ALL_HOMEWORK_STATUSES = HOMEWORK_STATUSES;

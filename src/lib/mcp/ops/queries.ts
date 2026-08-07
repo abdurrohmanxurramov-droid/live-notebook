@@ -13,6 +13,7 @@ import {
   validRange,
 } from "../schemas";
 import { defineOp, type Op } from "../registry";
+import { ANALYTICS_QUERY_OPS } from "./analytics";
 
 const STUDENT_COLUMNS =
   "id, name, subject, phone, days_per_week, status, lesson_price, lesson_currency, created_at";
@@ -488,4 +489,5 @@ export const QUERY_OPS: readonly Op[] = [
   getSettings,
   periodSummary,
   listTrash,
+  ...ANALYTICS_QUERY_OPS,
 ];

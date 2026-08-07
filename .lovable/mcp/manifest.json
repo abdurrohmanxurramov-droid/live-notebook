@@ -19,7 +19,7 @@
       {
         "name": "query",
         "title": "Query LiveNotebook data",
-        "description": "Read data from the signed-in teacher's LiveNotebook CRM. Never writes. Pick one operation in \"request.resource\": students.list, students.get, schedule_slots.list, schedule_slots.get, lessons.list, lessons.get, lessons.today, attendance.list, finance.list, finance.debts, finance.unpaid_students, homework.list, homework.get, homework.upcoming, settings.get, reports.period_summary, trash.list. Dates are YYYY-MM-DD, times HH:MM, weekdays 0=Sunday..6=Saturday. Date ranges may not exceed one year.",
+        "description": "Read data from the signed-in teacher's LiveNotebook CRM. Never writes. Pick one operation in \"request.resource\": students.list, students.get, schedule_slots.list, schedule_slots.get, lessons.list, lessons.get, lessons.today, attendance.list, finance.list, finance.debts, finance.unpaid_students, homework.list, homework.get, homework.upcoming, settings.get, reports.period_summary, trash.list, students.search, students.summary, schedule.week, schedule.free_slots, schedule.conflicts, lessons.stats, attendance.stats, finance.period_summary, finance.student_balance, homework.stats, dashboard.summary, reports.student_summary, search.global, trash.get. Dates are YYYY-MM-DD, times HH:MM, weekdays 0=Sunday..6=Saturday. Date ranges may not exceed one year.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -414,6 +414,373 @@
                   ],
                   "additionalProperties": false,
                   "description": "List soft-deleted records that can still be restored."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "students.search",
+                      "description": "Search students by name, phone or subject; optional status filter and limit."
+                    },
+                    "query": {
+                      "type": "string",
+                      "minLength": 2,
+                      "maxLength": 80
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "paused",
+                        "completed",
+                        "archived"
+                      ]
+                    },
+                    "limit": {
+                      "$ref": "#/properties/request/anyOf/8/properties/limit"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "query"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Search students by name, phone or subject; optional status filter and limit."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "students.summary",
+                      "description": "Counts of students per status, plus how many were added inside an optional period."
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from",
+                      "description": "Date, YYYY-MM-DD"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from",
+                      "description": "Date, YYYY-MM-DD"
+                    }
+                  },
+                  "required": [
+                    "resource"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Counts of students per status, plus how many were added inside an optional period."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "schedule.week",
+                      "description": "Lessons for the 7 days starting at week_start, with student names and weekly slots."
+                    },
+                    "week_start": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "week_start"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Lessons for the 7 days starting at week_start, with student names and weekly slots."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "schedule.free_slots",
+                      "description": "Find free windows of duration_min inside working hours across a date range, based on existing lessons only."
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "duration_min": {
+                      "type": "integer",
+                      "minimum": 15,
+                      "maximum": 480
+                    },
+                    "work_start": {
+                      "type": "string",
+                      "pattern": "^\\d{2}:\\d{2}(:\\d{2})?$",
+                      "description": "Time, HH:MM"
+                    },
+                    "work_end": {
+                      "$ref": "#/properties/request/anyOf/20/properties/work_start",
+                      "description": "Time, HH:MM"
+                    },
+                    "step_min": {
+                      "type": "integer",
+                      "minimum": 5,
+                      "maximum": 120
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "from",
+                    "to",
+                    "duration_min"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Find free windows of duration_min inside working hours across a date range, based on existing lessons only."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "schedule.conflicts",
+                      "description": "List pairs of non-cancelled lessons whose times overlap inside a date range."
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false,
+                  "description": "List pairs of non-cancelled lessons whose times overlap inside a date range."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "lessons.stats",
+                      "description": "Aggregate lessons in a period by status and by student."
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Aggregate lessons in a period by status and by student."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "attendance.stats",
+                      "description": "Attendance counts per status and per student for a period, with attendance percentage (present ÷ present+absent)."
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Attendance counts per status and per student for a period, with attendance percentage (present ÷ present+absent)."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "finance.period_summary",
+                      "description": "Money for a period: paid totals are matched on pay_date, unpaid totals on created_at (unpaid rows have no pay_date)."
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Money for a period: paid totals are matched on pay_date, unpaid totals on created_at (unpaid rows have no pay_date)."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "finance.student_balance",
+                      "description": "Per-currency paid / unpaid totals and outstanding balance for one student."
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "student_id"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Per-currency paid / unpaid totals and outstanding balance for one student."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "homework.stats",
+                      "description": "Homework counts by status and by student, plus how many open tasks are overdue."
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from",
+                      "description": "Date, YYYY-MM-DD"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from",
+                      "description": "Date, YYYY-MM-DD"
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    }
+                  },
+                  "required": [
+                    "resource"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Homework counts by status and by student, plus how many open tasks are overdue."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "dashboard.summary",
+                      "description": "One snapshot: active students, today's and upcoming lessons, unpaid totals, overdue homework and recent attendance."
+                    },
+                    "upcoming_days": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 30
+                    }
+                  },
+                  "required": [
+                    "resource"
+                  ],
+                  "additionalProperties": false,
+                  "description": "One snapshot: active students, today's and upcoming lessons, unpaid totals, overdue homework and recent attendance."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "reports.student_summary",
+                      "description": "One student over a period: lessons, attendance, finance and homework in a single read."
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/4/properties/from"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "student_id",
+                    "from",
+                    "to"
+                  ],
+                  "additionalProperties": false,
+                  "description": "One student over a period: lessons, attendance, finance and homework in a single read."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "search.global",
+                      "description": "Search across students, lessons (by notes), homework (by task) and finance (by currency); returns type/id/summary rows owned by the caller only."
+                    },
+                    "query": {
+                      "$ref": "#/properties/request/anyOf/17/properties/query"
+                    },
+                    "limit": {
+                      "$ref": "#/properties/request/anyOf/8/properties/limit"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "query"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Search across students, lessons (by notes), homework (by task) and finance (by currency); returns type/id/summary rows owned by the caller only."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "resource": {
+                      "type": "string",
+                      "const": "trash.get",
+                      "description": "Get one soft-deleted record from trash by table and id."
+                    },
+                    "table": {
+                      "type": "string",
+                      "enum": [
+                        "students",
+                        "lessons",
+                        "attendance",
+                        "finance",
+                        "homework",
+                        "schedule_slots"
+                      ]
+                    },
+                    "record_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                    }
+                  },
+                  "required": [
+                    "resource",
+                    "table",
+                    "record_id"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Get one soft-deleted record from trash by table and id."
                 }
               ],
               "description": "The read operation and its parameters, discriminated by `resource`."
@@ -430,7 +797,7 @@
       {
         "name": "mutate",
         "title": "Change LiveNotebook data",
-        "description": "Create or change one record in the signed-in teacher's LiveNotebook CRM. Pick one operation in \"request.operation\": student.create, student.update, student.set_status, schedule_slot.create, schedule_slot.update, schedule_slot.move, lesson.create, lesson.move, lesson.update, lesson.set_status, attendance.mark, finance.create, finance.update, finance.set_paid, homework.create, homework.update, settings.update, record.soft_delete, record.restore, record.prepare_permanent_delete, record.confirm_permanent_delete. Deletion is soft by default (\"record.soft_delete\") and reversible with \"record.restore\". Permanent deletion is two-step: \"record.prepare_permanent_delete\" returns a token, then \"record.confirm_permanent_delete\" consumes it — only after the user explicitly confirms. Attendance marking is idempotent per student and date.",
+        "description": "Create or change one record in the signed-in teacher's LiveNotebook CRM. Pick one operation in \"request.operation\": student.create, student.update, student.set_status, schedule_slot.create, schedule_slot.update, schedule_slot.move, lesson.create, lesson.move, lesson.update, lesson.set_status, attendance.mark, finance.create, finance.update, finance.set_paid, homework.create, homework.update, settings.update, record.soft_delete, record.restore, record.prepare_permanent_delete, record.confirm_permanent_delete, students.bulk_update_status, attendance.bulk_mark, finance.bulk_set_paid, lessons.bulk_set_status, lessons.bulk_move, homework.bulk_update_status. Deletion is soft by default (\"record.soft_delete\") and reversible with \"record.restore\". Permanent deletion is two-step: \"record.prepare_permanent_delete\" returns a token, then \"record.confirm_permanent_delete\" consumes it — only after the user explicitly confirms. Attendance marking is idempotent per student and date.",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": true,
@@ -1165,6 +1532,216 @@
                   ],
                   "additionalProperties": false,
                   "description": "Step 2 of 2: permanently delete the record behind a confirmation token. Irreversible; requires explicit user confirmation."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "operation": {
+                      "type": "string",
+                      "const": "students.bulk_update_status",
+                      "description": "Set the same status on up to 100 students; returns a per-student result."
+                    },
+                    "student_ids": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                      },
+                      "minItems": 1,
+                      "maxItems": 100
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "active",
+                        "paused",
+                        "completed",
+                        "archived"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "operation",
+                    "student_ids",
+                    "status"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Set the same status on up to 100 students; returns a per-student result."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "operation": {
+                      "type": "string",
+                      "const": "attendance.bulk_mark",
+                      "description": "Mark attendance for up to 100 student/date pairs. Idempotent: repeating a call updates the same records instead of duplicating them."
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "student_id": {
+                            "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                          },
+                          "date": {
+                            "$ref": "#/properties/request/anyOf/6/properties/scheduled_date"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "present",
+                              "absent",
+                              "excused",
+                              "rescheduled_by_teacher"
+                            ]
+                          },
+                          "note": {
+                            "$ref": "#/properties/request/anyOf/6/properties/notes"
+                          }
+                        },
+                        "required": [
+                          "student_id",
+                          "date",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1,
+                      "maxItems": 100
+                    }
+                  },
+                  "required": [
+                    "operation",
+                    "entries"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Mark attendance for up to 100 student/date pairs. Idempotent: repeating a call updates the same records instead of duplicating them."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "operation": {
+                      "type": "string",
+                      "const": "finance.bulk_set_paid",
+                      "description": "Mark up to 100 finance records paid or unpaid. Idempotent."
+                    },
+                    "finance_ids": {
+                      "$ref": "#/properties/request/anyOf/21/properties/student_ids"
+                    },
+                    "is_paid": {
+                      "type": "boolean"
+                    },
+                    "pay_date": {
+                      "$ref": "#/properties/request/anyOf/6/properties/scheduled_date",
+                      "description": "Date, YYYY-MM-DD"
+                    }
+                  },
+                  "required": [
+                    "operation",
+                    "finance_ids",
+                    "is_paid"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Mark up to 100 finance records paid or unpaid. Idempotent."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "operation": {
+                      "type": "string",
+                      "const": "lessons.bulk_set_status",
+                      "description": "Set the status of up to 100 lessons, keeping attendance in sync for each one. Idempotent."
+                    },
+                    "lesson_ids": {
+                      "$ref": "#/properties/request/anyOf/21/properties/student_ids"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "planned",
+                        "completed",
+                        "cancelled",
+                        "moved"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "operation",
+                    "lesson_ids",
+                    "status"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Set the status of up to 100 lessons, keeping attendance in sync for each one. Idempotent."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "operation": {
+                      "type": "string",
+                      "const": "lessons.bulk_move",
+                      "description": "Move up to 100 lessons to new dates/times. Conflicts are detected before writing; conflicting moves are refused and reported instead of applied."
+                    },
+                    "moves": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "lesson_id": {
+                            "$ref": "#/properties/request/anyOf/1/properties/student_id"
+                          },
+                          "scheduled_date": {
+                            "$ref": "#/properties/request/anyOf/6/properties/scheduled_date"
+                          },
+                          "scheduled_time": {
+                            "$ref": "#/properties/request/anyOf/3/properties/start_time"
+                          }
+                        },
+                        "required": [
+                          "lesson_id",
+                          "scheduled_date",
+                          "scheduled_time"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "minItems": 1,
+                      "maxItems": 100
+                    }
+                  },
+                  "required": [
+                    "operation",
+                    "moves"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Move up to 100 lessons to new dates/times. Conflicts are detected before writing; conflicting moves are refused and reported instead of applied."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "operation": {
+                      "type": "string",
+                      "const": "homework.bulk_update_status",
+                      "description": "Set the same status on up to 100 homework entries. Idempotent."
+                    },
+                    "homework_ids": {
+                      "$ref": "#/properties/request/anyOf/21/properties/student_ids"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "assigned",
+                        "done",
+                        "not_done",
+                        "partial"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "operation",
+                    "homework_ids",
+                    "status"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Set the same status on up to 100 homework entries. Idempotent."
                 }
               ],
               "description": "The write operation and its typed payload, discriminated by `operation`."
@@ -1181,7 +1758,7 @@
       {
         "name": "workflow",
         "title": "Run a LiveNotebook workflow",
-        "description": "Run one supported multi-step routine in the signed-in teacher's LiveNotebook CRM. Pick one in \"request.workflow\": onboard_student, complete_lesson, reschedule_lesson, record_payment, archive_student, request_permanent_delete. Each call returns a per-step report. Every workflow is reversible: none performs permanent deletion — \"request_permanent_delete\" only returns a confirmation token, and the user must confirm before the \"mutate\" tool executes \"record.confirm_permanent_delete\".",
+        "description": "Run one supported multi-step routine in the signed-in teacher's LiveNotebook CRM. Pick one in \"request.workflow\": onboard_student, complete_lesson, reschedule_lesson, record_payment, archive_student, request_permanent_delete, schedule.reschedule_day, student.full_profile, finance.reconcile_student. Each call returns a per-step report. Every workflow is reversible: none performs permanent deletion — \"request_permanent_delete\" only returns a confirmation token, and the user must confirm before the \"mutate\" tool executes \"record.confirm_permanent_delete\".",
         "annotations": {
           "readOnlyHint": false,
           "destructiveHint": false,
@@ -1427,6 +2004,108 @@
                   ],
                   "additionalProperties": false,
                   "description": "Prepare an irreversible deletion: returns a confirmation token only. This workflow NEVER deletes; the user must confirm and then mutate/record.confirm_permanent_delete is called."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "workflow": {
+                      "type": "string",
+                      "const": "schedule.reschedule_day",
+                      "description": "Move all matching lessons from one day to another (optionally shifting the time). Without confirm=true it only previews the plan and conflicts; nothing is written."
+                    },
+                    "from_date": {
+                      "$ref": "#/properties/request/anyOf/1/properties/homework_due_date"
+                    },
+                    "to_date": {
+                      "$ref": "#/properties/request/anyOf/1/properties/homework_due_date"
+                    },
+                    "shift_minutes": {
+                      "type": "integer",
+                      "minimum": -720,
+                      "maximum": 720
+                    },
+                    "statuses": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "planned",
+                          "completed",
+                          "cancelled",
+                          "moved"
+                        ]
+                      },
+                      "minItems": 1,
+                      "maxItems": 4
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/lesson_id"
+                    },
+                    "confirm": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "workflow",
+                    "from_date",
+                    "to_date"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Move all matching lessons from one day to another (optionally shifting the time). Without confirm=true it only previews the plan and conflicts; nothing is written."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "workflow": {
+                      "type": "string",
+                      "const": "student.full_profile",
+                      "description": "Read-only bundle for one student: profile, weekly slots, upcoming lessons, attendance stats, unpaid finance and open homework."
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/lesson_id"
+                    },
+                    "from": {
+                      "$ref": "#/properties/request/anyOf/1/properties/homework_due_date",
+                      "description": "Date, YYYY-MM-DD"
+                    },
+                    "to": {
+                      "$ref": "#/properties/request/anyOf/1/properties/homework_due_date",
+                      "description": "Date, YYYY-MM-DD"
+                    }
+                  },
+                  "required": [
+                    "workflow",
+                    "student_id"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Read-only bundle for one student: profile, weekly slots, upcoming lessons, attendance stats, unpaid finance and open homework."
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "workflow": {
+                      "type": "string",
+                      "const": "finance.reconcile_student",
+                      "description": "Preview only: match a proposed payment against a student's unpaid records and suggest which ones it would cover. Never marks anything paid and never deletes."
+                    },
+                    "student_id": {
+                      "$ref": "#/properties/request/anyOf/1/properties/lesson_id"
+                    },
+                    "amount": {
+                      "$ref": "#/properties/request/anyOf/0/properties/lesson_price"
+                    },
+                    "currency": {
+                      "$ref": "#/properties/request/anyOf/0/properties/lesson_currency"
+                    }
+                  },
+                  "required": [
+                    "workflow",
+                    "student_id",
+                    "amount",
+                    "currency"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Preview only: match a proposed payment against a student's unpaid records and suggest which ones it would cover. Never marks anything paid and never deletes."
                 }
               ],
               "description": "The workflow and its typed input, discriminated by `workflow`."

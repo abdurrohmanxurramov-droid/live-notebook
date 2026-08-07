@@ -6,7 +6,6 @@ import {
   currencySchema,
   dateStr,
   overlaps,
-  timeStr,
   toMinutes,
   uuid,
 } from "../schemas";
@@ -226,5 +225,3 @@ const reconcileStudent = defineOp({
 });
 
 export const EXTRA_WORKFLOW_OPS: readonly Op[] = [rescheduleDay, fullProfile, reconcileStudent];
-export const RESCHEDULE_DAY_SHAPE_KEYS = Object.keys(rescheduleDay.shape);
-export const UNUSED_TIME_SCHEMA = timeStr;
