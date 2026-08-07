@@ -55,7 +55,10 @@ const rescheduleDay = defineOp({
     const moving = new Set(source.map((r) => String(r.id)));
     const busy = (target ?? [])
       .filter((r) => !moving.has(String(r.id)))
-      .map((r) => ({ start: toMinutes(String(r.scheduled_time)), dur: Number(r.duration_min ?? 60) }));
+      .map((r) => ({
+        start: toMinutes(String(r.scheduled_time)),
+        dur: Number(r.duration_min ?? 60),
+      }));
 
     const shift = input.shift_minutes ?? 0;
     const plan = source.map((row) => {

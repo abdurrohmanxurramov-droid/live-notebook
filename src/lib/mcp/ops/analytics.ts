@@ -301,7 +301,13 @@ const lessonsStats = defineOp({
     const byStatus: Counter = {};
     const perStudent = new Map<
       string,
-      { student_id: string; name: string | null; total: number; by_status: Counter; minutes: number }
+      {
+        student_id: string;
+        name: string | null;
+        total: number;
+        by_status: Counter;
+        minutes: number;
+      }
     >();
     for (const row of data ?? []) {
       bump(byStatus, String(row.status));
@@ -675,7 +681,11 @@ const studentReport = defineOp({
           base === 0 ? null : Math.round(((attStatus["present"] ?? 0) / base) * 100),
       },
       finance: { paid_totals: paid, unpaid_totals: unpaid },
-      homework: { total: homework.data?.length ?? 0, by_status: hwStatus, items: homework.data ?? [] },
+      homework: {
+        total: homework.data?.length ?? 0,
+        by_status: hwStatus,
+        items: homework.data ?? [],
+      },
     });
   },
 });

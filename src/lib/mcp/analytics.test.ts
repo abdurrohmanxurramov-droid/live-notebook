@@ -81,9 +81,9 @@ describe("new read schemas", () => {
     expect(query.safeParse({ resource: "schedule.week", week_start: "05-01-2026" }).success).toBe(
       false,
     );
-    expect(
-      query.safeParse({ resource: "dashboard.summary", raw_sql: "select 1" }).success,
-    ).toBe(false);
+    expect(query.safeParse({ resource: "dashboard.summary", raw_sql: "select 1" }).success).toBe(
+      false,
+    );
   });
 
   it("requires a minimum search term length", () => {
@@ -96,8 +96,11 @@ describe("bulk schemas", () => {
   it(`caps batches at ${BULK_MAX} items`, () => {
     const ids = Array.from({ length: BULK_MAX + 1 }, () => ID);
     expect(
-      mutate.safeParse({ operation: "students.bulk_update_status", student_ids: ids, status: "paused" })
-        .success,
+      mutate.safeParse({
+        operation: "students.bulk_update_status",
+        student_ids: ids,
+        status: "paused",
+      }).success,
     ).toBe(false);
     expect(
       mutate.safeParse({
@@ -109,7 +112,9 @@ describe("bulk schemas", () => {
   });
 
   it("rejects empty batches", () => {
-    expect(mutate.safeParse({ operation: "attendance.bulk_mark", entries: [] }).success).toBe(false);
+    expect(mutate.safeParse({ operation: "attendance.bulk_mark", entries: [] }).success).toBe(
+      false,
+    );
   });
 
   it("validates nested bulk entries strictly", () => {

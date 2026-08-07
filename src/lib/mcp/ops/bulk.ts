@@ -156,9 +156,7 @@ const bulkLessonMove = defineOp({
   shape: {
     moves: z
       .array(
-        z
-          .object({ lesson_id: uuid, scheduled_date: dateStr, scheduled_time: timeStr })
-          .strict(),
+        z.object({ lesson_id: uuid, scheduled_date: dateStr, scheduled_time: timeStr }).strict(),
       )
       .min(1)
       .max(BULK_MAX),

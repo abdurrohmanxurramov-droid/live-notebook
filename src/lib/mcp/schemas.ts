@@ -76,7 +76,6 @@ export function addDaysIso(iso: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-
 export const settingsPatchSchema = z
   .object({
     default_currency: currencySchema.optional(),
