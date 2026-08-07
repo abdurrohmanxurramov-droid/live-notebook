@@ -37,6 +37,45 @@ export const nameSchema = z.string().trim().min(1).max(100);
 export const currencySchema = currencyCodeSchema;
 export const dayOfWeekSchema = z.number().int().min(0).max(6);
 export const limitSchema = z.number().int().min(1).max(200);
+/** Hard cap for every batch operation. */
+export const BULK_MAX = 100;
+export const bulkIdsSchema = z.array(uuid).min(1).max(BULK_MAX);
+/** Free-text search term; PostgREST filter metacharacters are stripped by sanitizeSearch. */
+export const searchTermSchema = z.string().trim().min(2).max(80);
+
+/** Removes characters that would break out of a PostgREST `or(...)`/`ilike` filter. */
+export function sanitizeSearch(term: string): string {
+  return term.replace(/[,()*%\\"']/g, " ").trim();
+}
+
+/** Minutes since midnight for a HH:MM[:SS] string. */
+export function toMinutes(time: string): number {
+  const [h, m] = time.split(":");
+  return Number(h) * 60 + Number(m);
+}
+
+/** HH:MM for minutes since midnight. */
+export function fromMinutes(total: number): string {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/** True when two [start, start+duration) intervals overlap. */
+export function overlaps(aStart: number, aDur: number, bStart: number, bDur: number): boolean {
+  return aStart < bStart + bDur && bStart < aStart + aDur;
+}
+
+export function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export function addDaysIso(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 
 export const settingsPatchSchema = z
   .object({
