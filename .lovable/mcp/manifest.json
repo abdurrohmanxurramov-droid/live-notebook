@@ -12,7 +12,7 @@
   "mcp": {
     "server": {
       "name": "livenotebook",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "title": "LiveNotebook"
     },
     "tools": [
