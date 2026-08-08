@@ -23,6 +23,7 @@ import {
 } from "../schemas";
 import { defineOp, type Op } from "../registry";
 import { EXTRA_WORKFLOW_OPS } from "./workflows-extra";
+import { INSIGHT_WORKFLOW_OPS } from "./insights-write";
 import {
   createFinanceEntry,
   createHomework,
@@ -326,4 +327,5 @@ export const WORKFLOW_OPS: readonly Op[] = [
   archiveStudent,
   requestPermanentDelete,
   ...EXTRA_WORKFLOW_OPS,
+  ...INSIGHT_WORKFLOW_OPS,
 ];

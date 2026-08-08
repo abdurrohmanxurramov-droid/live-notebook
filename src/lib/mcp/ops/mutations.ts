@@ -30,6 +30,7 @@ import {
 } from "../schemas";
 import { defineOp, type Op } from "../registry";
 import { BULK_OPS } from "./bulk";
+import { INSIGHT_MUTATE_OPS } from "./insights-write";
 
 const STUDENT_COLUMNS =
   "id, name, subject, phone, days_per_week, status, lesson_price, lesson_currency, created_at";
@@ -633,4 +634,5 @@ export const MUTATE_OPS: readonly Op[] = [
   preparePermanentDelete,
   confirmPermanentDelete,
   ...BULK_OPS,
+  ...INSIGHT_MUTATE_OPS,
 ];
