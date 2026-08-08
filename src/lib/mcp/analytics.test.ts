@@ -37,7 +37,7 @@ describe("operation surface", () => {
     ]) {
       expect(q).toContain(name);
     }
-    expect(q).toHaveLength(31);
+    expect(q).toHaveLength(41);
 
     const m = operationNames(MUTATE_OPS);
     for (const name of [
@@ -50,7 +50,7 @@ describe("operation surface", () => {
     ]) {
       expect(m).toContain(name);
     }
-    expect(m).toHaveLength(27);
+    expect(m).toHaveLength(28);
 
     const w = operationNames(WORKFLOW_OPS);
     expect(w).toEqual([
@@ -63,7 +63,100 @@ describe("operation surface", () => {
       "schedule.reschedule_day",
       "student.full_profile",
       "finance.reconcile_student",
+      "schedule.cancel_day",
     ]);
+  });
+});
+
+describe("insight operations", () => {
+  it("registers every new read operation", () => {
+    const q = operationNames(QUERY_OPS);
+    for (const name of [
+      "students.page",
+      "lessons.page",
+      "finance.page",
+      "schedule.suggest_slot",
+      "schedule.check_availability",
+      "finance.overdue",
+      "finance.cashflow",
+      "finance.student_payment_history",
+      "students.insights",
+      "students.at_risk",
+    ]) {
+      expect(q).toContain(name);
+    }
+    expect(operationNames(MUTATE_OPS)).toContain("homework.bulk_assign");
+  });
+
+  it("validates pagination bounds", () => {
+    expect(query.safeParse({ resource: "students.page", limit: 20, offset: 40 }).success).toBe(
+      true,
+    );
+    expect(query.safeParse({ resource: "students.page", offset: -1 }).success).toBe(false);
+    expect(query.safeParse({ resource: "students.page", limit: 500 }).success).toBe(false);
+  });
+
+  it("requires the core fields of scheduling helpers", () => {
+    expect(query.safeParse({ resource: "schedule.suggest_slot", duration_min: 60 }).success).toBe(
+      true,
+    );
+    expect(query.safeParse({ resource: "schedule.suggest_slot" }).success).toBe(false);
+    expect(
+      query.safeParse({
+        resource: "schedule.check_availability",
+        date: "2026-03-02",
+        time: "10:00",
+        duration_min: 60,
+        student_id: ID,
+      }).success,
+    ).toBe(true);
+    expect(
+      query.safeParse({
+        resource: "schedule.check_availability",
+        date: "2026-03-02",
+        time: "10-00",
+        duration_min: 60,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("constrains cashflow granularity and finance ranges", () => {
+    expect(
+      query.safeParse({
+        resource: "finance.cashflow",
+        from: "2026-01-01",
+        to: "2026-03-01",
+        granularity: "week",
+      }).success,
+    ).toBe(true);
+    expect(
+      query.safeParse({
+        resource: "finance.cashflow",
+        from: "2026-01-01",
+        to: "2026-03-01",
+        granularity: "hour",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("caps bulk homework assignment and keeps day cancellation opt-in", () => {
+    expect(
+      mutate.safeParse({
+        operation: "homework.bulk_assign",
+        student_ids: Array.from({ length: BULK_MAX + 1 }, () => ID),
+        task: "Упражнение 5",
+      }).success,
+    ).toBe(false);
+    expect(
+      mutate.safeParse({
+        operation: "homework.bulk_assign",
+        student_ids: [ID],
+        task: "Упражнение 5",
+      }).success,
+    ).toBe(true);
+    const parsed = workflow.safeParse({ workflow: "schedule.cancel_day", date: "2026-03-02" });
+    expect(parsed.success).toBe(true);
+    expect((parsed as { data: { confirm?: boolean } }).data.confirm).toBeUndefined();
   });
 });
 

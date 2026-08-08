@@ -37,6 +37,8 @@ export const nameSchema = z.string().trim().min(1).max(100);
 export const currencySchema = currencyCodeSchema;
 export const dayOfWeekSchema = z.number().int().min(0).max(6);
 export const limitSchema = z.number().int().min(1).max(200);
+/** Zero-based offset for paginated reads. */
+export const offsetSchema = z.number().int().min(0).max(10_000);
 /** Hard cap for every batch operation. */
 export const BULK_MAX = 100;
 export const bulkIdsSchema = z.array(uuid).min(1).max(BULK_MAX);
