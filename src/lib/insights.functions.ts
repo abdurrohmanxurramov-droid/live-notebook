@@ -22,6 +22,8 @@ const UI_MUTATE_OPS = ["homework.bulk_assign"] as const;
 export type UiQueryOp = (typeof UI_QUERY_OPS)[number];
 export type UiMutateOp = (typeof UI_MUTATE_OPS)[number];
 
+type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
 const paramsSchema = z.record(z.string(), z.unknown()).default({});
 
 const queryInput = z.object({
@@ -58,7 +60,7 @@ async function runOp(kind: "query" | "mutate", operation: string, params: Record
   if (result.isError) {
     throw new Error(result.content[0]?.text ?? "Операция не выполнена");
   }
-  return (result.structuredContent ?? {}) as Record<string, unknown>;
+  return (result.structuredContent ?? {}) as Record<string, Json>;
 }
 
 export const uiQuery = createServerFn({ method: "POST" })
