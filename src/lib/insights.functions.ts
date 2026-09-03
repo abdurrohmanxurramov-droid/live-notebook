@@ -55,7 +55,7 @@ async function runOp(kind: "query" | "mutate", operation: string, params: Record
       ? (await import("@/lib/mcp/ops/queries")).QUERY_OPS
       : (await import("@/lib/mcp/ops/mutations")).MUTATE_OPS;
 
-  const key = kind === "query" ? "resource" : "action";
+  const key = kind === "query" ? "resource" : "operation";
   const result = await dispatch(key, ops, { [key]: operation, ...params }, ctx);
   if (result.isError) {
     throw new Error(result.content[0]?.text ?? "Операция не выполнена");
