@@ -28,6 +28,7 @@ import { BarChart3, TrendingUp, Users, AlertTriangle, BookOpen } from "lucide-re
 import type { ReactNode } from "react";
 import { convert, describeUnconverted, formatMoney, normalizeCurrency } from "@/lib/currency";
 import { useDefaultCurrency } from "@/lib/use-settings";
+import { FinanceInsights } from "@/components/analytics/FinanceInsights";
 
 export const Route = createFileRoute("/_authenticated/analytics")({ component: AnalyticsPage });
 
@@ -286,6 +287,8 @@ function AnalyticsPage() {
               </ResponsiveContainer>
             </div>
           </Card>
+
+          <FinanceInsights />
 
           <SectionTitle>Посещаемость по дням</SectionTitle>
           <Card className="p-3">

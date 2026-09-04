@@ -78,6 +78,8 @@ const HW_STATUS: Record<
   not_done: { label: "Не сделал", Icon: X, tone: "danger" },
 };
 
+import { StudentInsightsPanel } from "@/components/StudentInsightsPanel";
+
 export function StudentRoom({ id }: { id: string }) {
   const { data: students = [] } = useStudents();
   const { data: attendance = [] } = useAttendance();
@@ -206,6 +208,8 @@ export function StudentRoom({ id }: { id: string }) {
           <Mini n={unpaidCount} label="Долгов" />
         </div>
       </Card>
+
+      <StudentInsightsPanel studentId={id} />
 
       <div className="mt-4 grid grid-cols-4 gap-2">
         <TabBtn

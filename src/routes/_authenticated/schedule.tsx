@@ -14,7 +14,7 @@ import {
 import { Sheet } from "@/components/Sheet";
 import { useStudents, useSchedule, useMut, initials, type ScheduleSlot } from "@/lib/db";
 import { sb } from "@/lib/sb";
-import { CalendarDays, Plus, Trash2, Clock } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Clock, Sparkles } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isOnline, withSnapshot } from "@/lib/offline";
 import { useServerFn } from "@tanstack/react-start";
@@ -28,6 +28,7 @@ import {
 import { Calendar } from "@/components/calendar/Calendar";
 import { SwipeableLessonCard } from "@/components/SwipeableLessonCard";
 import { getErrorMessage } from "@/lib/utils";
+import { SuggestSlotSheet } from "@/components/schedule/SuggestSlotSheet";
 
 export const Route = createFileRoute("/_authenticated/schedule")({ component: SchedulePage });
 
@@ -67,6 +68,7 @@ function SchedulePage() {
   const { data: students = [] } = useStudents();
   const [open, setOpen] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   const regenOnMount = useServerFn(regenerateLessons);
   const qcMount = useQueryClient();
@@ -124,10 +126,17 @@ function SchedulePage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Расписание</h1>
           <p className="mt-1 text-sm text-muted-foreground">Еженедельные уроки по дням</p>
         </div>
-        <Button variant="gold" onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4" /> Слот
-        </Button>
+        <div className="flex flex-col items-end gap-2">
+          <Button variant="gold" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" /> Слот
+          </Button>
+          <Button variant="outline" onClick={() => setSuggestOpen(true)}>
+            <Sparkles className="h-4 w-4" /> Подобрать окно
+          </Button>
+        </div>
       </header>
+
+      <SuggestSlotSheet open={suggestOpen} onClose={() => setSuggestOpen(false)} />
 
       <Calendar />
 
