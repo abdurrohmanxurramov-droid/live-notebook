@@ -87,9 +87,13 @@ export function FinanceInsights() {
     [],
   );
 
-  const from = useMemo(() => isoToday(grain === "day" ? -13 : grain === "week" ? -56 : -180), [grain]);
+  const from = useMemo(
+    () => isoToday(grain === "day" ? -13 : grain === "week" ? -56 : -180),
+    [grain],
+  );
   const cashflow = useAsync<CashflowResult>(
-    () => runQuery<CashflowResult>("finance.cashflow", { from, to: isoToday(), granularity: grain }),
+    () =>
+      runQuery<CashflowResult>("finance.cashflow", { from, to: isoToday(), granularity: grain }),
     [grain, from],
   );
 
