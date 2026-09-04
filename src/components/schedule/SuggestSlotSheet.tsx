@@ -150,7 +150,11 @@ export function SuggestSlotSheet({ open, onClose }: { open: boolean; onClose: ()
         </div>
 
         <Button variant="gold" className="liquid-action" disabled={loading} onClick={search}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4" />
+          )}
           Подобрать
         </Button>
 
@@ -175,7 +179,9 @@ export function SuggestSlotSheet({ open, onClose }: { open: boolean; onClose: ()
                   key={`${s.date}-${s.time}`}
                   onClick={() => pick(s)}
                   className={`w-full rounded-xl p-3 text-left transition-colors ${
-                    active ? "bg-accent/15 ring-1 ring-accent" : "bg-secondary/60 hover:bg-secondary"
+                    active
+                      ? "bg-accent/15 ring-1 ring-accent"
+                      : "bg-secondary/60 hover:bg-secondary"
                   }`}
                 >
                   <div className="flex items-center justify-between">
