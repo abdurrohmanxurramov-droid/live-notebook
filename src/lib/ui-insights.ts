@@ -17,14 +17,16 @@ export function sumTotals(totals: Totals | null | undefined): number {
 /** Typed helper around the allowlisted MCP read bridge. */
 export function useInsightQuery() {
   const run = useServerFn(uiQuery);
-  return <T = Record<string, unknown>,>(operation: UiQueryOp, params: Record<string, unknown> = {}) =>
-    run({ data: { operation, params } }) as Promise<T>;
+  return <T = Record<string, unknown>>(
+    operation: UiQueryOp,
+    params: Record<string, unknown> = {},
+  ) => run({ data: { operation, params } }) as Promise<T>;
 }
 
 /** Typed helper around the allowlisted MCP write bridge. */
 export function useInsightMutate() {
   const run = useServerFn(uiMutate);
-  return <T = Record<string, unknown>,>(
+  return <T = Record<string, unknown>>(
     operation: UiMutateOp,
     params: Record<string, unknown> = {},
   ) => run({ data: { operation, params } }) as Promise<T>;

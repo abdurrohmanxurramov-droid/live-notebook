@@ -91,7 +91,9 @@ export function StudentInsightsPanel({ studentId }: { studentId: string }) {
               <Row label="Задолженность" value={fmtTotals(data.finance.unpaid_totals, "нет")} />
               <Row
                 label="Последняя оплата"
-                value={data.finance.last_payment_date ? ruDate(data.finance.last_payment_date) : "—"}
+                value={
+                  data.finance.last_payment_date ? ruDate(data.finance.last_payment_date) : "—"
+                }
               />
               <Row
                 label="Открытые ДЗ"
