@@ -10,8 +10,21 @@ import { Check, Loader2, Users } from "lucide-react";
 
 const MAX = 100;
 
-type ItemResult = { student_id: string; ok?: boolean; error?: string };
-type BulkResult = { results: ItemResult[]; created?: number; failed?: number };
+type ItemResult = {
+  id?: string;
+  student_id?: string;
+  ok?: boolean;
+  status?: "created" | "already_exists";
+  error?: string;
+};
+type BulkResult = {
+  results: ItemResult[];
+  created?: number;
+  skipped?: number;
+  succeeded?: number;
+  failed?: number;
+};
+
 
 export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: students = [] } = useStudents();
