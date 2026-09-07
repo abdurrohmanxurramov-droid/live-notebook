@@ -68,8 +68,12 @@ export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () 
       setConfirming(false);
       qc.invalidateQueries({ queryKey: ["homework"] });
       const failed = res.results?.filter((r) => r.error).length ?? 0;
-      if (failed === 0) toast.success("ДЗ выдано всем выбранным");
-      else toast.error(`Есть ошибки: ${failed}`);
+      const skipped = res.results?.filter((r) => r.status === "already_exists").length ?? 0;
+      if (failed > 0) toast.error(`Есть ошибки: ${failed}`);
+      else if (skipped > 0)
+        toast.success(`Готово. Уже было выдано раньше: ${skipped} — дубли не создавались`);
+      else toast.success("ДЗ выдано всем выбранным");
+
     } catch (e: unknown) {
       toast.error(getErrorMessage(e));
     } finally {
