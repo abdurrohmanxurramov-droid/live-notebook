@@ -76,7 +76,27 @@ const bulkAssignHomework = defineOp({
       .is("deleted_at", null);
     if (ownError) return dbError("homework.bulk_assign", ownError);
     const ownedIds = new Set((owned ?? []).map((r) => String(r.id)));
-    const insertable = ids.filter((id) => ownedIds.has(id));
+    const candidates = ids.filter((id) => ownedIds.has(id));
+
+    const existingByStudent = new Map<string, string>();
+    if (candidates.length) {
+      let dupQuery = caller.supabase
+        .from("homework")
+        .select("id, student_id")
+        .in("student_id", candidates)
+        .eq("task", task)
+        .eq("assigned_date", assigned)
+        .is("deleted_at", null);
+      dupQuery = due_date ? dupQuery.eq("due_date", due_date) : dupQuery.is("due_date", null);
+      const { data: existing, error: dupError } = await dupQuery;
+      if (dupError) return dbError("homework.bulk_assign", dupError);
+      for (const row of existing ?? []) {
+        const sid = String(row.student_id);
+        if (!existingByStudent.has(sid)) existingByStudent.set(sid, String(row.id));
+      }
+    }
+
+    const insertable = candidates.filter((id) => !existingByStudent.has(id));
 
     let created: Array<{ id: unknown; student_id: unknown }> = [];
     if (insertable.length) {
@@ -96,13 +116,10 @@ const bulkAssignHomework = defineOp({
       if (error) return dbError("homework.bulk_assign", error);
       created = data ?? [];
     }
-    const byStudent = new Map(created.map((r) => [String(r.student_id), String(r.id)]));
-    const results: ItemResult[] = ids.map((id) =>
-      byStudent.has(id)
-        ? { id, ok: true, result: { homework_id: byStudent.get(id) } }
-        : { id, ok: false, error: "Ученик не найден." },
-    );
+    const createdByStudent = new Map(created.map((r) => [String(r.student_id), String(r.id)]));
+    const results = buildBulkAssignResults(ids, ownedIds, existingByStudent, createdByStudent);
     return ok({ task, assigned_date: assigned, due_date: due_date ?? null, ...summarise(results) });
+
   },
 });
 
