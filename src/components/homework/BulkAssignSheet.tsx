@@ -132,20 +132,24 @@ export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () 
 
         {result && (
           <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl bg-secondary p-2.5 text-[12px]">
-            {result.results?.map((r) => (
-              <div key={r.student_id} className="flex items-center justify-between gap-2">
-                <span className="truncate text-muted-foreground">
-                  {nameById[r.student_id] ?? r.student_id}
-                </span>
-                {r.error ? (
-                  <Badge tone="danger">{r.error}</Badge>
-                ) : (
-                  <Badge tone="success">Готово</Badge>
-                )}
-              </div>
-            ))}
+            {result.results?.map((r, i) => {
+              const sid = r.id ?? r.student_id ?? "";
+              return (
+                <div key={sid || i} className="flex items-center justify-between gap-2">
+                  <span className="truncate text-muted-foreground">{nameById[sid] ?? sid}</span>
+                  {r.error ? (
+                    <Badge tone="danger">{r.error}</Badge>
+                  ) : r.status === "already_exists" ? (
+                    <Badge tone="neutral">Уже выдано</Badge>
+                  ) : (
+                    <Badge tone="success">Готово</Badge>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
+
 
         {confirming ? (
           <div className="rounded-xl bg-accent/10 p-3 text-[12px]">
