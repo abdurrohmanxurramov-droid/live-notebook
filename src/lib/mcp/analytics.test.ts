@@ -3,6 +3,7 @@ import { buildRequestSchema, operationNames } from "./registry";
 import { QUERY_OPS } from "./ops/queries";
 import { MUTATE_OPS } from "./ops/mutations";
 import { WORKFLOW_OPS } from "./ops/workflows";
+import { buildBulkAssignResults } from "./ops/insights-write";
 import { BULK_MAX, fromMinutes, overlaps, sanitizeSearch, toMinutes } from "./schemas";
 
 const query = buildRequestSchema("resource", QUERY_OPS);
@@ -270,5 +271,34 @@ describe("time helpers", () => {
 
   it("strips PostgREST filter metacharacters", () => {
     expect(sanitizeSearch("a,b)or(c%")).toBe("a b or c");
+  });
+});
+
+describe("homework.bulk_assign duplicate prevention", () => {
+  const A = "11111111-1111-4111-8111-111111111111";
+  const B = "22222222-2222-4222-8222-222222222222";
+  const C = "33333333-3333-4333-8333-333333333333";
+
+  it("reports existing homework as skipped, not as an error", () => {
+    const results = buildBulkAssignResults(
+      [A, B, C],
+      new Set([A, B]),
+      new Map([[A, "hw-1"]]),
+      new Map([[B, "hw-2"]]),
+    );
+    expect(results[0]).toMatchObject({ id: A, ok: true, status: "already_exists" });
+    expect(results[0]?.error).toBeUndefined();
+    expect(results[1]).toMatchObject({ id: B, ok: true, status: "created" });
+    expect(results[2]).toMatchObject({ id: C, ok: false });
+  });
+
+  it("creates nothing on a repeated call with the same task", () => {
+    const existing = new Map([
+      [A, "hw-1"],
+      [B, "hw-2"],
+    ]);
+    const results = buildBulkAssignResults([A, B], new Set([A, B]), existing, new Map());
+    expect(results.every((r) => r.ok && r.status === "already_exists")).toBe(true);
+    expect(results.filter((r) => r.status === "created")).toHaveLength(0);
   });
 });

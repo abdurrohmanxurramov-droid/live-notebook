@@ -10,8 +10,20 @@ import { Check, Loader2, Users } from "lucide-react";
 
 const MAX = 100;
 
-type ItemResult = { student_id: string; ok?: boolean; error?: string };
-type BulkResult = { results: ItemResult[]; created?: number; failed?: number };
+type ItemResult = {
+  id?: string;
+  student_id?: string;
+  ok?: boolean;
+  status?: "created" | "already_exists";
+  error?: string;
+};
+type BulkResult = {
+  results: ItemResult[];
+  created?: number;
+  skipped?: number;
+  succeeded?: number;
+  failed?: number;
+};
 
 export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: students = [] } = useStudents();
@@ -55,8 +67,11 @@ export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () 
       setConfirming(false);
       qc.invalidateQueries({ queryKey: ["homework"] });
       const failed = res.results?.filter((r) => r.error).length ?? 0;
-      if (failed === 0) toast.success("ДЗ выдано всем выбранным");
-      else toast.error(`Есть ошибки: ${failed}`);
+      const skipped = res.results?.filter((r) => r.status === "already_exists").length ?? 0;
+      if (failed > 0) toast.error(`Есть ошибки: ${failed}`);
+      else if (skipped > 0)
+        toast.success(`Готово. Уже было выдано раньше: ${skipped} — дубли не создавались`);
+      else toast.success("ДЗ выдано всем выбранным");
     } catch (e: unknown) {
       toast.error(getErrorMessage(e));
     } finally {
@@ -119,18 +134,21 @@ export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () 
 
         {result && (
           <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl bg-secondary p-2.5 text-[12px]">
-            {result.results?.map((r) => (
-              <div key={r.student_id} className="flex items-center justify-between gap-2">
-                <span className="truncate text-muted-foreground">
-                  {nameById[r.student_id] ?? r.student_id}
-                </span>
-                {r.error ? (
-                  <Badge tone="danger">{r.error}</Badge>
-                ) : (
-                  <Badge tone="success">Готово</Badge>
-                )}
-              </div>
-            ))}
+            {result.results?.map((r, i) => {
+              const sid = r.id ?? r.student_id ?? "";
+              return (
+                <div key={sid || i} className="flex items-center justify-between gap-2">
+                  <span className="truncate text-muted-foreground">{nameById[sid] ?? sid}</span>
+                  {r.error ? (
+                    <Badge tone="danger">{r.error}</Badge>
+                  ) : r.status === "already_exists" ? (
+                    <Badge tone="neutral">Уже выдано</Badge>
+                  ) : (
+                    <Badge tone="success">Готово</Badge>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 

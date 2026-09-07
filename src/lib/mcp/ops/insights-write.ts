@@ -3,15 +3,54 @@ import { dbError, fail, guardWrite, isToolResult, ok, requireCaller } from "../s
 import { BULK_MAX, bulkIdsSchema, dateStr, noteSchema, taskSchema, todayIso } from "../schemas";
 import { defineOp, type Op } from "../registry";
 
-type ItemResult = { id: string; ok: boolean; error?: string; result?: unknown };
+type ItemResult = {
+  id: string;
+  ok: boolean;
+  status?: "created" | "already_exists";
+  error?: string;
+  result?: unknown;
+};
 
 function summarise(results: ItemResult[]) {
   return {
     total: results.length,
     succeeded: results.filter((r) => r.ok).length,
+    skipped: results.filter((r) => r.status === "already_exists").length,
     failed: results.filter((r) => !r.ok).length,
     results,
   };
+}
+
+/**
+ * Pure result builder for homework.bulk_assign.
+ * Existing (duplicate) homework is reported as a skipped success, never an error.
+ */
+export function buildBulkAssignResults(
+  ids: readonly string[],
+  ownedIds: ReadonlySet<string>,
+  existingByStudent: ReadonlyMap<string, string>,
+  createdByStudent: ReadonlyMap<string, string>,
+): ItemResult[] {
+  return ids.map((id) => {
+    if (!ownedIds.has(id)) return { id, ok: false, error: "Ученик не найден." };
+    const existing = existingByStudent.get(id);
+    if (existing)
+      return {
+        id,
+        ok: true,
+        status: "already_exists",
+        result: { homework_id: existing, duplicate: true },
+      };
+    const created = createdByStudent.get(id);
+    if (created)
+      return {
+        id,
+        ok: true,
+        status: "created",
+        result: { homework_id: created, duplicate: false },
+      };
+    return { id, ok: false, error: "Не удалось создать задание." };
+  });
 }
 
 /** Assign the same homework task to a batch of students in one call. */
@@ -41,7 +80,27 @@ const bulkAssignHomework = defineOp({
       .is("deleted_at", null);
     if (ownError) return dbError("homework.bulk_assign", ownError);
     const ownedIds = new Set((owned ?? []).map((r) => String(r.id)));
-    const insertable = ids.filter((id) => ownedIds.has(id));
+    const candidates = ids.filter((id) => ownedIds.has(id));
+
+    const existingByStudent = new Map<string, string>();
+    if (candidates.length) {
+      let dupQuery = caller.supabase
+        .from("homework")
+        .select("id, student_id")
+        .in("student_id", candidates)
+        .eq("task", task)
+        .eq("assigned_date", assigned)
+        .is("deleted_at", null);
+      dupQuery = due_date ? dupQuery.eq("due_date", due_date) : dupQuery.is("due_date", null);
+      const { data: existing, error: dupError } = await dupQuery;
+      if (dupError) return dbError("homework.bulk_assign", dupError);
+      for (const row of existing ?? []) {
+        const sid = String(row.student_id);
+        if (!existingByStudent.has(sid)) existingByStudent.set(sid, String(row.id));
+      }
+    }
+
+    const insertable = candidates.filter((id) => !existingByStudent.has(id));
 
     let created: Array<{ id: unknown; student_id: unknown }> = [];
     if (insertable.length) {
@@ -61,12 +120,8 @@ const bulkAssignHomework = defineOp({
       if (error) return dbError("homework.bulk_assign", error);
       created = data ?? [];
     }
-    const byStudent = new Map(created.map((r) => [String(r.student_id), String(r.id)]));
-    const results: ItemResult[] = ids.map((id) =>
-      byStudent.has(id)
-        ? { id, ok: true, result: { homework_id: byStudent.get(id) } }
-        : { id, ok: false, error: "Ученик не найден." },
-    );
+    const createdByStudent = new Map(created.map((r) => [String(r.student_id), String(r.id)]));
+    const results = buildBulkAssignResults(ids, ownedIds, existingByStudent, createdByStudent);
     return ok({ task, assigned_date: assigned, due_date: due_date ?? null, ...summarise(results) });
   },
 });
