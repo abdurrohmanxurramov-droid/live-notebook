@@ -43,11 +43,15 @@ export function buildBulkAssignResults(
       };
     const created = createdByStudent.get(id);
     if (created)
-      return { id, ok: true, status: "created", result: { homework_id: created, duplicate: false } };
+      return {
+        id,
+        ok: true,
+        status: "created",
+        result: { homework_id: created, duplicate: false },
+      };
     return { id, ok: false, error: "Не удалось создать задание." };
   });
 }
-
 
 /** Assign the same homework task to a batch of students in one call. */
 const bulkAssignHomework = defineOp({
@@ -119,7 +123,6 @@ const bulkAssignHomework = defineOp({
     const createdByStudent = new Map(created.map((r) => [String(r.student_id), String(r.id)]));
     const results = buildBulkAssignResults(ids, ownedIds, existingByStudent, createdByStudent);
     return ok({ task, assigned_date: assigned, due_date: due_date ?? null, ...summarise(results) });
-
   },
 });
 

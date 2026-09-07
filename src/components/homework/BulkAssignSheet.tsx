@@ -25,7 +25,6 @@ type BulkResult = {
   failed?: number;
 };
 
-
 export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: students = [] } = useStudents();
   const runMutate = useInsightMutate();
@@ -73,7 +72,6 @@ export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () 
       else if (skipped > 0)
         toast.success(`Готово. Уже было выдано раньше: ${skipped} — дубли не создавались`);
       else toast.success("ДЗ выдано всем выбранным");
-
     } catch (e: unknown) {
       toast.error(getErrorMessage(e));
     } finally {
@@ -153,7 +151,6 @@ export function BulkAssignSheet({ open, onClose }: { open: boolean; onClose: () 
             })}
           </div>
         )}
-
 
         {confirming ? (
           <div className="rounded-xl bg-accent/10 p-3 text-[12px]">
