@@ -1,33 +1,52 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { haptic } from "@/lib/haptics";
+import { hardRestart } from "@/lib/recover";
 
 const SHOWN_KEY = "splash-shown-session";
+const BRAND_MS = 1100;
+const LEAVE_MS = 600;
+const STARTUP_TIMEOUT_MS = 13_000;
 
-export function SplashScreen() {
-  const [visible, setVisible] = useState(false);
+/**
+ * Стартовый экран и одновременно startup-guard: он остаётся на экране,
+ * пока маршрут/авторизация не готовы, поэтому пустая белая страница
+ * при первом запуске невозможна. Если запуск завис — показываем
+ * понятный экран ошибки вместо пустоты.
+ */
+export function SplashScreen({ pending = false }: { pending?: boolean }) {
+  const [mounted, setMounted] = useState(false);
+  const [minElapsed, setMinElapsed] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [gone, setGone] = useState(false);
+  const [stuck, setStuck] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const startedAt = useRef(0);
 
   useEffect(() => {
-    if (sessionStorage.getItem(SHOWN_KEY) === "1") return;
-    setVisible(true);
+    startedAt.current = Date.now();
+    setMounted(true);
+    const firstTime = sessionStorage.getItem(SHOWN_KEY) !== "1";
+    sessionStorage.setItem(SHOWN_KEY, "1");
+    if (firstTime) haptic("medium");
+    const t = window.setTimeout(() => setMinElapsed(true), firstTime ? BRAND_MS : 0);
+    const timeout = window.setTimeout(() => setStuck(true), STARTUP_TIMEOUT_MS);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(timeout);
+    };
   }, []);
 
-  useEffect(() => {
-    if (!visible) return;
-    haptic("medium");
-    sessionStorage.setItem(SHOWN_KEY, "1");
-    const t1 = setTimeout(() => {
-      haptic("light");
-      setLeaving(true);
-    }, 1100);
-    const t2 = setTimeout(() => setVisible(false), 1700);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [visible]);
+  const ready = mounted && minElapsed && !pending;
 
-  if (!visible) return null;
+  useEffect(() => {
+    if (!ready || leaving) return;
+    haptic("light");
+    setLeaving(true);
+    const t = window.setTimeout(() => setGone(true), LEAVE_MS);
+    return () => window.clearTimeout(t);
+  }, [ready, leaving]);
+
+  if (gone) return null;
 
   return (
     <div
@@ -61,11 +80,42 @@ export function SplashScreen() {
           </h1>
           <div className="h-px w-8 bg-accent/40" />
         </div>
-        <div className="mt-2 flex gap-1.5">
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent [animation-delay:-0.3s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent [animation-delay:-0.15s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent" />
-        </div>
+
+        {stuck && !ready ? (
+          <div className="mt-2 max-w-xs px-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Приложение слишком долго запускается. Проверьте соединение и попробуйте снова.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button
+                onClick={() => {
+                  setStuck(false);
+                  setRetrying(true);
+                  window.setTimeout(() => {
+                    setRetrying(false);
+                    setStuck(true);
+                  }, STARTUP_TIMEOUT_MS);
+                }}
+                disabled={retrying}
+                className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
+              >
+                Повторить
+              </button>
+              <button
+                onClick={() => void hardRestart()}
+                className="rounded-xl border border-border px-4 py-2 text-sm text-foreground"
+              >
+                Перезагрузить
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-2 flex gap-1.5">
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent [animation-delay:-0.3s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent [animation-delay:-0.15s]" />
+            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-accent" />
+          </div>
+        )}
       </div>
     </div>
   );
