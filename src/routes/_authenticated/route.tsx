@@ -72,7 +72,17 @@ export const Route = createFileRoute("/_authenticated")({
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     if (!offline) {
       try {
-        const { data, error } = await supabase.auth.getUser();
+        // Ограничиваем сетевую проверку: зависший запрос не должен держать
+        // приложение на экране загрузки — используем сохранённую сессию.
+        const { data, error } = await Promise.race([
+          supabase.auth.getUser(),
+          new Promise<{ data: { user: null }; error: { message: string } | null }>((resolve) =>
+            setTimeout(
+              () => resolve({ data: { user: null }, error: user ? null : { message: "timeout" } }),
+              7000,
+            ),
+          ),
+        ]);
         if (!error && data.user) user = data.user;
         else if (error && (!user || !isNetworkError(error))) {
           throw redirect({ to: "/auth", search: {} });

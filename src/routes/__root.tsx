@@ -166,6 +166,9 @@ function ThemeBoot() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const booting = useRouterState({
+    select: (state) => state.isLoading || state.status === "pending",
+  });
   const hideNav = useRouterState({
     select: (state) =>
       state.location.pathname === "/auth" ||
@@ -209,7 +212,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeBoot />
       <ThemeProvider />
-      <SplashScreen />
+      <SplashScreen pending={booting} />
       <OfflineIndicator />
       <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
         <Outlet />
