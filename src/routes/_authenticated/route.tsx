@@ -1,10 +1,45 @@
 import { createFileRoute, Outlet, redirect, Link, useRouter } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
+import type { User } from "@supabase/supabase-js";
+import { supabase, SUPABASE_AUTH_STORAGE_KEY } from "@/integrations/supabase/client";
 import { QuickActionsFab } from "@/components/QuickActionsFab";
 import { TopClock } from "@/components/TopClock";
 import { hasAnySnapshot, isNetworkError, OFFLINE_TEXT } from "@/lib/offline";
 import { getSafeUiErrorMessage } from "@/lib/utils";
 import { signOutSafely } from "@/lib/logout";
+
+const AUTH_TIMEOUT_MS = 7000;
+
+async function withStartupTimeout<T>(request: PromiseLike<T>): Promise<T | null> {
+  let timeoutId: number | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve(request),
+      new Promise<null>((resolve) => {
+        timeoutId = window.setTimeout(() => resolve(null), AUTH_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+  }
+}
+
+function readCachedUser(): User | null {
+  try {
+    const raw = localStorage.getItem(SUPABASE_AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as {
+      user?: unknown;
+      session?: { user?: unknown };
+      currentSession?: { user?: unknown };
+    };
+    const candidate = value.user ?? value.session?.user ?? value.currentSession?.user;
+    if (!candidate || typeof candidate !== "object" || !("id" in candidate)) return null;
+    if (typeof (candidate as { id?: unknown }).id !== "string") return null;
+    return candidate as User;
+  } catch {
+    return null;
+  }
+}
 
 function AuthErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
@@ -67,24 +102,22 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
     // Offline-safe gate: trust the locally stored session so a network failure
     // never signs a previously logged-in user out.
-    const { data: sessionData } = await supabase.auth.getSession();
-    let user = sessionData.session?.user ?? null;
+    const cachedUser = readCachedUser();
+    let user = cachedUser;
+    try {
+      const sessionResult = await withStartupTimeout(supabase.auth.getSession());
+      user = sessionResult?.data.session?.user ?? cachedUser;
+    } catch {
+      // Temporary storage/auth failure: retain the safely parsed cached session.
+    }
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     if (!offline) {
       try {
         // Ограничиваем сетевую проверку: зависший запрос не должен держать
         // приложение на экране загрузки — используем сохранённую сессию.
-        const { data, error } = await Promise.race([
-          supabase.auth.getUser(),
-          new Promise<{ data: { user: null }; error: { message: string } | null }>((resolve) =>
-            setTimeout(
-              () => resolve({ data: { user: null }, error: user ? null : { message: "timeout" } }),
-              7000,
-            ),
-          ),
-        ]);
-        if (!error && data.user) user = data.user;
-        else if (error && (!user || !isNetworkError(error))) {
+        const userResult = await withStartupTimeout(supabase.auth.getUser());
+        if (userResult && !userResult.error && userResult.data.user) user = userResult.data.user;
+        else if (userResult?.error && (!user || !isNetworkError(userResult.error))) {
           throw redirect({ to: "/auth", search: {} });
         }
       } catch (e) {
@@ -102,14 +135,19 @@ export const Route = createFileRoute("/_authenticated")({
     // Onboarding gate (only for routes inside _authenticated, except /onboarding itself)
     if (!location.pathname.startsWith("/onboarding")) {
       try {
-        const { data: settings } = await supabase
-          .from("user_settings")
-          .select("onboarding_completed, gender")
-          .eq("user_id", data.user.id)
-          .maybeSingle();
-        const done =
-          !!settings && (settings.onboarding_completed === true || settings.gender != null);
-        if (!done) {
+        const settingsResult = await withStartupTimeout(
+          supabase
+            .from("user_settings")
+            .select("onboarding_completed, gender")
+            .eq("user_id", data.user.id)
+            .maybeSingle(),
+        );
+        const settings = settingsResult?.error ? null : settingsResult?.data;
+        if (
+          settings &&
+          settings.onboarding_completed !== true &&
+          settings.gender == null
+        ) {
           throw redirect({ to: "/onboarding" });
         }
       } catch (e) {

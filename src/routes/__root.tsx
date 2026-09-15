@@ -212,7 +212,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeBoot />
       <ThemeProvider />
-      <SplashScreen pending={booting} />
+      <SplashScreen pending={booting} onRetry={() => router.invalidate()} />
       <OfflineIndicator />
       <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
         <Outlet />
