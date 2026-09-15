@@ -9,10 +9,7 @@ import { signOutSafely } from "@/lib/logout";
 
 const AUTH_TIMEOUT_MS = 7000;
 
-async function withStartupTimeout<T>(
-  request: PromiseLike<T>,
-  deadline: number,
-): Promise<T | null> {
+async function withStartupTimeout<T>(request: PromiseLike<T>, deadline: number): Promise<T | null> {
   let timeoutId: number | undefined;
   try {
     return await Promise.race([
