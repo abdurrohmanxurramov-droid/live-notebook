@@ -143,11 +143,7 @@ export const Route = createFileRoute("/_authenticated")({
             .maybeSingle(),
         );
         const settings = settingsResult?.error ? null : settingsResult?.data;
-        if (
-          settings &&
-          settings.onboarding_completed !== true &&
-          settings.gender == null
-        ) {
+        if (settings && settings.onboarding_completed !== true && settings.gender == null) {
           throw redirect({ to: "/onboarding" });
         }
       } catch (e) {
