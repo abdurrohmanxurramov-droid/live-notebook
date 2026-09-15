@@ -24,7 +24,6 @@ import { healPushSubscriptionForCurrentUser, unsubscribePushLocally } from "@/li
 import { getSafeUiErrorMessage } from "@/lib/utils";
 import { hardRestart, installStaleBuildRecovery, looksLikeStaleBuildError } from "@/lib/recover";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -81,7 +80,6 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
       </div>
     </div>
   );
-
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -212,7 +210,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeBoot />
       <ThemeProvider />
-      <SplashScreen pending={booting} />
+      <SplashScreen pending={booting} onRetry={() => router.invalidate()} />
       <OfflineIndicator />
       <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
         <Outlet />
