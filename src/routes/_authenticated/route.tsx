@@ -111,6 +111,11 @@ export const Route = createFileRoute("/_authenticated")({
     } catch {
       // Temporary storage/auth failure: retain the safely parsed cached session.
     }
+    // Быстрый путь для гостя: локальной сессии нет — сразу на /auth,
+    // без дополнительных сетевых проверок, которые задерживают старт.
+    if (!user) {
+      throw redirect({ to: "/auth", search: {} });
+    }
     const offline = typeof navigator !== "undefined" && navigator.onLine === false;
     let settings:
       | { onboarding_completed: boolean | null; gender: string | null }
