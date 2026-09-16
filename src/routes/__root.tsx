@@ -225,11 +225,13 @@ function RootComponent() {
       <ThemeProvider />
       <SplashScreen pending={booting} onRetry={() => router.invalidate()} />
       <OfflineIndicator />
-      <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
+      <div className={`mx-auto min-h-screen max-w-2xl safe-top ${reservesNavSpace ? "pb-24" : ""}`}>
         <Outlet />
       </div>
-      {!hideNav && <BottomNav />}
-      <Toaster position="top-center" theme="system" richColors />
+      {showNav && <BottomNav />}
+      <ClientOnly fallback={null}>
+        <Toaster position="top-center" theme="system" richColors />
+      </ClientOnly>
     </QueryClientProvider>
   );
 }
