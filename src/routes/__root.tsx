@@ -25,6 +25,7 @@ import { clearOfflineSnapshots } from "@/lib/offline";
 import { healPushSubscriptionForCurrentUser, unsubscribePushLocally } from "@/lib/push";
 import { getSafeUiErrorMessage } from "@/lib/utils";
 import { hardRestart, installStaleBuildRecovery, looksLikeStaleBuildError } from "@/lib/recover";
+import { shouldShowBottomNav } from "@/lib/ui-nav";
 
 function NotFoundComponent() {
   return (
