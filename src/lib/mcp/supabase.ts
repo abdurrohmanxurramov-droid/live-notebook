@@ -37,16 +37,21 @@ export function dbError(tag: string, error: { code?: string } | null): ToolResul
   return fail("Операция не выполнена. Попробуйте позже.");
 }
 
-/** Resolves the authenticated caller, or returns an error result. */
+/**
+ * Resolves the authenticated caller, or returns an error result.
+ *
+ * The user id comes from the already-verified OAuth token claims (`sub`).
+ * An extra `auth.getUser()` round trip per operation used to make unrelated
+ * reads fail with "Not authenticated" whenever Supabase Auth throttled or
+ * dropped one of several concurrent tool calls.
+ */
 export async function requireCaller(
   ctx: ToolContext,
 ): Promise<{ supabase: SupabaseClient; userId: string } | ToolResult> {
   if (!ctx.isAuthenticated()) return fail("Not authenticated");
-  const supabase = supabaseForUser(ctx);
-  const { data } = await supabase.auth.getUser();
-  const userId = data.user?.id;
+  const userId = ctx.getUserId();
   if (!userId) return fail("Not authenticated");
-  return { supabase, userId };
+  return { supabase: supabaseForUser(ctx), userId };
 }
 
 export function isToolResult(value: unknown): value is ToolResult {
