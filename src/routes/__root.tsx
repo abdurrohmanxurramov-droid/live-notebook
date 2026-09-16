@@ -165,11 +165,7 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
   const booting = useRouterState({
-    select: (state) => {
-      if (typeof window !== "undefined")
-        console.log("[dbg]", state.isLoading, state.status, state.matches.map((m) => m.routeId + ":" + m.status).join("|"));
-      return state.isLoading || state.status === "pending";
-    },
+    select: (state) => state.isLoading || state.status === "pending",
   });
   const hideNav = useRouterState({
     select: (state) =>
