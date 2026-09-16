@@ -13,20 +13,13 @@ const STARTUP_TIMEOUT_MS = 13_000;
  * при первом запуске невозможна. Если запуск завис — показываем
  * понятный экран ошибки вместо пустоты.
  */
-export function SplashScreen({
-  pending = false,
-  onRetry,
-}: {
-  pending?: boolean;
-  onRetry?: () => void | Promise<void>;
-}) {
+export function SplashScreen({ pending = false }: { pending?: boolean }) {
   const [mounted, setMounted] = useState(false);
   const [minElapsed, setMinElapsed] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
   const [stuck, setStuck] = useState(false);
   const [retrying, setRetrying] = useState(false);
-  const [retryAttempt, setRetryAttempt] = useState(0);
   const startedAt = useRef(0);
 
   useEffect(() => {
@@ -36,19 +29,12 @@ export function SplashScreen({
     sessionStorage.setItem(SHOWN_KEY, "1");
     if (firstTime) haptic("medium");
     const t = window.setTimeout(() => setMinElapsed(true), firstTime ? BRAND_MS : 0);
+    const timeout = window.setTimeout(() => setStuck(true), STARTUP_TIMEOUT_MS);
     return () => {
       window.clearTimeout(t);
+      window.clearTimeout(timeout);
     };
   }, []);
-
-  useEffect(() => {
-    if (!pending) {
-      setStuck(false);
-      return;
-    }
-    const timeout = window.setTimeout(() => setStuck(true), STARTUP_TIMEOUT_MS);
-    return () => window.clearTimeout(timeout);
-  }, [pending, retryAttempt]);
 
   const ready = mounted && minElapsed && !pending;
 
@@ -105,8 +91,10 @@ export function SplashScreen({
                 onClick={() => {
                   setStuck(false);
                   setRetrying(true);
-                  setRetryAttempt((attempt) => attempt + 1);
-                  Promise.resolve(onRetry?.()).finally(() => setRetrying(false));
+                  window.setTimeout(() => {
+                    setRetrying(false);
+                    setStuck(true);
+                  }, STARTUP_TIMEOUT_MS);
                 }}
                 disabled={retrying}
                 className="rounded-xl bg-primary px-4 py-2 text-sm text-primary-foreground disabled:opacity-60"
