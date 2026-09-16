@@ -7,6 +7,8 @@ import {
   useRouterState,
   HeadContent,
   Scripts,
+  ClientOnly,
+  useHydrated,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
