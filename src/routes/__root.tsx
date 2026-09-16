@@ -7,6 +7,8 @@ import {
   useRouterState,
   HeadContent,
   Scripts,
+  ClientOnly,
+  useHydrated,
 } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "sonner";
@@ -23,6 +25,7 @@ import { clearOfflineSnapshots } from "@/lib/offline";
 import { healPushSubscriptionForCurrentUser, unsubscribePushLocally } from "@/lib/push";
 import { getSafeUiErrorMessage } from "@/lib/utils";
 import { hardRestart, installStaleBuildRecovery, looksLikeStaleBuildError } from "@/lib/recover";
+import { shouldShowBottomNav } from "@/lib/ui-nav";
 
 function NotFoundComponent() {
   return (
@@ -164,15 +167,25 @@ function ThemeBoot() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const hydrated = useHydrated();
   const booting = useRouterState({
     select: (state) => state.isLoading || state.status === "pending",
   });
-  const hideNav = useRouterState({
-    select: (state) =>
-      state.location.pathname === "/auth" ||
-      state.statusCode >= 400 ||
-      state.matches.some((match) => match.status === "error" || match.status === "notFound"),
+  const navState = useRouterState({
+    select: (state) => ({
+      pathname: state.location.pathname,
+      statusCode: state.statusCode,
+      hasFailedMatch: state.matches.some(
+        (match) => match.status === "error" || match.status === "notFound",
+      ),
+    }),
   });
+  const showNav = shouldShowBottomNav({ ...navState, hydrated, booting });
+  // Отступ зависит только от пути: он одинаков на сервере и клиенте,
+  // поэтому контент не «прыгает» при появлении меню.
+  const reservesNavSpace = !(
+    navState.pathname === "/auth" || navState.pathname.startsWith("/auth/")
+  );
 
   useEffect(() => {
     installGlobalHaptics();
@@ -212,11 +225,13 @@ function RootComponent() {
       <ThemeProvider />
       <SplashScreen pending={booting} onRetry={() => router.invalidate()} />
       <OfflineIndicator />
-      <div className={`mx-auto min-h-screen max-w-2xl safe-top ${hideNav ? "" : "pb-24"}`}>
+      <div className={`mx-auto min-h-screen max-w-2xl safe-top ${reservesNavSpace ? "pb-24" : ""}`}>
         <Outlet />
       </div>
-      {!hideNav && <BottomNav />}
-      <Toaster position="top-center" theme="system" richColors />
+      {showNav && <BottomNav />}
+      <ClientOnly fallback={null}>
+        <Toaster position="top-center" theme="system" richColors />
+      </ClientOnly>
     </QueryClientProvider>
   );
 }
