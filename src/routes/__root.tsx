@@ -164,15 +164,25 @@ function ThemeBoot() {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
+  const hydrated = useHydrated();
   const booting = useRouterState({
     select: (state) => state.isLoading || state.status === "pending",
   });
-  const hideNav = useRouterState({
-    select: (state) =>
-      state.location.pathname === "/auth" ||
-      state.statusCode >= 400 ||
-      state.matches.some((match) => match.status === "error" || match.status === "notFound"),
+  const navState = useRouterState({
+    select: (state) => ({
+      pathname: state.location.pathname,
+      statusCode: state.statusCode,
+      hasFailedMatch: state.matches.some(
+        (match) => match.status === "error" || match.status === "notFound",
+      ),
+    }),
   });
+  const showNav = shouldShowBottomNav({ ...navState, hydrated, booting });
+  // Отступ зависит только от пути: он одинаков на сервере и клиенте,
+  // поэтому контент не «прыгает» при появлении меню.
+  const reservesNavSpace = !(
+    navState.pathname === "/auth" || navState.pathname.startsWith("/auth/")
+  );
 
   useEffect(() => {
     installGlobalHaptics();
