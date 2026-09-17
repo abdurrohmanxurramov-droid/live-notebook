@@ -23,7 +23,6 @@ import {
 } from "@/lib/db";
 import { sb } from "@/lib/sb";
 import { getErrorMessage } from "@/lib/utils";
-import { BulkAssignSheet } from "@/components/homework/BulkAssignSheet";
 import {
   BookOpen,
   Plus,
@@ -33,7 +32,6 @@ import {
   MinusCircle,
   Clock,
   Filter,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -57,7 +55,6 @@ function HomeworkPage() {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | HomeworkStatus>("all");
   const [studentFilter, setStudentFilter] = useState<string>("");
-  const [bulkOpen, setBulkOpen] = useState(false);
 
   useEffect(() => {
     const wantsNew =
@@ -111,14 +108,9 @@ function HomeworkPage() {
             </div>
             <div className="num mt-1 text-2xl text-foreground">{stats.rate}%</div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <Button variant="gold" onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" /> Задать
-            </Button>
-            <Button variant="outline" onClick={() => setBulkOpen(true)}>
-              <Users className="h-4 w-4" /> Всем сразу
-            </Button>
-          </div>
+          <Button variant="gold" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" /> Задать
+          </Button>
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-secondary">
           <div
@@ -173,8 +165,6 @@ function HomeworkPage() {
           ))}
         </div>
       )}
-
-      <BulkAssignSheet open={bulkOpen} onClose={() => setBulkOpen(false)} />
 
       <AddHomeworkSheet open={open} onClose={() => setOpen(false)} students={students} />
     </div>

@@ -1,11 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
-import { installStaleBuildRecovery } from "./lib/recover";
-
-// Ставим перехват ошибок загрузки чанков как можно раньше — до монтирования React,
-// иначе ранняя ошибка бандла приводит к белому экрану без восстановления.
-installStaleBuildRecovery();
 
 export const getRouter = () => {
   const queryClient = new QueryClient({
